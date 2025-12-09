@@ -67,7 +67,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       "状态与产品总结", // 5. Product Summary
       "状态更新", // 6. Last Status Update
       "未更新", // 7. Ignored
-      "对接人员", // 8. Contact Names
+      "对接人员", // 8. Contact Names (Name + Title + IsPrimary)
       "状态", // 9. FollowUp Status (Chinese)
       "下一步", // 10. Next Step
       "关键日期", // 11. Next Action Date
@@ -84,7 +84,19 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const rows = customers.map(c => {
       const tags = c.tags.map((tag, i) => `${i + 1}. ${tag}`).join(' ||| ');
       const regions = Array.isArray(c.region) ? c.region.join(' ||| ') : c.region;
-      const contactNames = c.contacts.map(contact => contact.name).join(' ||| ');
+      
+      // Export Contacts with format: 1. Name (Title) 【主要联系人】
+      const contactNames = c.contacts.map((contact, i) => {
+        let str = `${i + 1}. ${contact.name}`;
+        if (contact.title) {
+          str += ` (${contact.title})`;
+        }
+        if (contact.isPrimary) {
+          str += ` 【主要联系人】`;
+        }
+        return str;
+      }).join(' ||| ');
+
       const contactInfos = c.contacts.map(contact => contact.email || contact.phone || '').join(' ||| ');
       const interactionText = [...c.interactions]
         .reverse()
@@ -228,19 +240,48 @@ const DataManagement: React.FC<DataManagementProps> = ({
           const docLinks = splitByDelimiter(cols[18]);
           const contactNames = splitByDelimiter(cols[8]);
           const contactInfos = splitByDelimiter(cols[19]);
+          
+          // Parse Contacts with advanced logic for Title () and Primary Tag 【】
           const contacts = contactNames.map((cName, i) => {
              const info = contactInfos[i] || '';
              const isEmail = info.includes('@');
+             
+             let cleanName = cName;
+             let title = '';
+             let isPrimary = false;
+
+             // 1. Remove leading numbering (e.g., "1. ")
+             cleanName = cleanName.replace(/^\d+[\.\s]*\s*/, '');
+
+             // 2. Extract Primary Tag 【主要联系人】
+             if (cleanName.includes('【主要联系人】')) {
+                 isPrimary = true;
+                 cleanName = cleanName.replace('【主要联系人】', '');
+             }
+
+             // 3. Extract Title (text inside parentheses)
+             const titleMatch = cleanName.match(/\((.*?)\)/);
+             if (titleMatch) {
+                 title = titleMatch[1].trim();
+                 cleanName = cleanName.replace(titleMatch[0], '');
+             }
+
+             // Final trim
+             cleanName = cleanName.trim();
+
              return {
-               name: cName,
-               title: '',
+               name: cleanName,
+               title: title,
+               isPrimary: isPrimary,
                email: isEmail ? info : '',
                phone: !isEmail ? info : ''
              };
           });
+
           if (contacts.length === 0 && contactNames.length === 0 && contactInfos.length > 0) {
-             contacts.push({ name: 'Primary Contact', title: '', email: contactInfos[0].includes('@') ? contactInfos[0] : '', phone: ''});
+             contacts.push({ name: 'Primary Contact', title: '', isPrimary: false, email: contactInfos[0].includes('@') ? contactInfos[0] : '', phone: ''});
           }
+
           const rawInteractions = splitByDelimiter(cols[13]);
           const interactions: Interaction[] = rawInteractions.map((raw, i) => {
              const dateMatch = raw.match(/【(.*?)】/);
@@ -392,7 +433,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     }
                   </p>
                   <p className="mt-2 text-xs text-slate-500 italic">
-                    Note: For Customers, data with the same Name will overwrite existing records (Upsert). Fields with "|||" will be split into lists. Status (Col 10) supports "我方跟进", "等待对方", "暂无".
+                    Note: For Customers, data with the same Name will overwrite existing records (Upsert). Fields with "|||" will be split into lists.<br/>
+                    Contacts: Format as "1. Name (Title) 【主要联系人】". Text in () is Title, text in 【】 marks Primary.
                   </p>
                </div>
                
@@ -496,7 +538,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
                              <td className="p-3 text-slate-500 whitespace-nowrap align-top">{row.lastStatusUpdate}</td>
                              <td className="p-3 align-top">
                                {row.contacts.map((c: any, i: number) => (
-                                 <div key={i} className="whitespace-nowrap">{c.name} <span className="text-slate-400 text-[10px]">{c.email || c.phone}</span></div>
+                                 <div key={i} className="whitespace-nowrap">
+                                   {c.name} 
+                                   {c.title && <span className="text-slate-400 text-[10px] ml-1">({c.title})</span>}
+                                   {c.isPrimary && <span className="text-blue-500 text-[10px] ml-1">★</span>}
+                                 </div>
                                ))}
                              </td>
                              <td className="p-3 align-top">
