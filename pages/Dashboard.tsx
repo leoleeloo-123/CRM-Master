@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Customer, Sample } from '../types';
-import { Card, Badge, RankStars } from '../components/Common';
+import { Card, Badge, RankStars, getUrgencyLevel } from '../components/Common';
 import { AlertTriangle, Calendar, ArrowRight, Activity, FlaskConical } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { format, isBefore, parseISO, addDays } from 'date-fns';
@@ -124,36 +124,44 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 <p>{t('noCriticalActions')}</p>
               </Card>
             ) : (
-              criticalCustomers.map(c => (
-                <Card key={c.id} className="p-4 xl:p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/customers/${c.id}`)}>
-                  <div className="flex justify-between items-start">
-                    <div className="flex gap-3 xl:gap-5">
-                       <div className={`w-1 xl:w-2 self-stretch rounded-full ${isBefore(parseISO(c.nextActionDate || ''), new Date()) ? 'bg-red-500' : 'bg-amber-400'}`}></div>
-                       <div>
-                         <div className="flex items-center gap-2 xl:gap-4">
-                           <h4 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{c.name}</h4>
-                           <RankStars rank={c.rank} />
-                         </div>
-                         <p className="text-sm xl:text-base text-slate-600 dark:text-slate-300 mt-1">{c.interactions[0]?.nextSteps || "Update required"}</p>
-                         <div className="flex gap-2 mt-2">
-                           {c.tags.slice(0, 2).map(t => <Badge key={t} color="gray">{t}</Badge>)}
-                         </div>
-                       </div>
+              criticalCustomers.map(c => {
+                const urgency = getUrgencyLevel(c.nextActionDate);
+                let dateColor = "text-slate-500 dark:text-slate-400";
+                if (urgency === 'urgent') dateColor = "text-red-600 dark:text-red-500 font-bold";
+                if (urgency === 'warning') dateColor = "text-amber-600 dark:text-amber-500 font-bold";
+                if (urgency === 'safe') dateColor = "text-emerald-600 dark:text-emerald-500 font-bold";
+
+                return (
+                  <Card key={c.id} className="p-4 xl:p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/customers/${c.id}`)}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-3 xl:gap-5">
+                        <div className={`w-1 xl:w-2 self-stretch rounded-full ${urgency === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
+                        <div>
+                          <div className="flex items-center gap-2 xl:gap-4">
+                            <h4 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{c.name}</h4>
+                            <RankStars rank={c.rank} />
+                          </div>
+                          <p className="text-sm xl:text-base text-slate-600 dark:text-slate-300 mt-1">{c.interactions[0]?.nextSteps || "Update required"}</p>
+                          <div className="flex gap-2 mt-2">
+                            {c.tags.slice(0, 2).map(t => <Badge key={t} color="gray">{t}</Badge>)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`flex items-center justify-end gap-1 text-sm xl:text-base font-medium ${dateColor}`}>
+                          <Calendar className="w-3.5 h-3.5 xl:w-5 xl:h-5" />
+                          <span>
+                            {c.nextActionDate ? format(parseISO(c.nextActionDate), 'MMM d') : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="mt-1 xl:mt-2">
+                            <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                       <div className="flex items-center justify-end gap-1 text-sm xl:text-base font-medium text-slate-500 dark:text-slate-400">
-                         <Calendar className="w-3.5 h-3.5 xl:w-5 xl:h-5" />
-                         <span className={isBefore(parseISO(c.nextActionDate || ''), new Date()) ? 'text-red-600 font-bold' : ''}>
-                           {c.nextActionDate ? format(parseISO(c.nextActionDate), 'MMM d') : 'N/A'}
-                         </span>
-                       </div>
-                       <div className="mt-1 xl:mt-2">
-                          <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
-                       </div>
-                    </div>
-                  </div>
-                </Card>
-              ))
+                  </Card>
+                );
+              })
             )}
           </div>
         </div>

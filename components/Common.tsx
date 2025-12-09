@@ -136,3 +136,19 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
     </div>
   );
 };
+
+export const getUrgencyLevel = (dateStr?: string): 'urgent' | 'warning' | 'safe' | 'none' => {
+  if (!dateStr) return 'none';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize today
+  const target = parseISO(dateStr);
+  
+  if (!isValid(target)) return 'none';
+  
+  const diff = differenceInDays(target, today);
+  
+  // Logic: < 7 days = Urgent (Red), 7-14 days = Warning (Yellow), > 14 days = Safe (Green)
+  if (diff < 7) return 'urgent';
+  if (diff <= 14) return 'warning';
+  return 'safe';
+};

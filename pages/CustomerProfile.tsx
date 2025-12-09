@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus } from '../types';
-import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter } from '../components/Common';
+import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel } from '../components/Common';
 import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
@@ -18,8 +18,15 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const navigate = useNavigate();
   const { t } = useApp();
   const [activeTab, setActiveTab] = useState<'overview' | 'samples'>('overview');
+  
+  // Product Summary Edit State
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editSummaryText, setEditSummaryText] = useState('');
+
+  // Next Step Edit State
+  const [isEditingNextStep, setIsEditingNextStep] = useState(false);
+  const [editNextStepText, setEditNextStepText] = useState('');
+  const [editNextStepDate, setEditNextStepDate] = useState('');
 
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
@@ -28,6 +35,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Customer not found. <Button onClick={() => navigate('/customers')}>{t('back')}</Button></div>;
   }
 
+  // --- Product Summary Handlers ---
   const handleSaveSummary = () => {
     onUpdateCustomer({
       ...customer,
@@ -37,9 +45,39 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setIsEditingSummary(false);
   };
 
-  const startEdit = () => {
+  const startEditSummary = () => {
     setEditSummaryText(customer.productSummary || '');
     setIsEditingSummary(true);
+  };
+
+  // --- Next Step Handlers ---
+  const handleSaveNextStep = () => {
+    const updatedInteractions = [...customer.interactions];
+    // Update the most recent interaction (index 0) or create one if missing
+    if (updatedInteractions.length > 0) {
+      updatedInteractions[0] = { ...updatedInteractions[0], nextSteps: editNextStepText };
+    } else {
+      updatedInteractions.push({
+        id: `manual_${Date.now()}`,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        summary: 'Next Step Added Manually',
+        nextSteps: editNextStepText,
+        tags: []
+      });
+    }
+
+    onUpdateCustomer({
+      ...customer,
+      nextActionDate: editNextStepDate,
+      interactions: updatedInteractions
+    });
+    setIsEditingNextStep(false);
+  };
+
+  const startEditNextStep = () => {
+    setEditNextStepText(customer.interactions[0]?.nextSteps || '');
+    setEditNextStepDate(customer.nextActionDate || '');
+    setIsEditingNextStep(true);
   };
 
   const updateFollowUpStatus = (newStatus: FollowUpStatus) => {
@@ -48,6 +86,22 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const iconClass = "w-4 h-4 xl:w-5 xl:h-5";
   const regions = Array.isArray(customer.region) ? customer.region.join(' | ') : customer.region;
+
+  // Calculate Urgency for Next Step Color
+  const urgency = getUrgencyLevel(customer.nextActionDate);
+  let urgencyClass = "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700";
+  let urgencyIconClass = "text-slate-500";
+  
+  if (urgency === 'urgent') {
+    urgencyClass = "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
+    urgencyIconClass = "text-red-500";
+  } else if (urgency === 'warning') {
+    urgencyClass = "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800";
+    urgencyIconClass = "text-amber-500";
+  } else if (urgency === 'safe') {
+    urgencyClass = "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800";
+    urgencyIconClass = "text-emerald-500";
+  }
 
   return (
     <div className="space-y-6 xl:space-y-10">
@@ -163,7 +217,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                     <Box className="w-5 h-5 xl:w-6 xl:h-6" /> {t('productSummary')}
                   </h3>
                   {!isEditingSummary ? (
-                    <button onClick={startEdit} className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900">
+                    <button onClick={startEditSummary} className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900">
                       <Edit className="w-5 h-5 xl:w-6 xl:h-6" />
                     </button>
                   ) : (
@@ -211,19 +265,60 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             {activeTab === 'overview' && (
               <div className="space-y-6 xl:space-y-8">
                 
-                {/* Next Steps Highlight */}
-                {customer.interactions.length > 0 && customer.interactions[0].nextSteps && (
-                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 p-4 xl:p-6 rounded-lg flex gap-3 xl:gap-5 mb-6 xl:mb-8">
-                      <Clock className="text-amber-500 shrink-0 w-5 h-5 xl:w-8 xl:h-8" />
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                           <p className="text-slate-800 dark:text-white font-bold text-sm xl:text-lg">Next Step</p>
-                           <p className="text-xs xl:text-base font-bold text-red-500">DDL: {customer.nextActionDate}</p>
-                        </div>
-                        <p className="text-sm xl:text-lg text-slate-700 dark:text-slate-300 mt-1">{customer.interactions[0].nextSteps}</p>
-                      </div>
-                   </div>
-                )}
+                {/* Next Steps Highlight - NOW EDITABLE */}
+                <div className={`border p-4 xl:p-6 rounded-lg mb-6 xl:mb-8 transition-colors ${urgencyClass}`}>
+                  <div className="flex justify-between items-start mb-2">
+                     <div className="flex items-center gap-3 xl:gap-5 mb-1">
+                        <Clock className={`${urgencyIconClass} shrink-0 w-5 h-5 xl:w-8 xl:h-8`} />
+                        <h3 className="text-slate-800 dark:text-white font-bold text-sm xl:text-lg">Next Step</h3>
+                     </div>
+                     {!isEditingNextStep ? (
+                       <button onClick={startEditNextStep} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                          <Edit className="w-5 h-5 xl:w-6 xl:h-6" />
+                       </button>
+                     ) : (
+                       <div className="flex gap-2">
+                          <button onClick={handleSaveNextStep} className="text-emerald-700 bg-white dark:bg-slate-700 p-1.5 rounded shadow-sm"><Save className="w-5 h-5" /></button>
+                          <button onClick={() => setIsEditingNextStep(false)} className="text-red-500 bg-white dark:bg-slate-700 p-1.5 rounded shadow-sm"><X className="w-5 h-5" /></button>
+                       </div>
+                     )}
+                  </div>
+
+                  <div className="pl-8 xl:pl-12">
+                     {isEditingNextStep ? (
+                       <div className="space-y-4">
+                         <div>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">DDL Date</label>
+                            <input 
+                              type="date"
+                              className="border rounded p-2 text-sm w-full md:w-auto bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                              value={editNextStepDate}
+                              onChange={(e) => setEditNextStepDate(e.target.value)}
+                            />
+                         </div>
+                         <div>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Action Plan</label>
+                            <textarea 
+                              className="w-full border rounded p-2 text-sm xl:text-base bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 min-h-[80px]"
+                              value={editNextStepText}
+                              onChange={(e) => setEditNextStepText(e.target.value)}
+                            />
+                         </div>
+                       </div>
+                     ) : (
+                       <>
+                         <div className="flex justify-between items-center mb-1">
+                            <span className={`text-xs xl:text-base font-bold uppercase ${urgencyIconClass}`}>
+                               DDL: {customer.nextActionDate || 'N/A'}
+                            </span>
+                         </div>
+                         <p className="text-sm xl:text-lg text-slate-700 dark:text-slate-300 mt-1 whitespace-pre-wrap">
+                            {customer.interactions[0]?.nextSteps || "No next steps defined."}
+                         </p>
+                       </>
+                     )}
+                  </div>
+                </div>
 
                 <div className="flex justify-between items-center mb-4 xl:mb-6">
                    <h3 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{t('interactionHistory')}</h3>
@@ -253,12 +348,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                  <LinkIcon className="w-3 h-3 xl:w-4 xl:h-4" /> Link {li+1}
                                </a>
                              ))}
-                           </div>
-                         )}
-
-                         {interaction.nextSteps && (
-                           <div className="mt-3 pt-3 xl:mt-4 xl:pt-4 border-t border-slate-100 dark:border-slate-700 text-xs xl:text-base text-slate-500 flex gap-2">
-                             <span className="font-bold text-amber-600 dark:text-amber-500">Next:</span> {interaction.nextSteps}
                            </div>
                          )}
                        </Card>
