@@ -4,14 +4,14 @@ import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductFo
 import { Card, Badge, Button, Modal, DaysCounter } from '../components/Common';
 import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, ExternalLink, Filter } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { MOCK_CUSTOMERS } from '../services/dataService';
 import { format } from 'date-fns';
 
 interface SampleTrackerProps {
   samples: Sample[];
+  customers: Customer[];
 }
 
-const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
+const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
   const { t } = useApp();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
   const [searchTerm, setSearchTerm] = useState('');
@@ -282,12 +282,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
                 className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                 value={newSample.customerId}
                 onChange={(e) => {
-                  const customer = MOCK_CUSTOMERS.find(c => c.id === e.target.value);
+                  const customer = customers.find(c => c.id === e.target.value);
                   setNewSample({...newSample, customerId: e.target.value, customerName: customer?.name || ''});
                 }}
               >
                 <option value="">Select Customer</option>
-                {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>

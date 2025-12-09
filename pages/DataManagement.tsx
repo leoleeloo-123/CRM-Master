@@ -6,7 +6,6 @@ import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConi
 import { useApp } from '../contexts/AppContext';
 
 interface DataManagementProps {
-  // Props are kept for compatibility but components should prefer context for global state
   customers: Customer[];
   samples: Sample[];
   onImportCustomers: (newCustomers: Customer[]) => void;
@@ -15,10 +14,11 @@ interface DataManagementProps {
 
 const DataManagement: React.FC<DataManagementProps> = ({ 
   onImportCustomers, 
-  onImportSamples 
-  // We ignore passed customers/samples props in favor of context to ensure we have the latest state
+  onImportSamples,
+  customers,
+  samples
 }) => {
-  const { t, clearDatabase, customers, samples } = useApp();
+  const { t, clearDatabase } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
   const [importData, setImportData] = useState('');
   const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);

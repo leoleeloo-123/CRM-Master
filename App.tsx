@@ -98,7 +98,7 @@ const AppContent: React.FC = () => {
                   onUpdateCustomer={handleUpdateCustomer} 
                 />
               } />
-              <Route path="/samples" element={<SampleTracker samples={samples} />} />
+              <Route path="/samples" element={<SampleTracker samples={samples} customers={customers} />} />
               <Route path="/data-management" element={
                 <DataManagement 
                   customers={customers} 
