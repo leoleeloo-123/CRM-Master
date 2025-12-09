@@ -25,6 +25,18 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     return matchesSearch && matchesRank;
   });
 
+  const getStatusLabel = (status: string | undefined) => {
+    if (!status) return '';
+    const s = status.trim();
+    // Handle FollowUpStatus
+    if (s === 'My Turn' || s === '我方跟进') return t('statusMyTurn');
+    if (s === 'Waiting for Customer' || s === '等待对方') return t('statusWaiting');
+    if (s === 'No Action' || s === '暂无') return t('statusNoAction');
+    
+    // Fallback for other statuses or display as is
+    return s;
+  };
+
   return (
     <div className="space-y-6 xl:space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -104,7 +116,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                     <div className="flex items-center gap-2">
                       <StatusIcon status={customer.followUpStatus || customer.status} />
                       <span className="font-medium text-xs xl:text-sm whitespace-nowrap">
-                        {customer.followUpStatus || customer.status}
+                        {getStatusLabel(customer.followUpStatus || customer.status)}
                       </span>
                     </div>
                   </td>
