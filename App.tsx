@@ -101,8 +101,6 @@ const AppContent: React.FC = () => {
               <Route path="/samples" element={<SampleTracker samples={samples} customers={customers} />} />
               <Route path="/data-management" element={
                 <DataManagement 
-                  customers={customers} 
-                  samples={samples} 
                   onImportCustomers={handleImportCustomers}
                   onImportSamples={handleImportSamples}
                 />

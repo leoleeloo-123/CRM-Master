@@ -6,19 +6,15 @@ import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConi
 import { useApp } from '../contexts/AppContext';
 
 interface DataManagementProps {
-  customers: Customer[];
-  samples: Sample[];
   onImportCustomers: (newCustomers: Customer[]) => void;
   onImportSamples: (newSamples: Sample[]) => void;
 }
 
 const DataManagement: React.FC<DataManagementProps> = ({ 
   onImportCustomers, 
-  onImportSamples,
-  customers,
-  samples
+  onImportSamples
 }) => {
-  const { t, clearDatabase } = useApp();
+  const { t, clearDatabase, customers, samples } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
   const [importData, setImportData] = useState('');
   const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
