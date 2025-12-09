@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction } from '../types';
-import { Card, Button, Badge } from '../components/Common';
-import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X } from 'lucide-react';
+import { Card, Button, Badge, Modal } from '../components/Common';
+import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 
 interface DataManagementProps {
@@ -12,11 +13,12 @@ interface DataManagementProps {
 }
 
 const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onImportCustomers, onImportSamples }) => {
-  const { t } = useApp();
+  const { t, clearDatabase } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
   const [importData, setImportData] = useState('');
   const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
   const [importStatus, setImportStatus] = useState<{type: 'success' | 'error' | 'info', message: string} | null>(null);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   const downloadCSV = (content: string, filename: string) => {
     const bom = "\uFEFF"; 
@@ -252,11 +254,21 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
     setImportStatus(null);
   };
 
+  const handleClearDatabase = () => {
+    clearDatabase();
+    setIsClearModalOpen(false);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('dataManagement')}</h2>
-        <p className="text-slate-500 dark:text-slate-400">{t('bulkImport')} / {t('export')}</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('dataManagement')}</h2>
+          <p className="text-slate-500 dark:text-slate-400">{t('bulkImport')} / {t('export')}</p>
+        </div>
+        <Button variant="danger" className="flex items-center gap-2" onClick={() => setIsClearModalOpen(true)}>
+           <Trash2 size={16} /> Clear Database
+        </Button>
       </div>
 
       {/* IMPORT SECTION */}
@@ -464,6 +476,20 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
           </Button>
         </Card>
       </div>
+
+      {/* Clear DB Modal */}
+      <Modal isOpen={isClearModalOpen} onClose={() => setIsClearModalOpen(false)} title="Dangerous Action">
+        <div className="p-2 space-y-4">
+          <p className="text-slate-600 dark:text-slate-300">
+            Are you sure you want to <strong>permanently delete ALL data</strong> (Customers and Samples)? 
+            This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsClearModalOpen(false)}>Cancel</Button>
+            <Button variant="danger" onClick={handleClearDatabase}>Yes, Clear Everything</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

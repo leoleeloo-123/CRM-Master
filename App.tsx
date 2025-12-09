@@ -8,17 +8,17 @@ import CustomerProfile from './pages/CustomerProfile';
 import SampleTracker from './pages/SampleTracker';
 import DataManagement from './pages/DataManagement';
 import Settings from './pages/Settings';
-import { MOCK_CUSTOMERS, MOCK_SAMPLES } from './services/dataService';
 import { Customer, Sample } from './types';
-import { AppProvider } from './contexts/AppContext';
+import { AppProvider, useApp } from './contexts/AppContext';
 
-const App: React.FC = () => {
-  const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS);
-  const [samples, setSamples] = useState<Sample[]>(MOCK_SAMPLES);
+// Inner component to use the context hooks
+const AppContent: React.FC = () => {
+  const { customers, samples, setCustomers, setSamples, isDemoData, setIsDemoData } = useApp();
   const [loading, setLoading] = useState(true);
   const [showDemoBanner, setShowDemoBanner] = useState(true);
 
   useEffect(() => {
+    // Simulate initial load check
     const timer = setTimeout(() => {
       setLoading(false);
     }, 500);
@@ -26,43 +26,45 @@ const App: React.FC = () => {
   }, []);
 
   const handleUpdateCustomer = (updatedCustomer: Customer) => {
-    setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+    setCustomers((prev: Customer[]) => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
   };
 
   const handleImportCustomers = (importedCustomers: Customer[]) => {
-    setCustomers(prevCustomers => {
-      // Create a map of existing customers by normalized name (lowercase, trimmed)
-      // Explicitly define the Map type to prevent 'unknown' inference
-      const customerMap = new Map<string, Customer>();
-      prevCustomers.forEach(c => {
-        customerMap.set(c.name.toLowerCase().trim(), c);
-      });
+    // If we are currently using Demo Data, clear it before importing
+    let baseCustomers = customers;
+    if (isDemoData) {
+      baseCustomers = [];
+      setIsDemoData(false); // Disable demo mode flag
+      setShowDemoBanner(false); // Hide banner
+    }
 
-      // Iterate through imported customers
-      importedCustomers.forEach(newCust => {
-        const normalizedName = newCust.name.toLowerCase().trim();
-        const existing = customerMap.get(normalizedName);
-
-        if (existing) {
-          // UPDATE (Overwrite):
-          // Preserve the existing ID to maintain Sample relationships
-          newCust.id = existing.id;
-          // Update the map with the new data, effectively replacing the old object
-          customerMap.set(normalizedName, newCust);
-        } else {
-          // INSERT:
-          // Add the new customer to the map
-          customerMap.set(normalizedName, newCust);
-        }
-      });
-
-      // Convert map values back to array
-      return Array.from(customerMap.values());
+    const customerMap = new Map<string, Customer>();
+    baseCustomers.forEach(c => {
+      customerMap.set(c.name.toLowerCase().trim(), c);
     });
+
+    importedCustomers.forEach(newCust => {
+      const normalizedName = newCust.name.toLowerCase().trim();
+      const existing = customerMap.get(normalizedName);
+
+      if (existing) {
+        newCust.id = existing.id;
+        customerMap.set(normalizedName, newCust);
+      } else {
+        customerMap.set(normalizedName, newCust);
+      }
+    });
+
+    setCustomers(Array.from(customerMap.values()));
   };
 
   const handleImportSamples = (newSamples: Sample[]) => {
-    setSamples(prev => [...prev, ...newSamples]);
+    if (isDemoData) {
+      setSamples(newSamples);
+      setIsDemoData(false);
+    } else {
+      setSamples((prev: Sample[]) => [...prev, ...newSamples]);
+    }
   };
 
   if (loading) {
@@ -74,45 +76,51 @@ const App: React.FC = () => {
   }
 
   return (
-    <AppProvider>
-      <HashRouter>
-        <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
-          <Sidebar />
-          <div className="flex-1 ml-80 overflow-y-auto relative">
-             {showDemoBanner && (
-               <div className="bg-blue-600 text-white text-xs font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
-                 <span>⚠ DEMO MODE: Showing generated sample data. Real client data is hidden. Import your data in Data Management.</span>
-                 <button onClick={() => setShowDemoBanner(false)} className="text-white hover:text-blue-200 bg-blue-700 px-2 py-0.5 rounded">Dismiss</button>
-               </div>
-             )}
-            <main className="max-w-[1920px] mx-auto p-10">
-              <Routes>
-                <Route path="/" element={<Dashboard customers={customers} samples={samples} />} />
-                <Route path="/customers" element={<CustomerList customers={customers} />} />
-                <Route path="/customers/:id" element={
-                  <CustomerProfile 
-                    customers={customers} 
-                    samples={samples} 
-                    onUpdateCustomer={handleUpdateCustomer} 
-                  />
-                } />
-                <Route path="/samples" element={<SampleTracker samples={samples} />} />
-                <Route path="/data-management" element={
-                  <DataManagement 
-                    customers={customers} 
-                    samples={samples} 
-                    onImportCustomers={handleImportCustomers}
-                    onImportSamples={handleImportSamples}
-                  />
-                } />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/reports" element={<Navigate to="/data-management" replace />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-          </div>
+    <HashRouter>
+      <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
+        <Sidebar />
+        <div className="flex-1 ml-80 overflow-y-auto relative">
+            {isDemoData && showDemoBanner && (
+              <div className="bg-blue-600 text-white text-xs font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
+                <span>⚠ DEMO MODE: Showing generated sample data. Real client data is hidden. Import your data in Data Management.</span>
+                <button onClick={() => setShowDemoBanner(false)} className="text-white hover:text-blue-200 bg-blue-700 px-2 py-0.5 rounded">Dismiss</button>
+              </div>
+            )}
+          <main className="max-w-[1920px] mx-auto p-10">
+            <Routes>
+              <Route path="/" element={<Dashboard customers={customers} samples={samples} />} />
+              <Route path="/customers" element={<CustomerList customers={customers} />} />
+              <Route path="/customers/:id" element={
+                <CustomerProfile 
+                  customers={customers} 
+                  samples={samples} 
+                  onUpdateCustomer={handleUpdateCustomer} 
+                />
+              } />
+              <Route path="/samples" element={<SampleTracker samples={samples} />} />
+              <Route path="/data-management" element={
+                <DataManagement 
+                  customers={customers} 
+                  samples={samples} 
+                  onImportCustomers={handleImportCustomers}
+                  onImportSamples={handleImportSamples}
+                />
+              } />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/reports" element={<Navigate to="/data-management" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
         </div>
-      </HashRouter>
+      </div>
+    </HashRouter>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AppProvider>
+      <AppContent />
     </AppProvider>
   );
 };

@@ -1,5 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Language, translations } from '../utils/i18n';
+import { Customer, Sample } from '../types';
+import { MOCK_CUSTOMERS, MOCK_SAMPLES } from '../services/dataService';
 
 interface AppContextType {
   theme: 'light' | 'dark';
@@ -9,6 +12,15 @@ interface AppContextType {
   companyName: string;
   setCompanyName: (name: string) => void;
   t: (key: keyof typeof translations['en']) => string;
+  
+  // Data State
+  customers: Customer[];
+  samples: Sample[];
+  setCustomers: (customers: Customer[] | ((prev: Customer[]) => Customer[])) => void;
+  setSamples: (samples: Sample[] | ((prev: Sample[]) => Sample[])) => void;
+  clearDatabase: () => void;
+  isDemoData: boolean;
+  setIsDemoData: (isDemo: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -31,6 +43,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return localStorage.getItem('companyName') || 'Navi Material';
   });
 
+  // Data State with Persistence
+  const [isDemoData, setIsDemoData] = useState<boolean>(() => {
+    return localStorage.getItem('isDemoData') !== 'false'; // Default true unless explicitly false
+  });
+
+  const [customers, setCustomersState] = useState<Customer[]>(() => {
+    const saved = localStorage.getItem('customers');
+    return saved ? JSON.parse(saved) : MOCK_CUSTOMERS;
+  });
+
+  const [samples, setSamplesState] = useState<Sample[]>(() => {
+    const saved = localStorage.getItem('samples');
+    return saved ? JSON.parse(saved) : MOCK_SAMPLES;
+  });
+
   // Initial system preference check
   useEffect(() => {
     if (!localStorage.getItem('theme')) {
@@ -51,6 +78,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Persist Data Changes
+  useEffect(() => {
+    localStorage.setItem('customers', JSON.stringify(customers));
+  }, [customers]);
+
+  useEffect(() => {
+    localStorage.setItem('samples', JSON.stringify(samples));
+  }, [samples]);
+
+  useEffect(() => {
+    localStorage.setItem('isDemoData', String(isDemoData));
+  }, [isDemoData]);
+
   const toggleTheme = (newTheme: 'light' | 'dark') => {
     setTheme(newTheme);
   };
@@ -65,12 +105,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('companyName', name);
   }
 
+  const setCustomers = (val: Customer[] | ((prev: Customer[]) => Customer[])) => {
+    setCustomersState(val);
+  };
+
+  const setSamples = (val: Sample[] | ((prev: Sample[]) => Sample[])) => {
+    setSamplesState(val);
+  };
+
+  const clearDatabase = () => {
+    setCustomersState([]);
+    setSamplesState([]);
+    setIsDemoData(false); // It's no longer demo data, it's empty data
+    localStorage.removeItem('customers');
+    localStorage.removeItem('samples');
+    localStorage.setItem('isDemoData', 'false');
+  };
+
   const t = (key: keyof typeof translations['en']) => {
     return translations[language][key] || key;
   };
 
   return (
-    <AppContext.Provider value={{ theme, toggleTheme, language, setLanguage, companyName, setCompanyName, t }}>
+    <AppContext.Provider value={{ 
+      theme, toggleTheme, 
+      language, setLanguage, 
+      companyName, setCompanyName, 
+      t,
+      customers, setCustomers,
+      samples, setSamples,
+      clearDatabase,
+      isDemoData, setIsDemoData
+    }}>
       {children}
     </AppContext.Provider>
   );
