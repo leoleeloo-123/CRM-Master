@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Moon, Sun, Monitor, Languages, Building2, Save } from 'lucide-react';
+import { Moon, Sun, Monitor, Languages, Building2, Save, Type } from 'lucide-react';
 
 const Settings: React.FC = () => {
-  const { theme, toggleTheme, language, setLanguage, companyName, setCompanyName, t } = useApp();
+  const { theme, toggleTheme, language, setLanguage, fontSize, setFontSize, companyName, setCompanyName, t } = useApp();
   
   const [localCompanyName, setLocalCompanyName] = useState(companyName);
   const [isSaved, setIsSaved] = useState(false);
@@ -121,6 +122,63 @@ const Settings: React.FC = () => {
                  {language === 'zh' && <div className="w-3 h-3 rounded-full bg-blue-600 shadow-sm"></div>}
               </button>
             </div>
+          </Card>
+          
+          {/* Font Size Settings */}
+          <Card className="p-8 md:col-span-2">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3 mb-6">
+              <Type className="text-emerald-600" size={28} /> {t('fontSize')}
+            </h3>
+            
+            <div className="flex flex-col md:flex-row gap-4">
+               <button
+                  onClick={() => setFontSize('small')}
+                  className={`flex-1 p-6 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${
+                    fontSize === 'small' 
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' 
+                      : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+               >
+                  <span className="text-lg font-medium">{t('fontSmall')}</span>
+                  <div className="space-y-1 w-full opacity-60">
+                    <div className="h-2 bg-current rounded w-3/4 mx-auto"></div>
+                    <div className="h-2 bg-current rounded w-1/2 mx-auto"></div>
+                  </div>
+               </button>
+
+               <button
+                  onClick={() => setFontSize('medium')}
+                  className={`flex-1 p-6 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${
+                    fontSize === 'medium' 
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' 
+                      : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+               >
+                  <span className="text-xl font-bold">{t('fontMedium')}</span>
+                  <div className="space-y-1.5 w-full opacity-60">
+                    <div className="h-2.5 bg-current rounded w-3/4 mx-auto"></div>
+                    <div className="h-2.5 bg-current rounded w-1/2 mx-auto"></div>
+                  </div>
+               </button>
+
+               <button
+                  onClick={() => setFontSize('large')}
+                  className={`flex-1 p-6 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${
+                    fontSize === 'large' 
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' 
+                      : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+               >
+                  <span className="text-2xl font-extrabold">{t('fontLarge')}</span>
+                  <div className="space-y-2 w-full opacity-60">
+                    <div className="h-3 bg-current rounded w-3/4 mx-auto"></div>
+                    <div className="h-3 bg-current rounded w-1/2 mx-auto"></div>
+                  </div>
+               </button>
+            </div>
+            <p className="mt-4 text-sm text-slate-500 text-center">
+               "Large" matches the original design size. Select "Medium" or "Small" to reduce scale.
+            </p>
           </Card>
         </div>
       </div>

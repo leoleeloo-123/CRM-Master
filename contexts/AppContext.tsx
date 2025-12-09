@@ -4,11 +4,15 @@ import { Language, translations } from '../utils/i18n';
 import { Customer, Sample } from '../types';
 import { MOCK_CUSTOMERS, MOCK_SAMPLES } from '../services/dataService';
 
+export type FontSize = 'small' | 'medium' | 'large';
+
 interface AppContextType {
   theme: 'light' | 'dark';
   toggleTheme: (theme: 'light' | 'dark') => void;
   language: Language;
   setLanguage: (lang: Language) => void;
+  fontSize: FontSize;
+  setFontSize: (size: FontSize) => void;
   companyName: string;
   setCompanyName: (name: string) => void;
   t: (key: keyof typeof translations['en']) => string;
@@ -36,6 +40,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [language, setLanguageState] = useState<Language>(() => {
     const savedLang = localStorage.getItem('language');
     return (savedLang === 'en' || savedLang === 'zh') ? savedLang : 'en';
+  });
+
+  // Font Size State
+  // Default is 'large' because user said current size is Large
+  const [fontSize, setFontSizeState] = useState<FontSize>(() => {
+    const savedSize = localStorage.getItem('fontSize');
+    return (savedSize === 'small' || savedSize === 'medium' || savedSize === 'large') ? savedSize : 'large';
   });
 
   // Company Name State
@@ -78,6 +89,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Apply Root Font Size
+  useEffect(() => {
+    const root = window.document.documentElement;
+    // Current design is "Large". Large = 100% (16px).
+    // Medium = 90% (approx 14.4px).
+    // Small = 80% (approx 12.8px).
+    let sizeValue = '100%';
+    if (fontSize === 'medium') sizeValue = '90%';
+    if (fontSize === 'small') sizeValue = '80%';
+    
+    root.style.fontSize = sizeValue;
+    localStorage.setItem('fontSize', fontSize);
+  }, [fontSize]);
+
   // Persist Data Changes
   useEffect(() => {
     localStorage.setItem('customers', JSON.stringify(customers));
@@ -98,6 +123,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
+  }
+
+  const setFontSize = (size: FontSize) => {
+    setFontSizeState(size);
   }
 
   const setCompanyName = (name: string) => {
@@ -129,7 +158,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{ 
       theme, toggleTheme, 
-      language, setLanguage, 
+      language, setLanguage,
+      fontSize, setFontSize,
       companyName, setCompanyName, 
       t,
       customers, setCustomers,

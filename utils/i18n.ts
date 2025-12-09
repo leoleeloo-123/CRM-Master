@@ -83,6 +83,12 @@ export const translations = {
     english: 'English',
     chinese: 'Chinese (Simplified)',
     settingsDesc: 'Customize your application experience.',
+    
+    // Font Size
+    fontSize: 'Font Size',
+    fontSmall: 'Small',
+    fontMedium: 'Medium',
+    fontLarge: 'Large',
   },
   zh: {
     // Navigation
@@ -165,5 +171,11 @@ export const translations = {
     english: '英文',
     chinese: '中文 (简体)',
     settingsDesc: '自定义您的应用程序体验。',
+    
+    // Font Size
+    fontSize: '字体大小',
+    fontSmall: '小',
+    fontMedium: '中',
+    fontLarge: '大',
   }
 };
