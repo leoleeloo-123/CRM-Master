@@ -36,89 +36,88 @@ const DataManagement: React.FC<DataManagementProps> = ({
     document.body.removeChild(link);
   };
 
+  // Helper to map Internal English Status -> Chinese Export Status
+  const mapStatusToExport = (status: FollowUpStatus | string): string => {
+    switch (status) {
+      case 'My Turn': return '我方跟进';
+      case 'Waiting for Customer': return '等待对方';
+      case 'No Action': return '暂无';
+      default: return '暂无';
+    }
+  };
+
+  // Helper to map Import Status (Chinese or English) -> Internal English Status
+  const mapStatusFromImport = (status: string): FollowUpStatus => {
+    const s = status ? status.trim() : '';
+    if (s === '我方跟进' || s === 'My Turn') return 'My Turn';
+    if (s === '等待对方' || s === 'Waiting for Customer') return 'Waiting for Customer';
+    if (s === '暂无' || s === 'No Action') return 'No Action';
+    return 'No Action'; // Default fallback
+  };
+
   const handleExportCustomers = () => {
     // 20 Columns matching the Updated Import Logic
-    // Col 0: Name
-    // Col 1: Region (NEW)
-    // Col 2: Tags
-    // ... shifted by 1
     const headers = [
       "客户", // 0. Name
-      "地区", // 1. Region (New Column)
-      "展会", // 2. Tags (Numbered + |||)
-      "展会官网", // 3. Website (Ignored)
+      "地区", // 1. Region
+      "展会", // 2. Tags
+      "展会官网", // 3. Website
       "等级", // 4. Rank
       "状态与产品总结", // 5. Product Summary
       "状态更新", // 6. Last Status Update
       "未更新", // 7. Ignored
-      "对接人员", // 8. Contact Names (|||)
-      "状态", // 9. FollowUp Status
+      "对接人员", // 8. Contact Names
+      "状态", // 9. FollowUp Status (Chinese)
       "下一步", // 10. Next Step
       "关键日期", // 11. Next Action Date
       "DDL", // 12. Ignored
-      "对接流程总结", // 13. Interaction History (【Date】 Summary |||)
+      "对接流程总结", // 13. Interaction History
       "对方回复", // 14. Last Customer Reply
       "未回复", // 15. Ignored
       "我方跟进", // 16. Last My Reply
       "未跟进", // 17. Ignored
-      "文档超链接", // 18. Doc Links (|||)
-      "联系方式" // 19. Contact Info (|||) matching col 8
+      "文档超链接", // 18. Doc Links
+      "联系方式" // 19. Contact Info
     ];
     
-    // Use the customers from context (source of truth)
     const rows = customers.map(c => {
-      // 1. Reverse Tags Logic: Add numbering and join with |||
       const tags = c.tags.map((tag, i) => `${i + 1}. ${tag}`).join(' ||| ');
-
-      // New: Regions joined by |||
       const regions = Array.isArray(c.region) ? c.region.join(' ||| ') : c.region;
-
-      // 2. Reverse Contacts Logic: Split Name and Info
       const contactNames = c.contacts.map(contact => contact.name).join(' ||| ');
       const contactInfos = c.contacts.map(contact => contact.email || contact.phone || '').join(' ||| ');
-
-      // 3. Reverse Interactions Logic: 
-      // App stores Newest First. Excel Source had Oldest First.
-      // So we reverse back to Oldest First.
-      // Format: 【YYYY-MM-DD】 Summary text
       const interactionText = [...c.interactions]
         .reverse()
         .map(i => `【${i.date}】 ${i.summary}`)
         .join(' ||| ');
-
-      // 4. Next Step (Usually derived from the latest interaction in App)
-      // We check the first interaction (Newest) for next steps
       const nextStep = c.interactions.length > 0 ? (c.interactions[0].nextSteps || '') : '';
-
-      // 5. Doc Links
       const docLinks = c.docLinks ? c.docLinks.join(' ||| ') : '';
-
-      // 6. Product Summary: Convert newlines back to ||| for flattened export
       const productSummaryExport = (c.productSummary || '').replace(/\n/g, ' ||| ');
+
+      // Use the mapping function for Status
+      const statusExport = mapStatusToExport(c.followUpStatus);
 
       return [
         c.name,
-        regions, // New Column 1
+        regions,
         tags,
-        "", // Website placeholder
+        "",
         c.rank,
         productSummaryExport,
         c.lastStatusUpdate,
-        "", // Un-updated placeholder
+        "",
         contactNames,
-        c.followUpStatus,
+        statusExport, // Col 9: Exporting Chinese
         nextStep,
         c.nextActionDate,
-        "", // DDL placeholder
+        "",
         interactionText,
         c.lastCustomerReplyDate,
-        "", // Un-replied placeholder
+        "",
         c.lastMyReplyDate,
-        "", // Un-followed placeholder
+        "",
         docLinks,
         contactInfos
       ].map(field => {
-        // CSV Escape: Wrap in quotes, escape existing quotes
         const stringField = String(field || '');
         return `"${stringField.replace(/"/g, '""')}"`;
       }).join(",");
@@ -133,15 +132,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
     return str.split('|||').map(s => s.trim()).filter(s => s.length > 0);
   };
 
-  // Helper to ensure dates are strict ISO 8601 (YYYY-MM-DD)
-  // This is crucial for the DaysCounter component and date-fns parsing
   const normalizeDate = (dateStr: string | undefined): string => {
     if (!dateStr) return '';
     const trimmed = dateStr.trim();
     if (!trimmed) return '';
-
-    // 1. Try explicit YYYY-MM-DD regex (Most reliable)
-    // Supports separators: - . /
     const yearFirstMatch = trimmed.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
     if (yearFirstMatch) {
       const y = yearFirstMatch[1];
@@ -149,31 +143,21 @@ const DataManagement: React.FC<DataManagementProps> = ({
       const d = yearFirstMatch[3].padStart(2, '0');
       return `${y}-${m}-${d}`;
     }
-
-    // 2. Try explicit MM/DD/YYYY or DD/MM/YYYY regex
-    // Supports separators: - . /
     const yearLastMatch = trimmed.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/);
     if (yearLastMatch) {
       const p1 = parseInt(yearLastMatch[1], 10);
       const p2 = parseInt(yearLastMatch[2], 10);
       const y = yearLastMatch[3];
-      
       let m, d;
-      // Heuristic: If first part > 12, it has to be Day (DD-MM-YYYY)
       if (p1 > 12) {
          d = p1.toString().padStart(2, '0');
          m = p2.toString().padStart(2, '0');
       } else {
-         // Ambiguity Case (e.g. 1/7/2025). 
-         // Default to MM-DD-YYYY as it's common in spreadsheet exports in many locales
          m = p1.toString().padStart(2, '0');
          d = p2.toString().padStart(2, '0');
       }
       return `${y}-${m}-${d}`;
     }
-
-    // 3. Last resort: JS Date Parsing (handles "Jan 1, 2025", etc.)
-    // Only works if the string is understandable by the browser
     const dateObj = new Date(trimmed);
     if (!isNaN(dateObj.getTime())) {
       const y = dateObj.getFullYear();
@@ -181,9 +165,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
       const d = dateObj.getDate().toString().padStart(2, '0');
       return `${y}-${m}-${d}`;
     }
-
-    // If all else fails, return original. 
-    // Note: This will likely fail isValid() checks in the UI, showing "-", which is better than crashing.
     return trimmed;
   };
 
@@ -200,57 +181,23 @@ const DataManagement: React.FC<DataManagementProps> = ({
         const tempId = Math.random().toString(36).substr(2, 9);
         
         if (activeTab === 'customers') {
-          // Column Mapping (Updated):
-          // 0: 客户 (Name)
-          // 1: 地区 (Region) -- NEW
-          // 2: 展会 (Tags) -> Clean numbering
-          // 3: 展会官网 (Ignored)
-          // 4: 等级 (Rank)
-          // 5: 状态与产品总结 (Summary)
-          // 6: 状态更新 (Last Update)
-          // 7: 未更新 (Skipped)
-          // 8: 对接人员 (Contact Name List) -> Zip with Col 19
-          // 9: 状态 (FollowUp Status)
-          // 10: 下一步 (Next Step)
-          // 11: 关键日期 (Next Action Date)
-          // 12: DDL (Skipped)
-          // 13: 对接流程总结 (Interaction List) -> Extract Date 【】
-          // 14: 对方回复 (Last Customer Reply)
-          // 15: 未回复 (Skipped)
-          // 16: 我方跟进 (Last My Reply)
-          // 17: 未跟进 (Skipped)
-          // 18: 文档超链接 (Doc Links)
-          // 19: 联系方式 (Contact Info List) -> Zip with Col 8
-
           const name = cols[0] || 'Unknown';
-          
-          // 1. Region Parsing (Col 1)
           const regions = splitByDelimiter(cols[1]);
           const finalRegions = regions.length > 0 ? regions : ['Unknown'];
-
-          // 2. Tags Parsing (Col 2): Remove "1.", "1、" etc.
           const rawTags = splitByDelimiter(cols[2]);
           const cleanTags = rawTags.map(t => t.replace(/^\d+[\.\、\s]*\s*/, ''));
-
           const rank = (parseInt(cols[4]) || 3) as Rank;
-          
-          // REPLACE ||| with newlines for display
           const productSummary = (cols[5] || '').replace(/\|\|\|/g, '\n');
-          
-          // Normalize Dates
           const lastStatusUpdate = normalizeDate(cols[6]);
           
-          const followUpStatus = (cols[9] as FollowUpStatus) || 'No Action';
-          const nextSteps = cols[10] || '';
+          // Use mapping helper for Status (Col 9)
+          const followUpStatus = mapStatusFromImport(cols[9]);
           
+          const nextSteps = cols[10] || '';
           const nextActionDate = normalizeDate(cols[11]);
           const lastCustomerReplyDate = normalizeDate(cols[14]);
           const lastMyReplyDate = normalizeDate(cols[16]);
-          
-          // 3. Document Links Parsing
           const docLinks = splitByDelimiter(cols[18]);
-
-          // 2. Contacts Parsing: Zip Names (Col 8) and Info (Col 19)
           const contactNames = splitByDelimiter(cols[8]);
           const contactInfos = splitByDelimiter(cols[19]);
           const contacts = contactNames.map((cName, i) => {
@@ -263,44 +210,27 @@ const DataManagement: React.FC<DataManagementProps> = ({
                phone: !isEmail ? info : ''
              };
           });
-          // Fallback if no contacts found but info exists
           if (contacts.length === 0 && contactNames.length === 0 && contactInfos.length > 0) {
              contacts.push({ name: 'Primary Contact', title: '', email: contactInfos[0].includes('@') ? contactInfos[0] : '', phone: ''});
           }
-
-          // 4. Interactions Parsing: Extract Date from 【】
-          // Data format is often: "- 【2025.1.7】 Content..."
           const rawInteractions = splitByDelimiter(cols[13]);
-          
-          // REVERSE Logic: Source has Oldest at Top (first in split), Newest at Bottom.
-          // App displays Newest at Top. So we MUST reverse the array.
           const interactions: Interaction[] = rawInteractions.map((raw, i) => {
-             // Regex to find content inside 【】 anywhere in string (handling leading dashes/spaces)
              const dateMatch = raw.match(/【(.*?)】/);
-             
-             // Prioritize extracted date. Fallback to today/last reply if missing.
              let date = lastMyReplyDate || new Date().toISOString().split('T')[0];
              let summary = raw;
-
              if (dateMatch) {
                date = normalizeDate(dateMatch[1]);
-               // Remove the date part AND any leading dashes/bullets/spaces before it
-               // e.g., "- 【2025.1.7】 Text" -> "Text"
                summary = raw.replace(/^[\s\-\.\*]*【.*?】/, '').trim();
              } else {
-               // If no date found, still clean leading bullets
                summary = raw.replace(/^[\s\-\.\*]+/, '').trim();
              }
-
              return {
                id: `int_${tempId}_${i}`,
                date: date,
                summary: summary,
                tags: []
              };
-          }).reverse(); // <--- This ensures Newest (Bottom of Excel) becomes Top of App
-
-          // Add "Next Step" as a separate interaction or logic if needed
+          }).reverse();
           if (interactions.length === 0 && nextSteps) {
              interactions.push({
                id: `int_${tempId}_next`,
@@ -309,14 +239,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
                nextSteps: nextSteps
              });
           } else if (interactions.length > 0 && nextSteps) {
-             // Attach next steps to the most recent interaction (now index 0 after reverse)
              interactions[0].nextSteps = nextSteps;
           }
 
           return {
-            id: `new_c_${tempId}`, // This ID might be overwritten by Upsert logic in App.tsx
+            id: `new_c_${tempId}`,
             name: name,
-            region: finalRegions, // Now an array
+            region: finalRegions,
             tags: cleanTags,
             rank: rank,
             productSummary: productSummary,
@@ -333,10 +262,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
           } as Customer;
 
         } else {
-          // Mapping: CustName | Serial | SampleName | Category | Form | Qty | Status | StatusDate | Details | Tracking
-          // Attempt to find customer ID by name
           const matchedCustomer = customers.find(c => c.name.toLowerCase() === (cols[0] || '').toLowerCase());
-          
           return {
             id: `new_s_${tempId}`,
             customerName: cols[0] || 'Unknown',
@@ -438,7 +364,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     }
                   </p>
                   <p className="mt-2 text-xs text-slate-500 italic">
-                    Note: For Customers, data with the same Name will overwrite existing records (Upsert). Fields with "|||" will be split into lists.
+                    Note: For Customers, data with the same Name will overwrite existing records (Upsert). Fields with "|||" will be split into lists. Status (Col 10) supports "我方跟进", "等待对方", "暂无".
                   </p>
                </div>
                

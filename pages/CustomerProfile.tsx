@@ -103,6 +103,14 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     urgencyIconClass = "text-emerald-500";
   }
 
+  // Helper for Status Label Translation
+  const getStatusLabel = (status: string) => {
+    if (status === 'My Turn') return t('statusMyTurn');
+    if (status === 'Waiting for Customer') return t('statusWaiting');
+    if (status === 'No Action') return t('statusNoAction');
+    return status;
+  };
+
   return (
     <div className="space-y-6 xl:space-y-10">
        {/* Header */}
@@ -129,7 +137,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              <span className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 font-bold uppercase mb-1 block">{t('status')}</span>
              <div className="flex items-center gap-2 mb-2 xl:mb-4">
                 <StatusIcon status={customer.followUpStatus} />
-                <span className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{customer.followUpStatus || 'Unknown'}</span>
+                <span className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">
+                  {getStatusLabel(customer.followUpStatus) || 'Unknown'}
+                </span>
              </div>
              <div className="flex gap-2">
                {['My Turn', 'Waiting for Customer', 'No Action'].map(status => (
@@ -137,7 +147,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                    key={status}
                    onClick={() => updateFollowUpStatus(status as FollowUpStatus)}
                    className={`w-3 h-3 xl:w-5 xl:h-5 rounded-full border border-slate-300 dark:border-slate-600 ${customer.followUpStatus === status ? 'bg-blue-600 ring-2 ring-blue-200' : 'bg-white dark:bg-slate-700'}`}
-                   title={`Set to ${status}`}
+                   title={getStatusLabel(status)}
                  />
                ))}
              </div>

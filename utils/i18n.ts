@@ -58,6 +58,11 @@ export const translations = {
     newRequest: 'New Request',
     noSamples: 'No samples recorded for this customer.',
     
+    // Status Options
+    statusMyTurn: 'My Turn',
+    statusWaiting: 'Waiting for Customer',
+    statusNoAction: 'No Action',
+
     // Sample Tracker
     monitorSamples: 'Monitor sample production and customer feedback.',
     newSample: 'New Sample',
@@ -145,6 +150,11 @@ export const translations = {
     logInteraction: '记录互动',
     newRequest: '新建样品申请',
     noSamples: '该客户暂无样品记录。',
+
+    // Status Options
+    statusMyTurn: '我方跟进',
+    statusWaiting: '等待对方',
+    statusNoAction: '暂无',
 
     // Sample Tracker
     monitorSamples: '监控样品生产和客户反馈。',
