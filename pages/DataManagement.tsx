@@ -133,13 +133,14 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
           }
 
           // 4. Interactions Parsing: Extract Date from 【】
+          // Data format is often: "- 【2025.1.7】 Content..."
           const rawInteractions = splitByDelimiter(cols[12]);
-          // REVERSE Logic: Source has Oldest at Top, Newest at Bottom.
-          // App displays First item at Top. We want Newest at Top.
-          // So we reverse the array.
+          
+          // REVERSE Logic: Source has Oldest at Top (first in split), Newest at Bottom.
+          // App displays Newest at Top. So we MUST reverse the array.
           const interactions: Interaction[] = rawInteractions.map((raw, i) => {
-             // Match content inside 【】 at the start of string
-             const dateMatch = raw.match(/^【(.*?)】/);
+             // Regex to find content inside 【】 anywhere in string (handling leading dashes/spaces)
+             const dateMatch = raw.match(/【(.*?)】/);
              
              // Prioritize extracted date. Fallback to today/last reply if missing.
              let date = lastMyReplyDate || new Date().toISOString().split('T')[0];
@@ -147,8 +148,12 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
 
              if (dateMatch) {
                date = dateMatch[1];
-               // Remove the date part from summary
-               summary = raw.replace(/^【(.*?)】/, '').trim();
+               // Remove the date part AND any leading dashes/bullets/spaces before it
+               // e.g., "- 【2025.1.7】 Text" -> "Text"
+               summary = raw.replace(/^[\s\-\.\*]*【.*?】/, '').trim();
+             } else {
+               // If no date found, still clean leading bullets
+               summary = raw.replace(/^[\s\-\.\*]+/, '').trim();
              }
 
              return {
@@ -157,11 +162,9 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
                summary: summary,
                tags: []
              };
-          }).reverse();
+          }).reverse(); // <--- This ensures Newest (Bottom of Excel) becomes Top of App
 
-          // Add "Next Step" as a separate interaction or logic if needed, 
-          // currently mostly relying on the Process Summary list.
-          // If interactions list is empty but we have next steps, add a placeholder
+          // Add "Next Step" as a separate interaction or logic if needed
           if (interactions.length === 0 && nextSteps) {
              interactions.push({
                id: `int_${tempId}_next`,
@@ -170,7 +173,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
                nextSteps: nextSteps
              });
           } else if (interactions.length > 0 && nextSteps) {
-             // Attach next steps to the most recent interaction (now the first in list after reverse)
+             // Attach next steps to the most recent interaction (now index 0 after reverse)
              interactions[0].nextSteps = nextSteps;
           }
 
