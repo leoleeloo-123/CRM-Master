@@ -103,13 +103,24 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     urgencyIconClass = "text-emerald-500";
   }
 
-  // Helper for Status Label Translation
+  // Helper for Status Label Translation and Normalization
   const getStatusLabel = (status: string) => {
-    if (status === 'My Turn') return t('statusMyTurn');
-    if (status === 'Waiting for Customer') return t('statusWaiting');
-    if (status === 'No Action') return t('statusNoAction');
+    if (status === 'My Turn' || status === '我方跟进') return t('statusMyTurn');
+    if (status === 'Waiting for Customer' || status === '等待对方') return t('statusWaiting');
+    if (status === 'No Action' || status === '暂无') return t('statusNoAction');
     return status;
   };
+
+  const normalizeStatus = (status: string | undefined): string => {
+    if (!status) return '';
+    const s = status.trim();
+    if (s === '我方跟进' || s === 'My Turn') return 'My Turn';
+    if (s === '等待对方' || s === 'Waiting for Customer') return 'Waiting for Customer';
+    if (s === '暂无' || s === 'No Action') return 'No Action';
+    return s;
+  };
+
+  const currentStatusNormalized = normalizeStatus(customer.followUpStatus);
 
   return (
     <div className="space-y-6 xl:space-y-10">
@@ -142,12 +153,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                 </span>
              </div>
              <div className="flex gap-2">
-               {['My Turn', 'Waiting for Customer', 'No Action'].map(status => (
+               {['My Turn', 'Waiting for Customer', 'No Action'].map(statusOption => (
                  <button 
-                   key={status}
-                   onClick={() => updateFollowUpStatus(status as FollowUpStatus)}
-                   className={`w-3 h-3 xl:w-5 xl:h-5 rounded-full border border-slate-300 dark:border-slate-600 ${customer.followUpStatus === status ? 'bg-blue-600 ring-2 ring-blue-200' : 'bg-white dark:bg-slate-700'}`}
-                   title={getStatusLabel(status)}
+                   key={statusOption}
+                   onClick={() => updateFollowUpStatus(statusOption as FollowUpStatus)}
+                   className={`w-3 h-3 xl:w-5 xl:h-5 rounded-full border border-slate-300 dark:border-slate-600 ${currentStatusNormalized === statusOption ? 'bg-blue-600 ring-2 ring-blue-200' : 'bg-white dark:bg-slate-700'}`}
+                   title={getStatusLabel(statusOption)}
                  />
                ))}
              </div>

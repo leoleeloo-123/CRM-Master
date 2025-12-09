@@ -50,15 +50,18 @@ export const StatusIcon: React.FC<{ status: string }> = ({ status }) => {
     case 'delivered':
     case 'feedback received':
     case 'my turn':
+    case '我方跟进':
       return <CheckCircle2 className={`${sizeClass} text-emerald-500`} />;
     case 'pending':
     case 'processing':
     case 'testing':
     case 'waiting for customer':
+    case '等待对方':
       return <Clock className={`${sizeClass} text-amber-500`} />;
     case 'inactive':
     case 'closed':
     case 'no action':
+    case '暂无':
       return <div className="w-3 h-3 xl:w-4 xl:h-4 rounded-full bg-slate-300 dark:bg-slate-600" />;
     case 'urgent':
     case 'overdue':
