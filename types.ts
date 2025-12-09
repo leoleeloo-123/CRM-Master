@@ -10,6 +10,7 @@ export interface Contact {
   title: string;
   email?: string;
   phone?: string;
+  isPrimary?: boolean;
 }
 
 export interface Interaction {

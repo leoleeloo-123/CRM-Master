@@ -59,6 +59,15 @@ export const translations = {
     noSamples: 'No samples recorded for this customer.',
     confirmDeleteInteraction: 'Are you sure you want to delete this interaction?',
     
+    // Contacts Edit
+    addContact: 'Add Contact',
+    primaryContact: 'Primary Contact',
+    contactName: 'Name',
+    contactTitle: 'Title',
+    contactEmail: 'Email',
+    contactPhone: 'Phone',
+    confirmDeleteContact: 'Delete this contact?',
+    
     // Status Options
     statusMyTurn: 'My Turn',
     statusWaiting: 'Waiting for Customer',
@@ -152,6 +161,15 @@ export const translations = {
     newRequest: '新建样品申请',
     noSamples: '该客户暂无样品记录。',
     confirmDeleteInteraction: '您确定要删除此互动记录吗？',
+    
+    // Contacts Edit
+    addContact: '添加联系人',
+    primaryContact: '主要联系人',
+    contactName: '姓名',
+    contactTitle: '职位',
+    contactEmail: '邮箱',
+    contactPhone: '电话',
+    confirmDeleteContact: '确定删除此联系人？',
 
     // Status Options
     statusMyTurn: '我方跟进',

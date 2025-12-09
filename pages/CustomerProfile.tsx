@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Customer, Sample, FollowUpStatus, Interaction } from '../types';
+import { Customer, Sample, FollowUpStatus, Interaction, Contact } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel } from '../components/Common';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X, Trash2, Star, CheckSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -28,6 +28,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [editNextStepText, setEditNextStepText] = useState('');
   const [editNextStepDate, setEditNextStepDate] = useState('');
 
+  // Contacts Edit State
+  const [isEditingContacts, setIsEditingContacts] = useState(false);
+  const [editContactsList, setEditContactsList] = useState<Contact[]>([]);
+
   // New Interaction State
   const [isAddingInteraction, setIsAddingInteraction] = useState(false);
   const [newInteractionDate, setNewInteractionDate] = useState('');
@@ -44,6 +48,34 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   if (!customer) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Customer not found. <Button onClick={() => navigate('/customers')}>{t('back')}</Button></div>;
   }
+
+  // --- Contacts Handlers ---
+  const startEditContacts = () => {
+    setEditContactsList(customer.contacts ? [...customer.contacts] : []);
+    setIsEditingContacts(true);
+  };
+
+  const handleSaveContacts = () => {
+    onUpdateCustomer({ ...customer, contacts: editContactsList });
+    setIsEditingContacts(false);
+  };
+  
+  const handleContactChange = (index: number, field: keyof Contact, value: string | boolean) => {
+      const newContacts = [...editContactsList];
+      newContacts[index] = { ...newContacts[index], [field]: value };
+      setEditContactsList(newContacts);
+  };
+
+  const handleDeleteContact = (index: number) => {
+    if (window.confirm(t('confirmDeleteContact'))) {
+       const newContacts = editContactsList.filter((_, i) => i !== index);
+       setEditContactsList(newContacts);
+    }
+  };
+
+  const handleAddContact = () => {
+    setEditContactsList([...editContactsList, { name: '', title: '', isPrimary: false }]);
+  };
 
   // --- Product Summary Handlers ---
   const handleSaveSummary = () => {
@@ -269,33 +301,115 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          {/* Left Sidebar Info */}
          <div className="space-y-6 xl:space-y-8">
            <Card className="p-6 xl:p-8 space-y-4 xl:space-y-6">
-             <h3 className="font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-700 pb-2 flex items-center gap-2 text-base xl:text-xl">
-                {t('keyContacts')}
-             </h3>
+             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-2">
+               <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-base xl:text-xl">
+                  {t('keyContacts')}
+               </h3>
+               {!isEditingContacts ? (
+                 <button onClick={startEditContacts} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                   <Edit className="w-4 h-4 xl:w-5 xl:h-5" />
+                 </button>
+               ) : (
+                 <div className="flex gap-2">
+                   <button onClick={handleSaveContacts} className="text-emerald-700 bg-white dark:bg-slate-700 p-1.5 rounded shadow-sm"><Save className="w-4 h-4" /></button>
+                   <button onClick={() => setIsEditingContacts(false)} className="text-red-500 bg-white dark:bg-slate-700 p-1.5 rounded shadow-sm"><X className="w-4 h-4" /></button>
+                 </div>
+               )}
+             </div>
+
              <div className="space-y-4 xl:space-y-6">
-               {customer.contacts.map((contact, idx) => (
-                 <div key={idx} className="flex gap-3 xl:gap-4 items-start border-b border-slate-50 dark:border-slate-700/50 last:border-0 pb-3 xl:pb-4 last:pb-0">
-                   <div className="w-8 h-8 xl:w-10 xl:h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-xs xl:text-sm shrink-0">
-                     {contact.name.charAt(0)}
-                   </div>
-                   <div className="overflow-hidden">
-                     <p className="font-bold text-slate-800 dark:text-white text-sm xl:text-lg truncate">{contact.name}</p>
-                     <p className="text-xs xl:text-base text-slate-500 dark:text-slate-400 truncate">{contact.title}</p>
-                     <div className="space-y-1 mt-2">
-                       {contact.email && (
-                         <div className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300 group cursor-pointer hover:text-blue-600 dark:hover:text-blue-400">
-                           <Mail className={iconClass} /> <span className="truncate">{contact.email}</span>
-                         </div>
-                       )}
-                       {contact.phone && (
-                          <div className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300 group cursor-pointer hover:text-blue-600 dark:hover:text-blue-400">
-                            <Phone className={iconClass} /> <span>{contact.phone}</span>
-                          </div>
-                       )}
+               {!isEditingContacts ? (
+                 // VIEW MODE
+                 customer.contacts.map((contact, idx) => (
+                   <div key={idx} className="flex gap-3 xl:gap-4 items-start border-b border-slate-50 dark:border-slate-700/50 last:border-0 pb-3 xl:pb-4 last:pb-0">
+                     <div className="w-8 h-8 xl:w-10 xl:h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-xs xl:text-sm shrink-0">
+                       {contact.name.charAt(0)}
+                     </div>
+                     <div className="overflow-hidden">
+                       <p className="font-bold text-slate-800 dark:text-white text-sm xl:text-lg truncate flex items-center gap-2">
+                         {contact.name}
+                         {contact.isPrimary && (
+                           <Badge color="blue">
+                             {t('primaryContact')}
+                           </Badge>
+                         )}
+                       </p>
+                       <p className="text-xs xl:text-base text-slate-500 dark:text-slate-400 truncate">{contact.title}</p>
+                       <div className="space-y-1 mt-2">
+                         {contact.email && (
+                           <div className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300 group cursor-pointer hover:text-blue-600 dark:hover:text-blue-400">
+                             <Mail className={iconClass} /> <span className="truncate">{contact.email}</span>
+                           </div>
+                         )}
+                         {contact.phone && (
+                            <div className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300 group cursor-pointer hover:text-blue-600 dark:hover:text-blue-400">
+                              <Phone className={iconClass} /> <span>{contact.phone}</span>
+                            </div>
+                         )}
+                       </div>
                      </div>
                    </div>
+                 ))
+               ) : (
+                 // EDIT MODE
+                 <div className="space-y-6">
+                   {editContactsList.map((contact, idx) => (
+                     <div key={idx} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-3 border border-slate-200 dark:border-slate-700">
+                        <div className="grid grid-cols-2 gap-3">
+                           <div>
+                             <label className="text-[10px] uppercase font-bold text-slate-400">{t('contactName')}</label>
+                             <input 
+                               className="w-full text-sm border rounded p-1 dark:bg-slate-900 dark:border-slate-600"
+                               value={contact.name}
+                               onChange={(e) => handleContactChange(idx, 'name', e.target.value)}
+                             />
+                           </div>
+                           <div>
+                             <label className="text-[10px] uppercase font-bold text-slate-400">{t('contactTitle')}</label>
+                             <input 
+                               className="w-full text-sm border rounded p-1 dark:bg-slate-900 dark:border-slate-600"
+                               value={contact.title}
+                               onChange={(e) => handleContactChange(idx, 'title', e.target.value)}
+                             />
+                           </div>
+                        </div>
+                        <div>
+                           <label className="text-[10px] uppercase font-bold text-slate-400">{t('contactEmail')}</label>
+                           <input 
+                             className="w-full text-sm border rounded p-1 dark:bg-slate-900 dark:border-slate-600"
+                             value={contact.email || ''}
+                             onChange={(e) => handleContactChange(idx, 'email', e.target.value)}
+                           />
+                        </div>
+                        <div>
+                           <label className="text-[10px] uppercase font-bold text-slate-400">{t('contactPhone')}</label>
+                           <input 
+                             className="w-full text-sm border rounded p-1 dark:bg-slate-900 dark:border-slate-600"
+                             value={contact.phone || ''}
+                             onChange={(e) => handleContactChange(idx, 'phone', e.target.value)}
+                           />
+                        </div>
+                        <div className="flex justify-between items-center pt-2">
+                           <label className="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400 cursor-pointer">
+                              <input 
+                                type="checkbox"
+                                checked={!!contact.isPrimary}
+                                onChange={(e) => handleContactChange(idx, 'isPrimary', e.target.checked)}
+                                className="w-4 h-4 rounded text-blue-600"
+                              />
+                              {t('primaryContact')}
+                           </label>
+                           <button onClick={() => handleDeleteContact(idx)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                              <Trash2 size={16} />
+                           </button>
+                        </div>
+                     </div>
+                   ))}
+                   <Button variant="secondary" onClick={handleAddContact} className="w-full text-sm py-2">
+                      <Plus className="w-4 h-4 mr-1" /> {t('addContact')}
+                   </Button>
                  </div>
-               ))}
+               )}
              </div>
            </Card>
            
