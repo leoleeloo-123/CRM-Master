@@ -16,6 +16,18 @@ const AppContent: React.FC = () => {
   const { customers, samples, setCustomers, setSamples, isDemoData, setIsDemoData } = useApp();
   const [loading, setLoading] = useState(true);
   const [showDemoBanner, setShowDemoBanner] = useState(true);
+  
+  // Sidebar State with persistence
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
+  const toggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
 
   useEffect(() => {
     // Simulate initial load check
@@ -78,9 +90,10 @@ const AppContent: React.FC = () => {
   return (
     <HashRouter>
       <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
-        <Sidebar />
-        {/* Adjusted left margin for large screens (xl:ml-96) to match Sidebar width */}
-        <div className="flex-1 ml-80 xl:ml-96 overflow-y-auto relative transition-all duration-300">
+        <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+        
+        {/* Adjusted left margin based on Sidebar state */}
+        <div className={`flex-1 overflow-y-auto relative transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-80 xl:ml-96'}`}>
             {isDemoData && showDemoBanner && (
               <div className="bg-blue-600 text-white text-xs xl:text-sm font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
                 <span>⚠ DEMO MODE: Showing generated sample data. Real client data is hidden. Import your data in Data Management.</span>
