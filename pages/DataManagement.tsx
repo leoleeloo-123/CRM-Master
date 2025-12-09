@@ -22,14 +22,17 @@ const DataManagement: React.FC<DataManagementProps> = ({
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   const downloadCSV = (content: string, filename: string) => {
-    const bom = "\uFEFF"; 
-    const encodedUri = encodeURI("data:text/csv;charset=utf-8," + bom + content);
+    // Use Blob for robust download handling (supports large files and UTF-8)
+    // The previous data URI method has length limits that can truncate data
+    const blob = new Blob(["\uFEFF" + content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Helper to map Internal English Status -> Chinese Export Status
@@ -52,6 +55,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
   };
 
   const handleExportCustomers = () => {
+    console.log(`Starting export for ${customers.length} customers...`);
+    
     // 20 Columns matching the Updated Import Logic
     const headers = [
       "客户", // 0. Name
@@ -121,6 +126,33 @@ const DataManagement: React.FC<DataManagementProps> = ({
     
     const csvContent = [headers.join(","), ...rows].join("\n");
     downloadCSV(csvContent, "navi_customers_master_export.csv");
+  };
+
+  const handleExportSamples = () => {
+    const headers = [
+      "Customer Name", "Serial #", "Sample Name", "Category", "Form", "Quantity", "Status", "Status Date", "Details", "Tracking #"
+    ];
+
+    const rows = samples.map(s => {
+       return [
+         s.customerName,
+         s.serialNumber,
+         s.sampleName,
+         s.productCategory?.join(', '),
+         s.productForm,
+         s.quantity,
+         s.status,
+         s.lastStatusDate,
+         s.statusDetails,
+         s.trackingNumber
+       ].map(field => {
+        const stringField = String(field || '');
+        return `"${stringField.replace(/"/g, '""')}"`;
+      }).join(",");
+    });
+
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    downloadCSV(csvContent, "navi_samples_master_export.csv");
   };
 
   const splitByDelimiter = (str: string | undefined): string[] => {
@@ -533,7 +565,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
               <p className="text-sm text-slate-500 dark:text-slate-400">{samples.length} records</p>
             </div>
           </div>
-          <Button variant="secondary" onClick={() => {}} className="w-full flex justify-center items-center gap-2">
+          <Button variant="secondary" onClick={handleExportSamples} className="w-full flex justify-center items-center gap-2">
             <Download size={16} /> {t('exportSamples')}
           </Button>
         </Card>
