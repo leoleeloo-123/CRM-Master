@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
@@ -15,6 +16,7 @@ const App: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS);
   const [samples, setSamples] = useState<Sample[]>(MOCK_SAMPLES);
   const [loading, setLoading] = useState(true);
+  const [showDemoBanner, setShowDemoBanner] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -76,7 +78,13 @@ const App: React.FC = () => {
       <HashRouter>
         <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
           <Sidebar />
-          <div className="flex-1 ml-80 overflow-y-auto">
+          <div className="flex-1 ml-80 overflow-y-auto relative">
+             {showDemoBanner && (
+               <div className="bg-blue-600 text-white text-xs font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
+                 <span>⚠ DEMO MODE: Showing generated sample data. Real client data is hidden. Import your data in Data Management.</span>
+                 <button onClick={() => setShowDemoBanner(false)} className="text-white hover:text-blue-200 bg-blue-700 px-2 py-0.5 rounded">Dismiss</button>
+               </div>
+             )}
             <main className="max-w-[1920px] mx-auto p-10">
               <Routes>
                 <Route path="/" element={<Dashboard customers={customers} samples={samples} />} />
