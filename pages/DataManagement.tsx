@@ -32,31 +32,82 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
   };
 
   const handleExportCustomers = () => {
+    // 19 Columns matching the Import Logic
     const headers = [
-      "ID", "Name", "Tags (Exhibitions)", "Rank", "Status", "Product Summary", "Last Status Update", 
-      "FollowUp Status", "Next Action Date", "Last Contact", "Last Customer Reply", "Last My Reply",
-      "Key Contact Name", "Key Contact Email"
+      "客户", // 0. Name
+      "展会", // 1. Tags (Numbered + |||)
+      "展会官网", // 2. Website (Ignored)
+      "等级", // 3. Rank
+      "状态与产品总结", // 4. Product Summary
+      "状态更新", // 5. Last Status Update
+      "未更新", // 6. Ignored
+      "对接人员", // 7. Contact Names (|||)
+      "状态", // 8. FollowUp Status
+      "下一步", // 9. Next Step
+      "关键日期", // 10. Next Action Date
+      "DDL", // 11. Ignored
+      "对接流程总结", // 12. Interaction History (【Date】 Summary |||)
+      "对方回复", // 13. Last Customer Reply
+      "未回复", // 14. Ignored
+      "我方跟进", // 15. Last My Reply
+      "未跟进", // 16. Ignored
+      "文档超链接", // 17. Doc Links (|||)
+      "联系方式" // 18. Contact Info (|||) matching col 7
     ];
     
-    const rows = customers.map(c => [
-      c.id,
-      `"${c.name.replace(/"/g, '""')}"`,
-      `"${c.tags.join('; ').replace(/"/g, '""')}"`,
-      c.rank,
-      c.status,
-      `"${c.productSummary.replace(/"/g, '""')}"`,
-      c.lastStatusUpdate,
-      c.followUpStatus,
-      c.nextActionDate,
-      c.lastContactDate,
-      c.lastCustomerReplyDate,
-      c.lastMyReplyDate,
-      c.contacts[0]?.name || '',
-      c.contacts[0]?.email || ''
-    ].join(","));
+    const rows = customers.map(c => {
+      // 1. Reverse Tags Logic: Add numbering and join with |||
+      const tags = c.tags.map((tag, i) => `${i + 1}. ${tag}`).join(' ||| ');
+
+      // 2. Reverse Contacts Logic: Split Name and Info
+      const contactNames = c.contacts.map(contact => contact.name).join(' ||| ');
+      const contactInfos = c.contacts.map(contact => contact.email || contact.phone || '').join(' ||| ');
+
+      // 3. Reverse Interactions Logic: 
+      // App stores Newest First. Excel Source had Oldest First.
+      // So we reverse back to Oldest First.
+      // Format: 【YYYY-MM-DD】 Summary text
+      const interactionText = [...c.interactions]
+        .reverse()
+        .map(i => `【${i.date}】 ${i.summary}`)
+        .join(' ||| ');
+
+      // 4. Next Step (Usually derived from the latest interaction in App)
+      // We check the first interaction (Newest) for next steps
+      const nextStep = c.interactions.length > 0 ? (c.interactions[0].nextSteps || '') : '';
+
+      // 5. Doc Links
+      const docLinks = c.docLinks ? c.docLinks.join(' ||| ') : '';
+
+      return [
+        c.name,
+        tags,
+        "", // Website placeholder
+        c.rank,
+        c.productSummary,
+        c.lastStatusUpdate,
+        "", // Un-updated placeholder
+        contactNames,
+        c.followUpStatus,
+        nextStep,
+        c.nextActionDate,
+        "", // DDL placeholder
+        interactionText,
+        c.lastCustomerReplyDate,
+        "", // Un-replied placeholder
+        c.lastMyReplyDate,
+        "", // Un-followed placeholder
+        docLinks,
+        contactInfos
+      ].map(field => {
+        // CSV Escape: Wrap in quotes, escape existing quotes
+        const stringField = String(field || '');
+        return `"${stringField.replace(/"/g, '""')}"`;
+      }).join(",");
+    });
     
     const csvContent = [headers.join(","), ...rows].join("\n");
-    downloadCSV(csvContent, "navi_customers_master.csv");
+    downloadCSV(csvContent, "navi_customers_master_export.csv");
   };
 
   const splitByDelimiter = (str: string | undefined): string[] => {
@@ -75,6 +126,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
     
     if (parts.length >= 3) {
       // Assume YYYY MM DD order if first part is 4 digits
+      // Covers 2025/12/07, 2025.12.7, 2025-12-7
       if (parts[0].length === 4) {
         const y = parts[0];
         const m = parts[1].padStart(2, '0');
