@@ -123,28 +123,58 @@ const DataManagement: React.FC<DataManagementProps> = ({
     return str.split('|||').map(s => s.trim()).filter(s => s.length > 0);
   };
 
-  // Helper to ensure dates are YYYY-MM-DD
+  // Helper to ensure dates are strict ISO 8601 (YYYY-MM-DD)
+  // This is crucial for the DaysCounter component and date-fns parsing
   const normalizeDate = (dateStr: string | undefined): string => {
     if (!dateStr) return '';
     const trimmed = dateStr.trim();
     if (!trimmed) return '';
 
-    // Split by any non-digit char
-    const parts = trimmed.split(/[^0-9]/).filter(p => p.length > 0);
-    
-    if (parts.length >= 3) {
-      // Assume YYYY MM DD order if first part is 4 digits
-      // Covers 2025/12/07, 2025.12.7, 2025-12-7
-      if (parts[0].length === 4) {
-        const y = parts[0];
-        const m = parts[1].padStart(2, '0');
-        const d = parts[2].padStart(2, '0');
-        return `${y}-${m}-${d}`;
-      }
+    // 1. Try explicit YYYY-MM-DD regex (Most reliable)
+    // Supports separators: - . /
+    const yearFirstMatch = trimmed.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
+    if (yearFirstMatch) {
+      const y = yearFirstMatch[1];
+      const m = yearFirstMatch[2].padStart(2, '0');
+      const d = yearFirstMatch[3].padStart(2, '0');
+      return `${y}-${m}-${d}`;
     }
-    
-    // Fallback replacement if regex fail, try basic replacement
-    return trimmed.replace(/[\.\/]/g, '-');
+
+    // 2. Try explicit MM/DD/YYYY or DD/MM/YYYY regex
+    // Supports separators: - . /
+    const yearLastMatch = trimmed.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/);
+    if (yearLastMatch) {
+      const p1 = parseInt(yearLastMatch[1], 10);
+      const p2 = parseInt(yearLastMatch[2], 10);
+      const y = yearLastMatch[3];
+      
+      let m, d;
+      // Heuristic: If first part > 12, it has to be Day (DD-MM-YYYY)
+      if (p1 > 12) {
+         d = p1.toString().padStart(2, '0');
+         m = p2.toString().padStart(2, '0');
+      } else {
+         // Ambiguity Case (e.g. 1/7/2025). 
+         // Default to MM-DD-YYYY as it's common in spreadsheet exports in many locales
+         m = p1.toString().padStart(2, '0');
+         d = p2.toString().padStart(2, '0');
+      }
+      return `${y}-${m}-${d}`;
+    }
+
+    // 3. Last resort: JS Date Parsing (handles "Jan 1, 2025", etc.)
+    // Only works if the string is understandable by the browser
+    const dateObj = new Date(trimmed);
+    if (!isNaN(dateObj.getTime())) {
+      const y = dateObj.getFullYear();
+      const m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const d = dateObj.getDate().toString().padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // If all else fails, return original. 
+    // Note: This will likely fail isValid() checks in the UI, showing "-", which is better than crashing.
+    return trimmed;
   };
 
   const parsePasteData = () => {
