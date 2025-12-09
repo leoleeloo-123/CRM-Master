@@ -79,14 +79,15 @@ const AppContent: React.FC = () => {
     <HashRouter>
       <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
         <Sidebar />
-        <div className="flex-1 ml-80 overflow-y-auto relative">
+        {/* Adjusted left margin for large screens (xl:ml-96) to match Sidebar width */}
+        <div className="flex-1 ml-80 xl:ml-96 overflow-y-auto relative transition-all duration-300">
             {isDemoData && showDemoBanner && (
-              <div className="bg-blue-600 text-white text-xs font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
+              <div className="bg-blue-600 text-white text-xs xl:text-sm font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
                 <span>⚠ DEMO MODE: Showing generated sample data. Real client data is hidden. Import your data in Data Management.</span>
                 <button onClick={() => setShowDemoBanner(false)} className="text-white hover:text-blue-200 bg-blue-700 px-2 py-0.5 rounded">Dismiss</button>
               </div>
             )}
-          <main className="max-w-[1920px] mx-auto p-10">
+          <main className="max-w-[2560px] mx-auto p-8 xl:p-12 2xl:p-16">
             <Routes>
               <Route path="/" element={<Dashboard customers={customers} samples={samples} />} />
               <Route path="/customers" element={<CustomerList customers={customers} />} />

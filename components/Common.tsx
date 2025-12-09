@@ -20,7 +20,7 @@ export const Badge: React.FC<{ children: React.ReactNode; color?: 'blue' | 'gree
     purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   };
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color]}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs xl:text-sm font-medium ${colors[color]}`}>
       {children}
     </span>
   );
@@ -30,12 +30,11 @@ export const Badge: React.FC<{ children: React.ReactNode; color?: 'blue' | 'gree
 export const RankStars: React.FC<{ rank: Rank }> = ({ rank }) => {
   const filledCount = 6 - rank; 
   return (
-    <div className="flex" title={`Rank ${rank} - ${rank === 1 ? 'Highest' : 'Lowest'} Importance`}>
+    <div className="flex gap-0.5" title={`Rank ${rank} - ${rank === 1 ? 'Highest' : 'Lowest'} Importance`}>
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
-          size={14}
-          className={`${i < filledCount ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
+          className={`${i < filledCount ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'} w-[14px] h-[14px] xl:w-[18px] xl:h-[18px]`}
         />
       ))}
     </div>
@@ -43,28 +42,29 @@ export const RankStars: React.FC<{ rank: Rank }> = ({ rank }) => {
 };
 
 export const StatusIcon: React.FC<{ status: string }> = ({ status }) => {
-  if (!status) return <div className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" />;
+  const sizeClass = "w-4 h-4 xl:w-5 xl:h-5";
+  if (!status) return <div className="w-3 h-3 xl:w-4 xl:h-4 rounded-full bg-slate-300 dark:bg-slate-600" />;
   
   switch (status.toLowerCase()) {
     case 'active':
     case 'delivered':
     case 'feedback received':
     case 'my turn':
-      return <CheckCircle2 size={16} className="text-emerald-500" />;
+      return <CheckCircle2 className={`${sizeClass} text-emerald-500`} />;
     case 'pending':
     case 'processing':
     case 'testing':
     case 'waiting for customer':
-      return <Clock size={16} className="text-amber-500" />;
+      return <Clock className={`${sizeClass} text-amber-500`} />;
     case 'inactive':
     case 'closed':
     case 'no action':
-      return <div className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" />;
+      return <div className="w-3 h-3 xl:w-4 xl:h-4 rounded-full bg-slate-300 dark:bg-slate-600" />;
     case 'urgent':
     case 'overdue':
-      return <AlertCircle size={16} className="text-red-500" />;
+      return <AlertCircle className={`${sizeClass} text-red-500`} />;
     default:
-      return <div className="w-3 h-3 rounded-full bg-blue-400" />;
+      return <div className="w-3 h-3 xl:w-4 xl:h-4 rounded-full bg-blue-400" />;
   }
 };
 
@@ -74,7 +74,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   className = '', 
   ...props 
 }) => {
-  const baseStyle = "px-4 py-2 rounded-md font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyle = "px-4 py-2 xl:px-6 xl:py-3 rounded-md font-medium text-sm xl:text-base transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600",
     secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-blue-500 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700",
@@ -91,9 +91,9 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 
 export const DaysCounter: React.FC<{ date?: string; label: string; type: 'elapsed' | 'remaining' }> = ({ date, label, type }) => {
   if (!date || !isValid(parseISO(date))) return (
-    <div className="flex flex-col items-center p-2 bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 dark:border-slate-700 min-w-[100px]">
-      <span className="text-slate-400 dark:text-slate-500 font-medium text-lg">-</span>
-      <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">{label}</span>
+    <div className="flex flex-col items-center p-2 xl:p-4 bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 dark:border-slate-700 min-w-[100px] xl:min-w-[140px]">
+      <span className="text-slate-400 dark:text-slate-500 font-medium text-lg xl:text-2xl">-</span>
+      <span className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">{label}</span>
     </div>
   );
 
@@ -108,11 +108,11 @@ export const DaysCounter: React.FC<{ date?: string; label: string; type: 'elapse
   if (type === 'remaining' && displayDays < 0) colorClass = "text-red-600 dark:text-red-500"; 
 
   return (
-    <div className="flex flex-col items-center p-2 bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 dark:border-slate-700 min-w-[100px]">
-      <div className={`font-bold text-lg flex items-center gap-1 ${colorClass}`}>
-        {Math.abs(displayDays)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">days</span>
+    <div className="flex flex-col items-center p-2 xl:p-4 bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 dark:border-slate-700 min-w-[100px] xl:min-w-[140px]">
+      <div className={`font-bold text-lg xl:text-3xl flex items-center gap-1 ${colorClass}`}>
+        {Math.abs(displayDays)} <span className="text-xs xl:text-sm font-normal text-slate-500 dark:text-slate-400">days</span>
       </div>
-      <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold text-center">{label}</span>
+      <span className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 uppercase font-bold text-center">{label}</span>
     </div>
   );
 };
@@ -121,15 +121,15 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col mx-4">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <h3 className="font-bold text-lg text-slate-900 dark:text-white">{title}</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl xl:max-w-4xl max-h-[90vh] flex flex-col mx-4">
+        <div className="p-4 xl:p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+          <h3 className="font-bold text-lg xl:text-2xl text-slate-900 dark:text-white">{title}</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
-            <X size={20} />
+            <X className="w-5 h-5 xl:w-7 xl:h-7" />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 xl:p-8 overflow-y-auto">
           {children}
         </div>
       </div>

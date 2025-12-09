@@ -50,10 +50,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
   });
 
   const columns: { id: SampleStatus | string; label: string; icon: React.ReactNode; color: string }[] = [
-    { id: 'Requested', label: 'Requested', icon: <ClipboardList size={16} />, color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
-    { id: 'Processing', label: 'Processing', icon: <FlaskConical size={16} />, color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400' },
-    { id: 'Sent', label: 'Sent / Testing', icon: <Truck size={16} />, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' },
-    { id: 'Feedback Received', label: 'Feedback', icon: <CheckCircle2 size={16} />, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' }
+    { id: 'Requested', label: 'Requested', icon: <ClipboardList className="w-4 h-4 xl:w-6 xl:h-6" />, color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
+    { id: 'Processing', label: 'Processing', icon: <FlaskConical className="w-4 h-4 xl:w-6 xl:h-6" />, color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400' },
+    { id: 'Sent', label: 'Sent / Testing', icon: <Truck className="w-4 h-4 xl:w-6 xl:h-6" />, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' },
+    { id: 'Feedback Received', label: 'Feedback', icon: <CheckCircle2 className="w-4 h-4 xl:w-6 xl:h-6" />, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' }
   ];
 
   const getColumnId = (status: string) => {
@@ -76,51 +76,51 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
   };
 
   return (
-    <div className="h-[calc(100vh-2rem)] flex flex-col">
+    <div className="h-[calc(100vh-2rem)] xl:h-[calc(100vh-3rem)] flex flex-col">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('sampleTracking')}</h2>
-          <p className="text-slate-500 dark:text-slate-400">{t('monitorSamples')}</p>
+          <h2 className="text-2xl xl:text-4xl font-bold text-slate-800 dark:text-white mb-1">{t('sampleTracking')}</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg">{t('monitorSamples')}</p>
         </div>
         <div className="flex gap-2">
           <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-lg flex">
              <button 
                onClick={() => setViewMode('board')}
-               className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${viewMode === 'board' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
+               className={`px-3 py-1 xl:px-5 xl:py-2 text-sm xl:text-base font-medium rounded-md transition-all ${viewMode === 'board' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
              >
                {t('board')}
              </button>
              <button 
                onClick={() => setViewMode('list')}
-               className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
+               className={`px-3 py-1 xl:px-5 xl:py-2 text-sm xl:text-base font-medium rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
              >
                {t('list')}
              </button>
           </div>
-          <Button className="flex items-center gap-2" onClick={() => setIsAddModalOpen(true)}><Plus size={16} /> {t('newSample')}</Button>
+          <Button className="flex items-center gap-2" onClick={() => setIsAddModalOpen(true)}><Plus className="w-4 h-4 xl:w-5 xl:h-5" /> {t('newSample')}</Button>
         </div>
       </div>
 
       {/* Filters and Search Bar */}
-      <Card className="p-4 mb-6 flex flex-col lg:flex-row gap-4 items-start lg:items-center bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-         <div className="relative w-full max-w-xs">
-           <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+      <Card className="p-4 xl:p-6 mb-6 flex flex-col lg:flex-row gap-4 items-start lg:items-center bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+         <div className="relative w-full max-w-xs xl:max-w-md">
+           <Search className="absolute left-3 top-2.5 xl:top-3.5 text-slate-400 w-4 h-4 xl:w-6 xl:h-6" />
            <input 
              type="text" 
              placeholder={t('search')}
-             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+             className="w-full pl-9 xl:pl-12 pr-4 py-2 xl:py-3 text-sm xl:text-lg border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
            />
          </div>
          
-         <div className="flex flex-wrap gap-2 items-center text-sm">
+         <div className="flex flex-wrap gap-2 items-center text-sm xl:text-base">
             <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mr-2">
-              <Filter size={16} /> Filters:
+              <Filter className="w-4 h-4 xl:w-5 xl:h-5" /> Filters:
             </div>
             
             <select 
-              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
               value={filterTestFinished}
               onChange={(e) => setFilterTestFinished(e.target.value)}
             >
@@ -130,7 +130,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
             </select>
 
             <select 
-              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
               value={filterCrystalType}
               onChange={(e) => setFilterCrystalType(e.target.value)}
             >
@@ -139,7 +139,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
             </select>
 
             <select 
-              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
@@ -148,7 +148,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
             </select>
 
             <select 
-              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
               value={filterForm}
               onChange={(e) => setFilterForm(e.target.value)}
             >
@@ -160,45 +160,45 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
 
       {viewMode === 'board' && (
         <div className="flex-1 overflow-x-auto">
-           <div className="flex gap-6 min-w-[1200px] h-full pb-4">
+           <div className="flex gap-6 min-w-[1200px] xl:min-w-[1600px] h-full pb-4">
              {columns.map(col => {
                const colSamples = filteredSamples.filter(s => getColumnId(s.status) === col.id);
                
                return (
-                 <div key={col.id} className="flex-1 min-w-[300px] bg-slate-50 dark:bg-slate-900 rounded-xl p-4 flex flex-col h-full border border-slate-200 dark:border-slate-800">
-                   <div className={`flex items-center gap-2 mb-4 px-2 py-1 rounded-lg w-fit ${col.color}`}>
+                 <div key={col.id} className="flex-1 min-w-[300px] xl:min-w-[400px] bg-slate-50 dark:bg-slate-900 rounded-xl p-4 xl:p-6 flex flex-col h-full border border-slate-200 dark:border-slate-800">
+                   <div className={`flex items-center gap-2 mb-4 px-2 py-1 xl:px-3 xl:py-2 rounded-lg w-fit ${col.color}`}>
                      {col.icon}
-                     <span className="font-bold text-sm uppercase">{col.label}</span>
-                     <span className="ml-1 bg-white dark:bg-slate-800 bg-opacity-50 px-1.5 rounded-full text-xs">{colSamples.length}</span>
+                     <span className="font-bold text-sm xl:text-lg uppercase">{col.label}</span>
+                     <span className="ml-1 bg-white dark:bg-slate-800 bg-opacity-50 px-1.5 py-0.5 rounded-full text-xs xl:text-sm">{colSamples.length}</span>
                    </div>
 
-                   <div className="space-y-3 overflow-y-auto flex-1 pr-2">
+                   <div className="space-y-3 xl:space-y-5 overflow-y-auto flex-1 pr-2">
                      {colSamples.map(sample => (
-                       <Card key={sample.id} className="p-3 hover:shadow-md cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500">
+                       <Card key={sample.id} className="p-3 xl:p-5 hover:shadow-md cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500">
                          <div className="flex justify-between items-start mb-1">
-                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{sample.serialNumber ? `#${sample.serialNumber}` : sample.id.toUpperCase()}</span>
-                           <span className="text-xs text-slate-400 dark:text-slate-500">{sample.requestDate}</span>
+                           <span className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400">{sample.serialNumber ? `#${sample.serialNumber}` : sample.id.toUpperCase()}</span>
+                           <span className="text-xs xl:text-sm text-slate-400 dark:text-slate-500">{sample.requestDate}</span>
                          </div>
-                         <h4 className="font-bold text-slate-800 dark:text-white">{sample.customerName}</h4>
-                         <p className="text-sm text-blue-600 dark:text-blue-400 font-bold mt-1">{sample.sampleName || sample.productType}</p>
+                         <h4 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{sample.customerName}</h4>
+                         <p className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 font-bold mt-1">{sample.sampleName || sample.productType}</p>
                          
-                         <div className="flex flex-wrap gap-1 mt-2">
+                         <div className="flex flex-wrap gap-1 mt-2 xl:mt-3">
                             {sample.productCategory?.map(c => <Badge key={c} color="purple">{c}</Badge>)}
                             <Badge color="blue">{sample.productForm}</Badge>
                          </div>
 
-                         <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                         <div className="mt-2 text-xs xl:text-base text-slate-600 dark:text-slate-300 line-clamp-2">
                            {sample.statusDetails || sample.sampleDetails}
                          </div>
                          
                          {sample.trackingNumber && (
-                           <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                             <Truck size={12} /> {sample.trackingNumber}
+                           <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-1 text-xs xl:text-sm text-slate-500 dark:text-slate-400">
+                             <Truck className="w-3 h-3 xl:w-4 xl:h-4" /> {sample.trackingNumber}
                            </div>
                          )}
 
-                         <div className="mt-2 flex justify-between items-center">
-                            <span className={`text-xs px-2 py-0.5 rounded ${sample.isTestFinished ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                         <div className="mt-2 xl:mt-3 flex justify-between items-center">
+                            <span className={`text-xs xl:text-sm px-2 py-0.5 rounded ${sample.isTestFinished ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-700'}`}>
                                {sample.isTestFinished ? 'Test Finished' : 'Test Ongoing'}
                             </span>
                          </div>
@@ -215,51 +215,51 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
       {viewMode === 'list' && (
         <Card className="flex-1 overflow-hidden flex flex-col">
           <div className="overflow-auto">
-             <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+             <table className="w-full text-left text-sm xl:text-base text-slate-700 dark:text-slate-300">
                <thead className="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700">
                  <tr>
-                   <th className="p-4 whitespace-nowrap">ID / Serial</th>
-                   <th className="p-4">Customer</th>
-                   <th className="p-4">Sample Name</th>
-                   <th className="p-4">Category</th>
-                   <th className="p-4">Status Info</th>
-                   <th className="p-4 whitespace-nowrap">Status Date</th>
-                   <th className="p-4">Tracking</th>
+                   <th className="p-4 xl:p-6 whitespace-nowrap">ID / Serial</th>
+                   <th className="p-4 xl:p-6">Customer</th>
+                   <th className="p-4 xl:p-6">Sample Name</th>
+                   <th className="p-4 xl:p-6">Category</th>
+                   <th className="p-4 xl:p-6">Status Info</th>
+                   <th className="p-4 xl:p-6 whitespace-nowrap">Status Date</th>
+                   <th className="p-4 xl:p-6">Tracking</th>
                  </tr>
                </thead>
                <tbody>
                  {filteredSamples.map(s => (
                    <tr key={s.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                     <td className="p-4 align-top font-mono text-xs">
+                     <td className="p-4 xl:p-6 align-top font-mono text-xs xl:text-sm">
                        <div>{s.id}</div>
                        {s.serialNumber && <div className="text-slate-500">SN: {s.serialNumber}</div>}
                        {s.sampleLabelLink && <a href={s.sampleLabelLink} target="_blank" className="text-blue-500 underline mt-1 block">Label PDF</a>}
                      </td>
-                     <td className="p-4 align-top font-bold">{s.customerName}</td>
-                     <td className="p-4 align-top">
-                       <div className="font-medium text-blue-600 dark:text-blue-400">{s.sampleName}</div>
-                       <div className="text-xs text-slate-500 mt-1">{s.quantity} | {s.crystalType} | {s.productForm}</div>
+                     <td className="p-4 xl:p-6 align-top font-bold text-base xl:text-lg">{s.customerName}</td>
+                     <td className="p-4 xl:p-6 align-top">
+                       <div className="font-medium text-blue-600 dark:text-blue-400 text-base xl:text-lg">{s.sampleName}</div>
+                       <div className="text-xs xl:text-sm text-slate-500 mt-1">{s.quantity} | {s.crystalType} | {s.productForm}</div>
                      </td>
-                     <td className="p-4 align-top">
+                     <td className="p-4 xl:p-6 align-top">
                        <div className="flex flex-wrap gap-1">
-                          {s.productCategory?.map(c => <span key={c} className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">{c}</span>)}
+                          {s.productCategory?.map(c => <span key={c} className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs xl:text-sm">{c}</span>)}
                        </div>
                      </td>
-                     <td className="p-4 align-top">
+                     <td className="p-4 xl:p-6 align-top">
                        <Badge color={['Sent', 'Delivered'].includes(s.status) ? 'blue' : s.status === 'Feedback Received' ? 'green' : 'yellow'}>
                          {s.status}
                        </Badge>
-                       <div className="text-xs mt-1 text-slate-500 dark:text-slate-400 line-clamp-2">{s.statusDetails}</div>
+                       <div className="text-xs xl:text-sm mt-1 text-slate-500 dark:text-slate-400 line-clamp-2">{s.statusDetails}</div>
                      </td>
-                     <td className="p-4 align-top whitespace-nowrap">
-                       <div>{s.lastStatusDate}</div>
-                       <div className="text-xs text-slate-400 mt-1">{s.isTestFinished ? 'Finished' : 'Ongoing'}</div>
+                     <td className="p-4 xl:p-6 align-top whitespace-nowrap">
+                       <div className="text-base xl:text-lg">{s.lastStatusDate}</div>
+                       <div className="text-xs xl:text-sm text-slate-400 mt-1">{s.isTestFinished ? 'Finished' : 'Ongoing'}</div>
                      </td>
-                     <td className="p-4 align-top font-mono text-xs">
+                     <td className="p-4 xl:p-6 align-top font-mono text-xs xl:text-sm">
                         {s.trackingNumber ? (
                           <div className="flex items-center gap-1">
                             {s.trackingNumber}
-                            {s.trackingLink && <a href={s.trackingLink} target="_blank" className="text-blue-500"><ExternalLink size={10}/></a>}
+                            {s.trackingLink && <a href={s.trackingLink} target="_blank" className="text-blue-500"><ExternalLink className="w-3 h-3 xl:w-4 xl:h-4"/></a>}
                           </div>
                         ) : '-'}
                      </td>
@@ -277,9 +277,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Customer *</label>
+              <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Customer *</label>
               <select 
-                className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                 value={newSample.customerId}
                 onChange={(e) => {
                   const customer = MOCK_CUSTOMERS.find(c => c.id === e.target.value);
@@ -291,9 +291,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status *</label>
+              <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Status *</label>
               <select 
-                className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                 value={newSample.status}
                 onChange={(e) => setNewSample({...newSample, status: e.target.value as SampleStatus})}
               >
@@ -310,30 +310,30 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
              <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Serial Number</label>
+               <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Serial Number</label>
                <input 
                  type="text"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                 className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                  placeholder="e.g. S-2025-001"
                  value={newSample.serialNumber || ''}
                  onChange={e => setNewSample({...newSample, serialNumber: e.target.value})}
                />
              </div>
              <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity *</label>
+               <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity *</label>
                <input 
                  type="text"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                 className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                  placeholder="e.g. 50g, 100ct, 1L"
                  value={newSample.quantity || ''}
                  onChange={e => setNewSample({...newSample, quantity: e.target.value})}
                />
              </div>
              <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status Date</label>
+               <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Status Date</label>
                <input 
                  type="date"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                 className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                  value={newSample.lastStatusDate || ''}
                  onChange={e => setNewSample({...newSample, lastStatusDate: e.target.value})}
                />
@@ -342,20 +342,20 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sample Name *</label>
+               <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Sample Name *</label>
                <input 
                  type="text"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                 className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                  placeholder="Main Description"
                  value={newSample.sampleName || ''}
                  onChange={e => setNewSample({...newSample, sampleName: e.target.value})}
                />
              </div>
              <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Application</label>
+               <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Application</label>
                <input 
                  type="text"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                 className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                  placeholder="e.g. CMP, Lapping"
                  value={newSample.application || ''}
                  onChange={e => setNewSample({...newSample, application: e.target.value})}
@@ -365,10 +365,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
              <div>
-               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Category (Multi-select)</label>
+               <label className="block text-sm xl:text-base font-bold text-slate-700 dark:text-slate-300 mb-2">Category (Multi-select)</label>
                <div className="grid grid-cols-2 gap-2">
                  {productCategories.map(cat => (
-                   <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">
+                   <label key={cat} className="flex items-center gap-2 text-sm xl:text-base cursor-pointer">
                      <input 
                        type="checkbox" 
                        checked={newSample.productCategory?.includes(cat)}
@@ -382,10 +382,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
              </div>
              <div className="space-y-4">
                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Crystal Type</label>
+                  <label className="block text-sm xl:text-base font-bold text-slate-700 dark:text-slate-300 mb-2">Crystal Type</label>
                   <div className="flex gap-4">
                     {crystalTypes.map(c => (
-                      <label key={c} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <label key={c} className="flex items-center gap-2 text-sm xl:text-base cursor-pointer">
                          <input 
                            type="radio" 
                            name="crystalType"
@@ -399,10 +399,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
                   </div>
                </div>
                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Form</label>
+                  <label className="block text-sm xl:text-base font-bold text-slate-700 dark:text-slate-300 mb-2">Form</label>
                   <div className="flex gap-4">
                     {productForms.map(f => (
-                      <label key={f} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <label key={f} className="flex items-center gap-2 text-sm xl:text-base cursor-pointer">
                          <input 
                            type="radio" 
                            name="productForm"
@@ -419,9 +419,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
           </div>
 
           <div>
-             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status Details / Summary</label>
+             <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Status Details / Summary</label>
              <textarea 
-               className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 h-20"
+               className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 h-20"
                placeholder="Current status summary from me or customer..."
                value={newSample.statusDetails || ''}
                onChange={e => setNewSample({...newSample, statusDetails: e.target.value})}
@@ -430,19 +430,19 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tracking Number</label>
+               <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Tracking Number</label>
                <input 
                  type="text"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                 className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                  value={newSample.trackingNumber || ''}
                  onChange={e => setNewSample({...newSample, trackingNumber: e.target.value})}
                />
             </div>
             <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tracking Link</label>
+               <label className="block text-sm xl:text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Tracking Link</label>
                <input 
                  type="text"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                 className="w-full border rounded-lg p-2 xl:p-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm xl:text-base"
                  placeholder="https://..."
                  value={newSample.trackingLink || ''}
                  onChange={e => setNewSample({...newSample, trackingLink: e.target.value})}
@@ -458,7 +458,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples }) => {
                 onChange={e => setNewSample({...newSample, isTestFinished: e.target.checked})}
                 className="w-4 h-4 rounded text-blue-600"
              />
-             <label htmlFor="testFinished" className="text-sm font-bold text-slate-700 dark:text-slate-300">Test Finished</label>
+             <label htmlFor="testFinished" className="text-sm xl:text-base font-bold text-slate-700 dark:text-slate-300">Test Finished</label>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
