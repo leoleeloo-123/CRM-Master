@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Customer, Sample, FollowUpStatus } from '../types';
+import { Customer, Sample, FollowUpStatus, Interaction } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel } from '../components/Common';
 import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X } from 'lucide-react';
 import { format } from 'date-fns';
@@ -27,6 +27,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isEditingNextStep, setIsEditingNextStep] = useState(false);
   const [editNextStepText, setEditNextStepText] = useState('');
   const [editNextStepDate, setEditNextStepDate] = useState('');
+
+  // New Interaction State
+  const [isAddingInteraction, setIsAddingInteraction] = useState(false);
+  const [newInteractionDate, setNewInteractionDate] = useState('');
+  const [newInteractionText, setNewInteractionText] = useState('');
 
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
@@ -78,6 +83,37 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setEditNextStepText(customer.interactions[0]?.nextSteps || '');
     setEditNextStepDate(customer.nextActionDate || '');
     setIsEditingNextStep(true);
+  };
+
+  // --- New Interaction Handlers ---
+  const startAddInteraction = () => {
+    setNewInteractionDate(format(new Date(), 'yyyy-MM-dd'));
+    setNewInteractionText('');
+    setIsAddingInteraction(true);
+  };
+
+  const handleSaveInteraction = () => {
+    if (!newInteractionText.trim()) return;
+
+    const newInteraction: Interaction = {
+      id: `int_${Date.now()}`,
+      date: newInteractionDate || format(new Date(), 'yyyy-MM-dd'),
+      summary: newInteractionText,
+      tags: [],
+      docLinks: []
+    };
+
+    const updatedInteractions = [newInteraction, ...customer.interactions];
+    
+    onUpdateCustomer({
+      ...customer,
+      interactions: updatedInteractions,
+      // Update Last Contact Date if the new interaction is more recent
+      lastContactDate: newInteractionDate > (customer.lastContactDate || '') ? newInteractionDate : customer.lastContactDate
+    });
+
+    setIsAddingInteraction(false);
+    setNewInteractionText('');
   };
 
   const updateFollowUpStatus = (newStatus: FollowUpStatus) => {
@@ -343,8 +379,44 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
                 <div className="flex justify-between items-center mb-4 xl:mb-6">
                    <h3 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{t('interactionHistory')}</h3>
-                   <Button variant="secondary" className="text-xs xl:text-sm py-1 xl:py-2"><Plus className="w-3.5 h-3.5 xl:w-5 xl:h-5 mr-1"/> {t('logInteraction')}</Button>
+                   {!isAddingInteraction && (
+                     <Button variant="secondary" onClick={startAddInteraction} className="text-xs xl:text-sm py-1 xl:py-2">
+                       <Plus className="w-3.5 h-3.5 xl:w-5 xl:h-5 mr-1"/> {t('logInteraction')}
+                     </Button>
+                   )}
                 </div>
+
+                {/* New Interaction Form */}
+                {isAddingInteraction && (
+                  <Card className="mb-6 p-4 xl:p-6 border-l-4 border-l-blue-500 animate-in fade-in slide-in-from-top-2">
+                    <h4 className="font-bold text-slate-800 dark:text-white mb-4">New Interaction</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Date</label>
+                        <input 
+                          type="date"
+                          className="border rounded p-2 text-sm bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                          value={newInteractionDate}
+                          onChange={(e) => setNewInteractionDate(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Summary</label>
+                        <textarea 
+                          className="w-full border rounded p-2 text-sm xl:text-base bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 min-h-[100px]"
+                          placeholder="What was discussed?"
+                          value={newInteractionText}
+                          onChange={(e) => setNewInteractionText(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <Button variant="ghost" onClick={() => setIsAddingInteraction(false)}>Cancel</Button>
+                        <Button onClick={handleSaveInteraction}>Save Interaction</Button>
+                      </div>
+                    </div>
+                  </Card>
+                )}
 
                 <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 xl:ml-6 space-y-8 xl:space-y-12 pl-8 xl:pl-10 py-2">
                   {customer.interactions.map((interaction, idx) => (
@@ -374,7 +446,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                        </Card>
                     </div>
                   ))}
-                  {customer.interactions.length === 0 && <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg italic">No interactions recorded yet.</p>}
+                  {customer.interactions.length === 0 && !isAddingInteraction && <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg italic">No interactions recorded yet.</p>}
                 </div>
               </div>
             )}
