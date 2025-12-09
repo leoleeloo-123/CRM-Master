@@ -134,9 +134,14 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
 
           // 4. Interactions Parsing: Extract Date from 【】
           const rawInteractions = splitByDelimiter(cols[12]);
+          // REVERSE Logic: Source has Oldest at Top, Newest at Bottom.
+          // App displays First item at Top. We want Newest at Top.
+          // So we reverse the array.
           const interactions: Interaction[] = rawInteractions.map((raw, i) => {
              // Match content inside 【】 at the start of string
              const dateMatch = raw.match(/^【(.*?)】/);
+             
+             // Prioritize extracted date. Fallback to today/last reply if missing.
              let date = lastMyReplyDate || new Date().toISOString().split('T')[0];
              let summary = raw;
 
@@ -152,7 +157,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
                summary: summary,
                tags: []
              };
-          });
+          }).reverse();
 
           // Add "Next Step" as a separate interaction or logic if needed, 
           // currently mostly relying on the Process Summary list.
@@ -165,7 +170,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
                nextSteps: nextSteps
              });
           } else if (interactions.length > 0 && nextSteps) {
-             // Attach next steps to the most recent interaction (first in list usually, or add to first)
+             // Attach next steps to the most recent interaction (now the first in list after reverse)
              interactions[0].nextSteps = nextSteps;
           }
 
