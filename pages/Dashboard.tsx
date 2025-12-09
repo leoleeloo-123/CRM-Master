@@ -1,0 +1,206 @@
+import React from 'react';
+import { Customer, Sample } from '../types';
+import { Card, Badge, RankStars } from '../components/Common';
+import { AlertTriangle, Calendar, ArrowRight, Activity, FlaskConical } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { format, isBefore, parseISO, addDays } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../contexts/AppContext';
+
+interface DashboardProps {
+  customers: Customer[];
+  samples: Sample[];
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
+  const navigate = useNavigate();
+  const { t } = useApp();
+
+  const criticalCustomers = customers.filter(c => {
+    if (c.rank > 2) return false;
+    const now = new Date();
+    const actionDate = c.nextActionDate ? parseISO(c.nextActionDate) : null;
+    const isOverdue = actionDate && isBefore(actionDate, now);
+    const isUpcoming = actionDate && isBefore(actionDate, addDays(now, 7)) && !isOverdue;
+    return isOverdue || isUpcoming;
+  });
+
+  const activeSamples = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received'].includes(s.status)).length;
+  const pendingFeedback = samples.filter(s => s.status === 'Sent' || s.status === 'Delivered').length;
+  
+  const sampleStatusData = [
+    { name: 'Requested', value: samples.filter(s => s.status === 'Requested').length, color: '#94a3b8' },
+    { name: 'Processing', value: samples.filter(s => s.status === 'Processing').length, color: '#f59e0b' },
+    { name: 'Sent', value: samples.filter(s => s.status === 'Sent').length, color: '#3b82f6' },
+    { name: 'Feedback', value: samples.filter(s => s.status === 'Feedback Received').length, color: '#10b981' },
+  ];
+
+  const regionDataRaw = customers.reduce((acc, curr) => {
+    acc[curr.region] = (acc[curr.region] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const regionData = Object.keys(regionDataRaw).map(key => ({
+    name: key,
+    count: regionDataRaw[key]
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('dashboard')}</h2>
+          <p className="text-slate-500 dark:text-slate-400">{t('welcome')}</p>
+        </div>
+        <div className="text-sm text-slate-500 dark:text-slate-400">
+          {t('today')}: <span className="font-medium text-slate-900 dark:text-white">{format(new Date(), 'MMMM do, yyyy')}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-4 flex items-center gap-4 border-l-4 border-l-blue-500">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/50 rounded-full text-blue-600 dark:text-blue-400">
+            <Activity size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('totalCustomers')}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{customers.length}</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-4 border-l-4 border-l-amber-500">
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/50 rounded-full text-amber-600 dark:text-amber-400">
+            <FlaskConical size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('activeSamples')}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{activeSamples}</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-4 border-l-4 border-l-purple-500">
+          <div className="p-3 bg-purple-50 dark:bg-purple-900/50 rounded-full text-purple-600 dark:text-purple-400">
+            <Calendar size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('pendingFeedback')}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{pendingFeedback}</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-4 border-l-4 border-l-red-500">
+          <div className="p-3 bg-red-50 dark:bg-red-900/50 rounded-full text-red-600 dark:text-red-400">
+            <AlertTriangle size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('criticalActions')}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-white">{criticalCustomers.length}</p>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <AlertTriangle size={20} className="text-amber-500" />
+              {t('priorityAttention')}
+            </h3>
+            <button 
+              onClick={() => navigate('/customers')}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium flex items-center gap-1"
+            >
+              {t('viewAll')} <ArrowRight size={14} />
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {criticalCustomers.length === 0 ? (
+              <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
+                <p>{t('noCriticalActions')}</p>
+              </Card>
+            ) : (
+              criticalCustomers.map(c => (
+                <Card key={c.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/customers/${c.id}`)}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-3">
+                       <div className={`w-1 self-stretch rounded-full ${isBefore(parseISO(c.nextActionDate || ''), new Date()) ? 'bg-red-500' : 'bg-amber-400'}`}></div>
+                       <div>
+                         <div className="flex items-center gap-2">
+                           <h4 className="font-bold text-slate-800 dark:text-white">{c.name}</h4>
+                           <RankStars rank={c.rank} />
+                         </div>
+                         <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{c.interactions[0]?.nextSteps || "Update required"}</p>
+                         <div className="flex gap-2 mt-2">
+                           {c.tags.slice(0, 2).map(t => <Badge key={t} color="gray">{t}</Badge>)}
+                         </div>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <div className="flex items-center justify-end gap-1 text-sm font-medium text-slate-500 dark:text-slate-400">
+                         <Calendar size={14} />
+                         <span className={isBefore(parseISO(c.nextActionDate || ''), new Date()) ? 'text-red-600 font-bold' : ''}>
+                           {c.nextActionDate ? format(parseISO(c.nextActionDate), 'MMM d') : 'N/A'}
+                         </span>
+                       </div>
+                       <Badge color={c.status === 'Active' ? 'green' : 'gray'}><span className="mt-1 block">{c.status}</span></Badge>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+           <Card className="p-5">
+             <h3 className="font-bold text-slate-800 dark:text-white mb-4">{t('samplePipeline')}</h3>
+             <div className="h-64 w-full">
+               <ResponsiveContainer width="100%" height="100%">
+                 <PieChart>
+                   <Pie
+                     data={sampleStatusData}
+                     cx="50%"
+                     cy="50%"
+                     innerRadius={60}
+                     outerRadius={80}
+                     paddingAngle={5}
+                     dataKey="value"
+                   >
+                     {sampleStatusData.map((entry, index) => (
+                       <Cell key={`cell-${index}`} fill={entry.color} />
+                     ))}
+                   </Pie>
+                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }} />
+                   <legend />
+                 </PieChart>
+               </ResponsiveContainer>
+             </div>
+             <div className="grid grid-cols-2 gap-2 mt-2">
+               {sampleStatusData.map(d => (
+                 <div key={d.name} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }}></div>
+                   <span>{d.name}: {d.value}</span>
+                 </div>
+               ))}
+             </div>
+           </Card>
+
+           <Card className="p-5">
+             <h3 className="font-bold text-slate-800 dark:text-white mb-4">{t('customersByRegion')}</h3>
+             <div className="h-40 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={regionData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                    <XAxis dataKey="name" tick={{fontSize: 10, fill: '#64748b'}} />
+                    <YAxis allowDecimals={false} tick={{fontSize: 10, fill: '#64748b'}} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }} />
+                    <Bar dataKey="count" fill="#475569" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+             </div>
+           </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
