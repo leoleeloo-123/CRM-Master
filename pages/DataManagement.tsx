@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction } from '../types';
 import { Card, Button, Badge, Modal } from '../components/Common';
@@ -6,14 +5,19 @@ import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConi
 import { useApp } from '../contexts/AppContext';
 
 interface DataManagementProps {
+  // Props are kept for compatibility but components should prefer context for global state
   customers: Customer[];
   samples: Sample[];
   onImportCustomers: (newCustomers: Customer[]) => void;
   onImportSamples: (newSamples: Sample[]) => void;
 }
 
-const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onImportCustomers, onImportSamples }) => {
-  const { t, clearDatabase } = useApp();
+const DataManagement: React.FC<DataManagementProps> = ({ 
+  onImportCustomers, 
+  onImportSamples 
+  // We ignore passed customers/samples props in favor of context to ensure we have the latest state
+}) => {
+  const { t, clearDatabase, customers, samples } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
   const [importData, setImportData] = useState('');
   const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
@@ -55,6 +59,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
       "联系方式" // 18. Contact Info (|||) matching col 7
     ];
     
+    // Use the customers from context (source of truth)
     const rows = customers.map(c => {
       // 1. Reverse Tags Logic: Add numbering and join with |||
       const tags = c.tags.map((tag, i) => `${i + 1}. ${tag}`).join(' ||| ');
@@ -79,12 +84,15 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
       // 5. Doc Links
       const docLinks = c.docLinks ? c.docLinks.join(' ||| ') : '';
 
+      // 6. Product Summary: Convert newlines back to ||| for flattened export
+      const productSummaryExport = (c.productSummary || '').replace(/\n/g, ' ||| ');
+
       return [
         c.name,
         tags,
         "", // Website placeholder
         c.rank,
-        c.productSummary,
+        productSummaryExport,
         c.lastStatusUpdate,
         "", // Un-updated placeholder
         contactNames,
@@ -180,7 +188,9 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
           const cleanTags = rawTags.map(t => t.replace(/^\d+[\.\、\s]*\s*/, ''));
 
           const rank = (parseInt(cols[3]) || 3) as Rank;
-          const productSummary = cols[4] || '';
+          
+          // REPLACE ||| with newlines for display
+          const productSummary = (cols[4] || '').replace(/\|\|\|/g, '\n');
           
           // Normalize Dates
           const lastStatusUpdate = normalizeDate(cols[5]);
