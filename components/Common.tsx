@@ -93,29 +93,50 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 };
 
 export const DaysCounter: React.FC<{ date?: string; label: string; type: 'elapsed' | 'remaining' }> = ({ date, label, type }) => {
+  // If no date, render a placeholder
   if (!date || !isValid(parseISO(date))) return (
-    <div className="flex flex-col items-center p-2 xl:p-4 bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 dark:border-slate-700 min-w-[100px] xl:min-w-[140px]">
-      <span className="text-slate-400 dark:text-slate-500 font-medium text-lg xl:text-2xl">-</span>
-      <span className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">{label}</span>
+    <div className="flex flex-col items-center justify-center p-3 xl:p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[120px] h-full shadow-sm">
+      <span className="text-slate-300 dark:text-slate-600 font-medium text-3xl xl:text-5xl mb-1">-</span>
+      <span className="text-xs text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider text-center leading-tight">{label}</span>
     </div>
   );
 
-  const days = differenceInDays(new Date(), parseISO(date));
-  const displayDays = type === 'elapsed' ? days : -days; 
+  const daysDiff = differenceInDays(new Date(), parseISO(date));
+  // If type is 'elapsed', we want positive numbers for past dates (now > date).
+  // If type is 'remaining', we want positive numbers for future dates (date > now), so we invert.
+  const displayDays = type === 'elapsed' ? daysDiff : -daysDiff; 
   
   let colorClass = "text-slate-700 dark:text-slate-200";
-  if (type === 'elapsed' && displayDays > 14) colorClass = "text-amber-600 dark:text-amber-500";
-  if (type === 'elapsed' && displayDays > 30) colorClass = "text-red-600 dark:text-red-500";
-  
-  if (type === 'remaining' && displayDays < 7 && displayDays >= 0) colorClass = "text-amber-600 dark:text-amber-500";
-  if (type === 'remaining' && displayDays < 0) colorClass = "text-red-600 dark:text-red-500"; 
+
+  if (type === 'elapsed') {
+    // Logic: 
+    // < 7 days: Green (Good, Recently Updated)
+    // 7 - 30 days: Yellow (Warning)
+    // 30+ days: Red (Bad, Stale)
+    if (displayDays < 7) colorClass = "text-emerald-500 dark:text-emerald-400";
+    else if (displayDays < 30) colorClass = "text-amber-500 dark:text-amber-400";
+    else colorClass = "text-red-500 dark:text-red-400";
+  } else {
+    // Logic:
+    // < 7 days: Red (Urgent or Overdue)
+    // 7 - 30 days: Yellow (Approaching)
+    // 30+ days: Green (Safe)
+    if (displayDays < 7) colorClass = "text-red-500 dark:text-red-400";
+    else if (displayDays < 30) colorClass = "text-amber-500 dark:text-amber-400";
+    else colorClass = "text-emerald-500 dark:text-emerald-400";
+  }
+
+  const isOverdue = type === 'remaining' && displayDays < 0;
 
   return (
-    <div className="flex flex-col items-center p-2 xl:p-4 bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 dark:border-slate-700 min-w-[100px] xl:min-w-[140px]">
-      <div className={`font-bold text-lg xl:text-3xl flex items-center gap-1 ${colorClass}`}>
-        {Math.abs(displayDays)} <span className="text-xs xl:text-sm font-normal text-slate-500 dark:text-slate-400">days</span>
+    <div className="flex flex-col items-center justify-center p-3 xl:p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[120px] h-full shadow-sm hover:shadow-md transition-all">
+      <div className={`font-extrabold text-3xl md:text-4xl xl:text-5xl mb-1 xl:mb-2 flex items-baseline gap-1 ${colorClass}`}>
+        {Math.abs(displayDays)} <span className="text-sm xl:text-base font-medium text-slate-400 dark:text-slate-500">days</span>
       </div>
-      <span className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 uppercase font-bold text-center">{label}</span>
+      <span className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider text-center leading-tight">{label}</span>
+      {isOverdue && (
+         <span className="text-[10px] font-bold text-red-600 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full mt-2">OVERDUE</span>
+      )}
     </div>
   );
 };

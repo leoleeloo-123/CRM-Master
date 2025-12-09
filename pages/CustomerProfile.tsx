@@ -267,33 +267,40 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
        </div>
 
        {/* Top Metrics Bar: Tracking Timers */}
-       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 xl:gap-8">
-          <Card className="p-4 xl:p-6 border-l-4 border-l-blue-500">
-             <span className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 font-bold uppercase mb-1 block">{t('status')}</span>
-             <div className="flex items-center gap-2 mb-2 xl:mb-4">
-                <StatusIcon status={customer.followUpStatus} />
-                <span className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">
-                  {getStatusLabel(customer.followUpStatus) || 'Unknown'}
-                </span>
+       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-8 h-auto lg:h-40">
+          {/* 1. Status Card */}
+          <Card className="p-4 xl:p-6 border-l-4 border-l-blue-500 flex flex-col justify-between h-full">
+             <div>
+                <span className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 font-bold uppercase mb-1 block">{t('status')}</span>
+                <div className="flex items-center gap-2 mb-2 xl:mb-4">
+                    <StatusIcon status={customer.followUpStatus} />
+                    <span className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">
+                      {getStatusLabel(customer.followUpStatus) || 'Unknown'}
+                    </span>
+                </div>
              </div>
              <div className="flex gap-2">
                {['My Turn', 'Waiting for Customer', 'No Action'].map(statusOption => (
                  <button 
                    key={statusOption}
                    onClick={() => updateFollowUpStatus(statusOption as FollowUpStatus)}
-                   className={`w-3 h-3 xl:w-5 xl:h-5 rounded-full border border-slate-300 dark:border-slate-600 ${currentStatusNormalized === statusOption ? 'bg-blue-600 ring-2 ring-blue-200' : 'bg-white dark:bg-slate-700'}`}
+                   className={`w-4 h-4 xl:w-6 xl:h-6 rounded-full border border-slate-300 dark:border-slate-600 transition-all hover:scale-110 ${currentStatusNormalized === statusOption ? 'bg-blue-600 ring-2 ring-blue-200 dark:ring-blue-800 scale-110' : 'bg-white dark:bg-slate-700'}`}
                    title={getStatusLabel(statusOption)}
                  />
                ))}
              </div>
           </Card>
 
-          <DaysCounter date={customer.lastStatusUpdate} label={t('daysSinceUpdate')} type="elapsed" />
+          {/* 2. Days Until DDL (Remaining) - High Priority */}
           <DaysCounter date={customer.nextActionDate} label={t('daysUntilDDL')} type="remaining" />
           
-          <div className="flex gap-2 xl:gap-4">
-             <div className="flex-1"><DaysCounter date={customer.lastCustomerReplyDate} label={t('unrepliedDays')} type="elapsed" /></div>
-             <div className="flex-1"><DaysCounter date={customer.lastMyReplyDate} label={t('unfollowedDays')} type="elapsed" /></div>
+          {/* 3. Days Since Update (Elapsed) */}
+          <DaysCounter date={customer.lastStatusUpdate} label={t('daysSinceUpdate')} type="elapsed" />
+          
+          {/* 4. Reply Counters (Split) */}
+          <div className="flex gap-2 xl:gap-4 h-full">
+             <div className="flex-1 h-full"><DaysCounter date={customer.lastCustomerReplyDate} label={t('unrepliedDays')} type="elapsed" /></div>
+             <div className="flex-1 h-full"><DaysCounter date={customer.lastMyReplyDate} label={t('unfollowedDays')} type="elapsed" /></div>
           </div>
        </div>
 
