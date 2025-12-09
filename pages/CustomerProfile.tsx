@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel } from '../components/Common';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X } from 'lucide-react';
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -32,6 +32,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isAddingInteraction, setIsAddingInteraction] = useState(false);
   const [newInteractionDate, setNewInteractionDate] = useState('');
   const [newInteractionText, setNewInteractionText] = useState('');
+
+  // Edit Interaction History State
+  const [editingInteractionId, setEditingInteractionId] = useState<string | null>(null);
+  const [editInteractionDate, setEditInteractionDate] = useState('');
+  const [editInteractionText, setEditInteractionText] = useState('');
 
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
@@ -104,6 +109,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     };
 
     const updatedInteractions = [newInteraction, ...customer.interactions];
+    // Keep sorted by date descending
+    updatedInteractions.sort((a, b) => b.date.localeCompare(a.date));
     
     onUpdateCustomer({
       ...customer,
@@ -114,6 +121,55 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
     setIsAddingInteraction(false);
     setNewInteractionText('');
+  };
+
+  // --- Edit Existing Interaction Handlers ---
+  const startEditInteraction = (interaction: Interaction) => {
+    setEditingInteractionId(interaction.id);
+    setEditInteractionDate(interaction.date);
+    setEditInteractionText(interaction.summary);
+  };
+
+  const handleSaveEditedInteraction = () => {
+    if (!editingInteractionId || !editInteractionText.trim()) return;
+
+    const updatedInteractions = customer.interactions.map(interaction => {
+      if (interaction.id === editingInteractionId) {
+        return {
+          ...interaction,
+          date: editInteractionDate,
+          summary: editInteractionText
+        };
+      }
+      return interaction;
+    });
+
+    // Re-sort in case date changed
+    updatedInteractions.sort((a, b) => b.date.localeCompare(a.date));
+
+    // Update last contact date if needed (simplistic check: just take max date)
+    const maxDate = updatedInteractions.reduce((max, curr) => curr.date > max ? curr.date : max, '');
+    
+    onUpdateCustomer({
+      ...customer,
+      interactions: updatedInteractions,
+      lastContactDate: maxDate > (customer.lastContactDate || '') ? maxDate : customer.lastContactDate
+    });
+    
+    setEditingInteractionId(null);
+  };
+
+  const handleDeleteInteraction = (interactionId: string) => {
+    if (window.confirm(t('confirmDeleteInteraction'))) {
+       const updatedInteractions = customer.interactions.filter(i => i.id !== interactionId);
+       onUpdateCustomer({
+         ...customer,
+         interactions: updatedInteractions
+       });
+       if (editingInteractionId === interactionId) {
+         setEditingInteractionId(null);
+       }
+    }
   };
 
   const updateFollowUpStatus = (newStatus: FollowUpStatus) => {
@@ -424,26 +480,75 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                        {/* Timeline Dot */}
                        <div className="absolute -left-[41px] xl:-left-[50px] top-0 w-5 h-5 xl:w-6 xl:h-6 rounded-full bg-white dark:bg-slate-900 border-4 border-blue-600 shadow-sm"></div>
                        
-                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 xl:mb-3">
-                         <span className="text-sm xl:text-lg font-bold text-slate-800 dark:text-slate-200">{interaction.date}</span>
-                         <div className="flex gap-2 mt-1 sm:mt-0">
-                           {interaction.tags?.map(t => <Badge key={t} color="purple">{t}</Badge>)}
-                         </div>
-                       </div>
-                       
-                       <Card className="p-4 xl:p-6 bg-white dark:bg-slate-800 hover:shadow-md transition-shadow">
-                         <p className="text-slate-700 dark:text-slate-300 text-sm xl:text-lg whitespace-pre-wrap">{interaction.summary}</p>
-                         
-                         {interaction.docLinks && interaction.docLinks.length > 0 && (
-                           <div className="mt-3 xl:mt-4 flex flex-wrap gap-2">
-                             {interaction.docLinks.map((link, li) => (
-                               <a key={li} href={link} target="_blank" className="flex items-center gap-1 text-xs xl:text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 xl:px-3 xl:py-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50">
-                                 <LinkIcon className="w-3 h-3 xl:w-4 xl:h-4" /> Link {li+1}
-                               </a>
-                             ))}
+                       {editingInteractionId === interaction.id ? (
+                         <Card className="p-4 xl:p-6 bg-white dark:bg-slate-800 border-2 border-blue-500 dark:border-blue-400 shadow-lg relative">
+                             <h4 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                               <Edit className="w-4 h-4" /> Edit Interaction
+                             </h4>
+                             <div className="space-y-4">
+                               <div>
+                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Date</label>
+                                 <input 
+                                   type="date"
+                                   className="border rounded p-2 text-sm bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 w-full md:w-auto"
+                                   value={editInteractionDate}
+                                   onChange={(e) => setEditInteractionDate(e.target.value)}
+                                 />
+                               </div>
+                               <div>
+                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Summary</label>
+                                 <textarea 
+                                   className="w-full border rounded p-2 text-sm xl:text-base bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 min-h-[100px]"
+                                   value={editInteractionText}
+                                   onChange={(e) => setEditInteractionText(e.target.value)}
+                                 />
+                               </div>
+                               <div className="flex justify-between items-center pt-2">
+                                 <Button variant="danger" className="text-xs px-3 py-1.5" onClick={() => handleDeleteInteraction(interaction.id)}>
+                                    <Trash2 className="w-4 h-4 mr-1" /> Delete
+                                 </Button>
+                                 <div className="flex gap-2">
+                                   <Button variant="ghost" onClick={() => setEditingInteractionId(null)}>Cancel</Button>
+                                   <Button onClick={handleSaveEditedInteraction}>Save Changes</Button>
+                                 </div>
+                               </div>
+                             </div>
+                         </Card>
+                       ) : (
+                         <>
+                           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 xl:mb-3">
+                             <span className="text-sm xl:text-lg font-bold text-slate-800 dark:text-slate-200">{interaction.date}</span>
+                             <div className="flex gap-2 mt-1 sm:mt-0">
+                               {interaction.tags?.map(t => <Badge key={t} color="purple">{t}</Badge>)}
+                             </div>
                            </div>
-                         )}
-                       </Card>
+                           
+                           <Card className="p-4 xl:p-6 bg-white dark:bg-slate-800 hover:shadow-md transition-shadow group relative">
+                             {/* Hover Edit Button */}
+                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <button 
+                                 onClick={() => startEditInteraction(interaction)} 
+                                 className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                                 title="Edit Record"
+                               >
+                                 <Edit className="w-4 h-4 xl:w-5 xl:h-5" />
+                               </button>
+                             </div>
+
+                             <p className="text-slate-700 dark:text-slate-300 text-sm xl:text-lg whitespace-pre-wrap pr-6">{interaction.summary}</p>
+                             
+                             {interaction.docLinks && interaction.docLinks.length > 0 && (
+                               <div className="mt-3 xl:mt-4 flex flex-wrap gap-2">
+                                 {interaction.docLinks.map((link, li) => (
+                                   <a key={li} href={link} target="_blank" className="flex items-center gap-1 text-xs xl:text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 xl:px-3 xl:py-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                                     <LinkIcon className="w-3 h-3 xl:w-4 xl:h-4" /> Link {li+1}
+                                   </a>
+                                 ))}
+                               </div>
+                             )}
+                           </Card>
+                         </>
+                       )}
                     </div>
                   ))}
                   {customer.interactions.length === 0 && !isAddingInteraction && <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg italic">No interactions recorded yet.</p>}

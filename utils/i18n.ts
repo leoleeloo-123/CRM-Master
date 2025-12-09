@@ -57,6 +57,7 @@ export const translations = {
     logInteraction: 'Log Interaction',
     newRequest: 'New Request',
     noSamples: 'No samples recorded for this customer.',
+    confirmDeleteInteraction: 'Are you sure you want to delete this interaction?',
     
     // Status Options
     statusMyTurn: 'My Turn',
@@ -150,6 +151,7 @@ export const translations = {
     logInteraction: '记录互动',
     newRequest: '新建样品申请',
     noSamples: '该客户暂无样品记录。',
+    confirmDeleteInteraction: '您确定要删除此互动记录吗？',
 
     // Status Options
     statusMyTurn: '我方跟进',
