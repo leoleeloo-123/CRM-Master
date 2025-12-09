@@ -64,6 +64,29 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
     return str.split('|||').map(s => s.trim()).filter(s => s.length > 0);
   };
 
+  // Helper to ensure dates are YYYY-MM-DD
+  const normalizeDate = (dateStr: string | undefined): string => {
+    if (!dateStr) return '';
+    const trimmed = dateStr.trim();
+    if (!trimmed) return '';
+
+    // Split by any non-digit char
+    const parts = trimmed.split(/[^0-9]/).filter(p => p.length > 0);
+    
+    if (parts.length >= 3) {
+      // Assume YYYY MM DD order if first part is 4 digits
+      if (parts[0].length === 4) {
+        const y = parts[0];
+        const m = parts[1].padStart(2, '0');
+        const d = parts[2].padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+    }
+    
+    // Fallback replacement if regex fail, try basic replacement
+    return trimmed.replace(/[\.\/]/g, '-');
+  };
+
   const parsePasteData = () => {
     if (!importData.trim()) {
       setImportStatus({ type: 'error', message: 'Please paste data into the text area.' });
@@ -106,12 +129,16 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
 
           const rank = (parseInt(cols[3]) || 3) as Rank;
           const productSummary = cols[4] || '';
-          const lastStatusUpdate = cols[5] || '';
+          
+          // Normalize Dates
+          const lastStatusUpdate = normalizeDate(cols[5]);
+          
           const followUpStatus = (cols[8] as FollowUpStatus) || 'No Action';
           const nextSteps = cols[9] || '';
-          const nextActionDate = cols[10] || '';
-          const lastCustomerReplyDate = cols[13] || '';
-          const lastMyReplyDate = cols[15] || '';
+          
+          const nextActionDate = normalizeDate(cols[10]);
+          const lastCustomerReplyDate = normalizeDate(cols[13]);
+          const lastMyReplyDate = normalizeDate(cols[15]);
           
           // 3. Document Links Parsing
           const docLinks = splitByDelimiter(cols[17]);
@@ -149,7 +176,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
              let summary = raw;
 
              if (dateMatch) {
-               date = dateMatch[1];
+               date = normalizeDate(dateMatch[1]);
                // Remove the date part AND any leading dashes/bullets/spaces before it
                // e.g., "- 【2025.1.7】 Text" -> "Text"
                summary = raw.replace(/^[\s\-\.\*]*【.*?】/, '').trim();
@@ -213,7 +240,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ customers, samples, onI
             productForm: (cols[4] as ProductForm) || 'Powder',
             quantity: cols[5] || '',
             status: (cols[6] as SampleStatus) || 'Requested',
-            lastStatusDate: cols[7] || new Date().toISOString().split('T')[0],
+            lastStatusDate: normalizeDate(cols[7]) || new Date().toISOString().split('T')[0],
             statusDetails: cols[8] || '',
             trackingNumber: cols[9] || '',
             productType: cols[2] || 'Sample',
