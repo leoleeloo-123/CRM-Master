@@ -24,7 +24,7 @@ export interface Interaction {
 export interface Customer {
   id: string;
   name: string;
-  region: string;
+  region: string[]; // Changed to string array to support multiple regions
   rank: Rank;
   status: CustomerStatus;
   

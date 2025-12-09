@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction } from '../types';
 import { Card, Button, Badge, Modal } from '../components/Common';
@@ -36,33 +37,41 @@ const DataManagement: React.FC<DataManagementProps> = ({
   };
 
   const handleExportCustomers = () => {
-    // 19 Columns matching the Import Logic
+    // 20 Columns matching the Updated Import Logic
+    // Col 0: Name
+    // Col 1: Region (NEW)
+    // Col 2: Tags
+    // ... shifted by 1
     const headers = [
       "客户", // 0. Name
-      "展会", // 1. Tags (Numbered + |||)
-      "展会官网", // 2. Website (Ignored)
-      "等级", // 3. Rank
-      "状态与产品总结", // 4. Product Summary
-      "状态更新", // 5. Last Status Update
-      "未更新", // 6. Ignored
-      "对接人员", // 7. Contact Names (|||)
-      "状态", // 8. FollowUp Status
-      "下一步", // 9. Next Step
-      "关键日期", // 10. Next Action Date
-      "DDL", // 11. Ignored
-      "对接流程总结", // 12. Interaction History (【Date】 Summary |||)
-      "对方回复", // 13. Last Customer Reply
-      "未回复", // 14. Ignored
-      "我方跟进", // 15. Last My Reply
-      "未跟进", // 16. Ignored
-      "文档超链接", // 17. Doc Links (|||)
-      "联系方式" // 18. Contact Info (|||) matching col 7
+      "地区", // 1. Region (New Column)
+      "展会", // 2. Tags (Numbered + |||)
+      "展会官网", // 3. Website (Ignored)
+      "等级", // 4. Rank
+      "状态与产品总结", // 5. Product Summary
+      "状态更新", // 6. Last Status Update
+      "未更新", // 7. Ignored
+      "对接人员", // 8. Contact Names (|||)
+      "状态", // 9. FollowUp Status
+      "下一步", // 10. Next Step
+      "关键日期", // 11. Next Action Date
+      "DDL", // 12. Ignored
+      "对接流程总结", // 13. Interaction History (【Date】 Summary |||)
+      "对方回复", // 14. Last Customer Reply
+      "未回复", // 15. Ignored
+      "我方跟进", // 16. Last My Reply
+      "未跟进", // 17. Ignored
+      "文档超链接", // 18. Doc Links (|||)
+      "联系方式" // 19. Contact Info (|||) matching col 8
     ];
     
     // Use the customers from context (source of truth)
     const rows = customers.map(c => {
       // 1. Reverse Tags Logic: Add numbering and join with |||
       const tags = c.tags.map((tag, i) => `${i + 1}. ${tag}`).join(' ||| ');
+
+      // New: Regions joined by |||
+      const regions = Array.isArray(c.region) ? c.region.join(' ||| ') : c.region;
 
       // 2. Reverse Contacts Logic: Split Name and Info
       const contactNames = c.contacts.map(contact => contact.name).join(' ||| ');
@@ -89,6 +98,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
       return [
         c.name,
+        regions, // New Column 1
         tags,
         "", // Website placeholder
         c.rank,
@@ -190,54 +200,59 @@ const DataManagement: React.FC<DataManagementProps> = ({
         const tempId = Math.random().toString(36).substr(2, 9);
         
         if (activeTab === 'customers') {
-          // Column Mapping:
+          // Column Mapping (Updated):
           // 0: 客户 (Name)
-          // 1: 展会 (Tags) -> Clean numbering
-          // 2: 展会官网 (Ignored)
-          // 3: 等级 (Rank)
-          // 4: 状态与产品总结 (Summary)
-          // 5: 状态更新 (Last Update)
-          // 6: 未更新 (Skipped)
-          // 7: 对接人员 (Contact Name List) -> Zip with Col 18
-          // 8: 状态 (FollowUp Status)
-          // 9: 下一步 (Next Step)
-          // 10: 关键日期 (Next Action Date)
-          // 11: DDL (Skipped)
-          // 12: 对接流程总结 (Interaction List) -> Extract Date 【】
-          // 13: 对方回复 (Last Customer Reply)
-          // 14: 未回复 (Skipped)
-          // 15: 我方跟进 (Last My Reply)
-          // 16: 未跟进 (Skipped)
-          // 17: 文档超链接 (Doc Links)
-          // 18: 联系方式 (Contact Info List) -> Zip with Col 7
+          // 1: 地区 (Region) -- NEW
+          // 2: 展会 (Tags) -> Clean numbering
+          // 3: 展会官网 (Ignored)
+          // 4: 等级 (Rank)
+          // 5: 状态与产品总结 (Summary)
+          // 6: 状态更新 (Last Update)
+          // 7: 未更新 (Skipped)
+          // 8: 对接人员 (Contact Name List) -> Zip with Col 19
+          // 9: 状态 (FollowUp Status)
+          // 10: 下一步 (Next Step)
+          // 11: 关键日期 (Next Action Date)
+          // 12: DDL (Skipped)
+          // 13: 对接流程总结 (Interaction List) -> Extract Date 【】
+          // 14: 对方回复 (Last Customer Reply)
+          // 15: 未回复 (Skipped)
+          // 16: 我方跟进 (Last My Reply)
+          // 17: 未跟进 (Skipped)
+          // 18: 文档超链接 (Doc Links)
+          // 19: 联系方式 (Contact Info List) -> Zip with Col 8
 
           const name = cols[0] || 'Unknown';
           
-          // 1. Tags Parsing: Remove "1.", "1、" etc.
-          const rawTags = splitByDelimiter(cols[1]);
+          // 1. Region Parsing (Col 1)
+          const regions = splitByDelimiter(cols[1]);
+          const finalRegions = regions.length > 0 ? regions : ['Unknown'];
+
+          // 2. Tags Parsing (Col 2): Remove "1.", "1、" etc.
+          const rawTags = splitByDelimiter(cols[2]);
           const cleanTags = rawTags.map(t => t.replace(/^\d+[\.\、\s]*\s*/, ''));
 
-          const rank = (parseInt(cols[3]) || 3) as Rank;
+          const rank = (parseInt(cols[4]) || 3) as Rank;
           
           // REPLACE ||| with newlines for display
-          const productSummary = (cols[4] || '').replace(/\|\|\|/g, '\n');
+          const productSummary = (cols[5] || '').replace(/\|\|\|/g, '\n');
           
           // Normalize Dates
-          const lastStatusUpdate = normalizeDate(cols[5]);
+          const lastStatusUpdate = normalizeDate(cols[6]);
           
-          const followUpStatus = (cols[8] as FollowUpStatus) || 'No Action';
-          const nextSteps = cols[9] || '';
+          const followUpStatus = (cols[9] as FollowUpStatus) || 'No Action';
+          const nextSteps = cols[10] || '';
           
-          const nextActionDate = normalizeDate(cols[10]);
-          const lastCustomerReplyDate = normalizeDate(cols[13]);
-          const lastMyReplyDate = normalizeDate(cols[15]);
+          const nextActionDate = normalizeDate(cols[11]);
+          const lastCustomerReplyDate = normalizeDate(cols[14]);
+          const lastMyReplyDate = normalizeDate(cols[16]);
           
           // 3. Document Links Parsing
-          const docLinks = splitByDelimiter(cols[17]);
+          const docLinks = splitByDelimiter(cols[18]);
 
-          // 2. Contacts Parsing: Zip Names (Col 7) and Info (Col 18)
-          const contactNames = splitByDelimiter(cols[7]);
-          const contactInfos = splitByDelimiter(cols[18]);
+          // 2. Contacts Parsing: Zip Names (Col 8) and Info (Col 19)
+          const contactNames = splitByDelimiter(cols[8]);
+          const contactInfos = splitByDelimiter(cols[19]);
           const contacts = contactNames.map((cName, i) => {
              const info = contactInfos[i] || '';
              const isEmail = info.includes('@');
@@ -255,7 +270,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
           // 4. Interactions Parsing: Extract Date from 【】
           // Data format is often: "- 【2025.1.7】 Content..."
-          const rawInteractions = splitByDelimiter(cols[12]);
+          const rawInteractions = splitByDelimiter(cols[13]);
           
           // REVERSE Logic: Source has Oldest at Top (first in split), Newest at Bottom.
           // App displays Newest at Top. So we MUST reverse the array.
@@ -301,6 +316,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
           return {
             id: `new_c_${tempId}`, // This ID might be overwritten by Upsert logic in App.tsx
             name: name,
+            region: finalRegions, // Now an array
             tags: cleanTags,
             rank: rank,
             productSummary: productSummary,
@@ -313,7 +329,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
             contacts: contacts,
             docLinks: docLinks,
             status: 'Active' as CustomerStatus,
-            region: 'Unknown',
             interactions: interactions
           } as Customer;
 
@@ -418,7 +433,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   </h4>
                   <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
                     {activeTab === 'customers' 
-                      ? "1.客户 | 2.展会 | 3.展会官网(Ignore) | 4.等级 | 5.状态与产品总结 | 6.状态更新 | 7.未更新(Ignore) | 8.对接人员 | 9.状态(My Turn/etc) | 10.下一步 | 11.关键日期 | 12.DDL(Ignore) | 13.对接流程总结 | 14.对方回复 | 15.未回复(Ignore) | 16.我方跟进 | 17.未跟进(Ignore) | 18.文档超链接 | 19.联系方式"
+                      ? "1.客户 | 2.地区(NEW) | 3.展会 | 4.展会官网(Ignore) | 5.等级 | 6.状态与产品总结 | 7.状态更新 | 8.未更新(Ignore) | 9.对接人员 | 10.状态(My Turn/etc) | 11.下一步 | 12.关键日期 | 13.DDL(Ignore) | 14.对接流程总结 | 15.对方回复 | 16.未回复(Ignore) | 17.我方跟进 | 18.未跟进(Ignore) | 19.文档超链接 | 20.联系方式"
                       : "Customer Name | Serial # | Sample Name | Category (comma sep) | Form | Quantity | Status | Status Date | Details | Tracking #"
                     }
                   </p>
@@ -477,6 +492,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                        {activeTab === 'customers' ? (
                          <>
                            <th className="p-3 whitespace-nowrap min-w-[120px]">Name</th>
+                           <th className="p-3 whitespace-nowrap min-w-[120px]">Region</th>
                            <th className="p-3 whitespace-nowrap min-w-[120px]">Tags</th>
                            <th className="p-3 whitespace-nowrap">Rank</th>
                            <th className="p-3 whitespace-nowrap">Status</th>
@@ -510,6 +526,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
                          {activeTab === 'customers' ? (
                            <>
                              <td className="p-3 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap align-top">{row.name}</td>
+                             <td className="p-3 align-top">
+                               <div className="flex flex-wrap gap-1 w-[120px]">
+                                 {Array.isArray(row.region) && row.region.map((r: string) => <span key={r} className="bg-slate-100 dark:bg-slate-700 px-1 rounded block mb-1">{r}</span>)}
+                               </div>
+                             </td>
                              <td className="p-3 align-top">
                                <div className="flex flex-wrap gap-1 w-[150px]">
                                  {row.tags?.map((t: string) => <span key={t} className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{t}</span>)}

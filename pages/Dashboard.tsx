@@ -37,7 +37,11 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   ];
 
   const regionDataRaw = customers.reduce((acc, curr) => {
-    acc[curr.region] = (acc[curr.region] || 0) + 1;
+    // Check if region is an array (it should be now), but fallback to string handling just in case of old data
+    const regions = Array.isArray(curr.region) ? curr.region : [curr.region];
+    regions.forEach(r => {
+      acc[r] = (acc[r] || 0) + 1;
+    });
     return acc;
   }, {} as Record<string, number>);
   

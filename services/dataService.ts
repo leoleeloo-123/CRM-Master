@@ -6,7 +6,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
   {
     id: 'c1',
     name: 'Acme Corp',
-    region: 'North America',
+    region: ['North America'],
     rank: 1,
     status: 'Active',
     productSummary: '[Status] Negotiating annual contract for Type A powders. 1. Agglomerated diamond testing successful. 2. Interested in new suspension formula.',
@@ -41,7 +41,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
   {
     id: 'c2',
     name: 'Nebula Industries',
-    region: 'Europe',
+    region: ['Europe', 'Germany'],
     rank: 2,
     status: 'Pending',
     productSummary: 'Evaluating 20nm Nano Diamond for polishing application. Currently comparing with competitor.',
@@ -67,7 +67,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
   {
     id: 'c3',
     name: 'Quantum Optics',
-    region: 'Asia',
+    region: ['Asia', 'China'],
     rank: 1,
     status: 'Active',
     productSummary: 'High-volume buyer for Single Crystal. 1. Monthly recurring orders. 2. Developing new lens polishing process.',
@@ -86,7 +86,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
   {
     id: 'c4',
     name: 'StartUp Dynamics',
-    region: 'USA',
+    region: ['USA'],
     rank: 4,
     status: 'Prospect',
     productSummary: 'Looking for cost-effective alternatives for CMP slurry. Early stage discussion.',
@@ -112,7 +112,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
   {
     id: 'c5',
     name: 'Global Wafer Co.',
-    region: 'Taiwan',
+    region: ['Taiwan'],
     rank: 3,
     status: 'Active',
     productSummary: 'Testing Diamond Ball for wire saw application. Sample 2 sent.',

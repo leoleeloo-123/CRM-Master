@@ -17,8 +17,9 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
   const [filterRank, setFilterRank] = useState<number | null>(null);
 
   const filteredCustomers = customers.filter(c => {
+    const regionString = Array.isArray(c.region) ? c.region.join(' ') : c.region;
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.region.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          regionString.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           c.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesRank = filterRank ? c.rank === filterRank : true;
     return matchesSearch && matchesRank;
@@ -86,7 +87,9 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                 >
                   <td className="p-4 xl:p-6 align-top">
                     <div className="font-bold text-slate-900 dark:text-white text-lg xl:text-2xl mb-1">{customer.name}</div>
-                    <div className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 mb-2">{customer.region}</div>
+                    <div className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 mb-2">
+                       {Array.isArray(customer.region) ? customer.region.join(', ') : customer.region}
+                    </div>
                     <div className="flex gap-1 flex-wrap">
                       {customer.tags.slice(0, 3).map(t => (
                         <span key={t} className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-xs xl:text-sm">{t}</span>

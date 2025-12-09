@@ -47,6 +47,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const iconClass = "w-4 h-4 xl:w-5 xl:h-5";
+  const regions = Array.isArray(customer.region) ? customer.region.join(' | ') : customer.region;
 
   return (
     <div className="space-y-6 xl:space-y-10">
@@ -61,7 +62,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              <RankStars rank={customer.rank} />
            </div>
            <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-2 text-sm xl:text-lg">
-             <MapPin className={iconClass} /> {customer.region} 
+             <MapPin className={iconClass} /> {regions} 
              <span className="text-slate-300 dark:text-slate-600 mx-1">|</span>
              {customer.tags.map(t => <span key={t} className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs xl:text-sm text-slate-600 dark:text-slate-300">{t}</span>)}
            </p>
