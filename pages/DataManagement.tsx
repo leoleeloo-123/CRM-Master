@@ -2,13 +2,13 @@
 import React, { useState } from 'react';
 import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
-import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2 } from 'lucide-react';
+import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { differenceInDays, parseISO, isValid } from 'date-fns';
 
 interface DataManagementProps {
   onImportCustomers: (newCustomers: Customer[]) => void;
-  onImportSamples: (newSamples: Sample[]) => void;
+  onImportSamples: (newSamples: Sample[], override?: boolean) => void;
 }
 
 const DataManagement: React.FC<DataManagementProps> = ({ 
@@ -21,6 +21,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
   const [importStatus, setImportStatus] = useState<{type: 'success' | 'error' | 'info', message: string} | null>(null);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [shouldOverride, setShouldOverride] = useState(true); // Default to true for Samples as requested
 
   const downloadCSV = (content: string, filename: string) => {
     const blob = new Blob(["\uFEFF" + content], { type: 'text/csv;charset=utf-8;' });
@@ -196,8 +197,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
       const rows = importData.trim().split('\n').filter(r => r.trim() !== '');
       
       // Pre-calc Sample Indexes
+      // If overriding, we don't care about existing indexes.
+      // If appending, we need max index.
       const customerIndexMap = new Map<string, number>();
-      if (activeTab === 'samples') {
+      
+      if (activeTab === 'samples' && !shouldOverride) {
           samples.forEach(s => {
              const lowerName = s.customerName.toLowerCase();
              const currentMax = customerIndexMap.get(lowerName) || 0;
@@ -397,7 +401,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
         syncSampleToCatalog(s);
       });
 
-      onImportSamples(samplesToImport);
+      onImportSamples(samplesToImport, shouldOverride);
     }
 
     setImportStatus({ type: 'success', message: `Successfully imported ${parsedPreview.length} records!` });
@@ -454,7 +458,20 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   </p>
                </div>
                
-               <div className="flex gap-2">
+               <div className="flex flex-col gap-2 items-end">
+                 {/* Override Toggle Checkbox for Samples */}
+                 {activeTab === 'samples' && !parsedPreview && (
+                   <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer bg-white dark:bg-slate-800 px-3 py-1 rounded border border-slate-200 dark:border-slate-700">
+                      <input 
+                        type="checkbox" 
+                        checked={shouldOverride} 
+                        onChange={(e) => setShouldOverride(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span>Override Existing Samples</span>
+                   </label>
+                 )}
+
                  {!parsedPreview ? (
                    <div className="flex gap-2">
                     {activeTab === 'customers' ? (
@@ -468,6 +485,12 @@ const DataManagement: React.FC<DataManagementProps> = ({
                    </div>
                  ) : (
                    <>
+                     {activeTab === 'samples' && (
+                       <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                         <RefreshCcw size={14} />
+                         {shouldOverride ? 'Mode: Replace All' : 'Mode: Append New'}
+                       </div>
+                     )}
                      <Button onClick={clearPreview} variant="secondary">Cancel</Button>
                      <Button onClick={confirmImport} className="bg-emerald-600 hover:bg-emerald-700 text-white flex gap-2">
                        <CheckCircle2 size={16} /> Confirm Import ({parsedPreview.length})

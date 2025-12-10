@@ -70,10 +70,10 @@ const AppContent: React.FC = () => {
     setCustomers(Array.from(customerMap.values()));
   };
 
-  const handleImportSamples = (newSamples: Sample[]) => {
-    if (isDemoData) {
+  const handleImportSamples = (newSamples: Sample[], override: boolean = false) => {
+    if (isDemoData || override) {
       setSamples(newSamples);
-      setIsDemoData(false);
+      if (isDemoData) setIsDemoData(false);
     } else {
       setSamples((prev: Sample[]) => [...prev, ...newSamples]);
     }
