@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus } from '../types';
 import { Card, Badge, Button, Modal } from '../components/Common';
-import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, ExternalLink, Filter, CalendarDays, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, parseISO, isValid } from 'date-fns';
 
@@ -22,6 +22,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const [menuOpenColumn, setMenuOpenColumn] = useState<string | null>(null);
   
   // Filter States
+  const [filterCustomer, setFilterCustomer] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterTestFinished, setFilterTestFinished] = useState<string>('all'); 
   const [filterCrystalType, setFilterCrystalType] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
@@ -44,18 +46,26 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const filteredSamples = samples.filter(s => {
     const matchesSearch = s.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.sampleName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (s.sampleSKU || '').toLowerCase().includes(searchTerm.toLowerCase());
+                          (s.sampleSKU || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (s.originalSize || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (s.processedSize || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     let matchesTest = true;
     if (filterTestFinished === 'finished') matchesTest = s.isTestFinished === true;
     if (filterTestFinished === 'ongoing') matchesTest = s.isTestFinished === false;
 
+    const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
+    const matchesStatus = filterStatus ? s.status === filterStatus : true;
     const matchesCrystal = filterCrystalType ? s.crystalType === filterCrystalType : true;
     const matchesCategory = filterCategory ? s.productCategory?.includes(filterCategory as ProductCategory) : true;
     const matchesForm = filterForm ? s.productForm === filterForm : true;
 
-    return matchesSearch && matchesTest && matchesCrystal && matchesCategory && matchesForm;
+    return matchesSearch && matchesTest && matchesCustomer && matchesStatus && matchesCrystal && matchesCategory && matchesForm;
   });
+
+  // Get Unique Customers for Filter
+  const uniqueCustomerIds = Array.from(new Set(samples.map(s => s.customerId)));
+  const customerFilterOptions = customers.filter(c => uniqueCustomerIds.includes(c.id));
 
   // Helper for dynamic colors based on string hash or predefined list
   const getStatusStyle = (status: string, index: number) => {
@@ -205,9 +215,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedColumnIndex(index);
-    // Optional: Set transparent drag image or effect
     e.dataTransfer.effectAllowed = 'move';
-    // Small hack to make standard drag image look better (optional)
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -250,6 +258,19 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     }
     setMenuOpenColumn(null);
   };
+  
+  // Reset all filters
+  const resetFilters = () => {
+      setFilterCustomer('');
+      setFilterStatus('');
+      setFilterTestFinished('all');
+      setFilterCrystalType('');
+      setFilterCategory('');
+      setFilterForm('');
+      setSearchTerm('');
+  };
+
+  const hasActiveFilters = filterCustomer || filterStatus || filterTestFinished !== 'all' || filterCrystalType || filterCategory || filterForm || searchTerm;
 
   return (
     <div className="h-[calc(100vh-2rem)] xl:h-[calc(100vh-3rem)] flex flex-col">
@@ -277,33 +298,92 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         </div>
       </div>
 
-      {/* Filters */}
-      <Card className="p-4 xl:p-6 mb-6 flex flex-col lg:flex-row gap-4 items-start lg:items-center bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-         <div className="relative w-full max-w-xs xl:max-w-md">
-           <Search className="absolute left-3 top-2.5 xl:top-3.5 text-slate-400 w-4 h-4 xl:w-6 xl:h-6" />
-           <input 
-             type="text" 
-             placeholder={t('searchSample')}
-             className="w-full pl-9 xl:pl-12 pr-4 py-2 xl:py-3 text-sm xl:text-lg border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-             value={searchTerm}
-             onChange={(e) => setSearchTerm(e.target.value)}
-           />
-         </div>
-         
-         <div className="flex flex-wrap gap-2 items-center text-sm xl:text-base">
-            <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mr-2">
-              <Filter className="w-4 h-4 xl:w-5 xl:h-5" /> {t('filters')}:
-            </div>
-            
-            <select 
-              className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-              value={filterTestFinished}
-              onChange={(e) => setFilterTestFinished(e.target.value)}
-            >
-              <option value="all">{t('filterTestAll')}</option>
-              <option value="finished">{t('filterTestFinished')}</option>
-              <option value="ongoing">{t('filterTestOngoing')}</option>
-            </select>
+      {/* Advanced Filter Bar */}
+      <Card className="p-4 xl:p-6 mb-6 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+         <div className="flex flex-col gap-4">
+             {/* Row 1: Search & Basic Filters */}
+             <div className="flex flex-col xl:flex-row gap-4">
+                 <div className="relative flex-1">
+                   <Search className="absolute left-3 top-2.5 xl:top-3.5 text-slate-400 w-4 h-4 xl:w-6 xl:h-6" />
+                   <input 
+                     type="text" 
+                     placeholder={t('searchSample')}
+                     className="w-full pl-9 xl:pl-12 pr-4 py-2 xl:py-3 text-sm xl:text-lg border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                   />
+                 </div>
+                 
+                 <div className="flex flex-wrap gap-2 items-center text-sm xl:text-base">
+                    <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mr-2 font-medium">
+                      <Filter className="w-4 h-4 xl:w-5 xl:h-5" /> {t('filters')}:
+                    </div>
+                    
+                    <select 
+                      className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 max-w-[150px]"
+                      value={filterCustomer}
+                      onChange={(e) => setFilterCustomer(e.target.value)}
+                    >
+                      <option value="">{t('customer')}</option>
+                      {customerFilterOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+
+                    <select 
+                      className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 max-w-[150px]"
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                    >
+                      <option value="">{t('status')}</option>
+                      {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{renderOption(s)}</option>)}
+                    </select>
+
+                    <select 
+                      className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                      value={filterTestFinished}
+                      onChange={(e) => setFilterTestFinished(e.target.value)}
+                    >
+                      <option value="all">{t('filterTestAll')}</option>
+                      <option value="finished">{t('filterTestFinished')}</option>
+                      <option value="ongoing">{t('filterTestOngoing')}</option>
+                    </select>
+                 </div>
+             </div>
+
+             {/* Row 2: Detailed Specs Filters */}
+             <div className="flex flex-wrap gap-2 items-center text-sm xl:text-base border-t border-slate-200 dark:border-slate-700 pt-3">
+                 <select 
+                    className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                    value={filterCrystalType}
+                    onChange={(e) => setFilterCrystalType(e.target.value)}
+                 >
+                    <option value="">{t('crystal')}: All</option>
+                    {tagOptions.crystalType.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
+                 </select>
+
+                 <select 
+                    className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                 >
+                    <option value="">{t('category')}: All</option>
+                    {tagOptions.productCategory.map(c => <option key={c} value={c}>{renderOption(c)}</option>)}
+                 </select>
+
+                 <select 
+                    className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                    value={filterForm}
+                    onChange={(e) => setFilterForm(e.target.value)}
+                 >
+                    <option value="">{t('form')}: All</option>
+                    {tagOptions.productForm.map(f => <option key={f} value={f}>{renderOption(f)}</option>)}
+                 </select>
+
+                 {hasActiveFilters && (
+                    <button onClick={resetFilters} className="ml-auto text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
+                        <X size={14} /> Clear All
+                    </button>
+                 )}
+             </div>
          </div>
       </Card>
 
@@ -378,6 +458,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                             <Badge color="blue">{renderOption(sample.productForm || '')}</Badge>
                             <Badge color="purple">{renderOption(sample.crystalType || '')}</Badge>
                          </div>
+                         
+                         <div className="mt-2 text-xs xl:text-sm space-y-1">
+                            {sample.originalSize && <div className="text-slate-600 dark:text-slate-400"><span className="text-slate-400 dark:text-slate-500 uppercase text-[10px] mr-1">{t('origLabel')}:</span>{sample.originalSize}</div>}
+                            {sample.processedSize && <div className="text-slate-600 dark:text-slate-400"><span className="text-slate-400 dark:text-slate-500 uppercase text-[10px] mr-1">{t('procLabel')}:</span>{sample.processedSize}</div>}
+                         </div>
 
                          <div className="mt-2 text-xs xl:text-base text-slate-600 dark:text-slate-300 line-clamp-2">
                            {sample.statusDetails}
@@ -433,10 +518,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              <table className="w-full text-left text-sm xl:text-base text-slate-700 dark:text-slate-300">
                <thead className="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700">
                  <tr>
-                   <th className="p-4 xl:p-6">{t('idx')}</th>
-                   <th className="p-4 xl:p-6">{t('customer')}</th>
-                   <th className="p-4 xl:p-6">{t('sampleInfo')}</th>
-                   <th className="p-4 xl:p-6">{t('specs')}</th>
+                   <th className="p-4 xl:p-6 w-16">{t('idx')}</th>
+                   <th className="p-4 xl:p-6 w-1/5">{t('customer')}</th>
+                   <th className="p-4 xl:p-6 w-1/5">{t('sampleInfo')}</th>
+                   <th className="p-4 xl:p-6 w-1/4">{t('specs')}</th>
+                   <th className="p-4 xl:p-6 w-24">{t('qtyAbbr')}</th>
                    <th className="p-4 xl:p-6">{t('statusInfo')}</th>
                    <th className="p-4 xl:p-6 whitespace-nowrap text-center">{t('sinceUpdate')}</th>
                    <th className="p-4 xl:p-6">{t('test')}</th>
@@ -444,24 +530,45 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                </thead>
                <tbody>
                  {filteredSamples.map(s => (
-                   <tr key={s.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer" onClick={() => handleOpenEdit(s)}>
+                   <tr key={s.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer group" onClick={() => handleOpenEdit(s)}>
                      <td className="p-4 xl:p-6 align-top font-mono font-bold text-slate-500">{s.sampleIndex}</td>
-                     <td className="p-4 xl:p-6 align-top font-bold text-base xl:text-lg">{s.customerName}</td>
+                     <td className="p-4 xl:p-6 align-top">
+                        <div className="font-bold text-base xl:text-lg text-slate-800 dark:text-white">{s.customerName}</div>
+                     </td>
                      <td className="p-4 xl:p-6 align-top">
                        <div className="font-medium text-blue-600 dark:text-blue-400 text-base xl:text-lg">{getDisplaySampleName(s)}</div>
                        <div className="text-xs xl:text-sm text-slate-500 mt-1">{s.sampleSKU ? `SKU: ${s.sampleSKU}` : ''}</div>
                      </td>
-                     <td className="p-4 xl:p-6 align-top text-xs xl:text-sm">
-                        <div>{renderOption(s.productForm || '')} | {renderOption(s.crystalType || '')}</div>
-                        <div>{s.originalSize} -&gt; {s.processedSize}</div>
-                        <div>{s.isGraded}</div>
-                        <div className="font-semibold">{s.quantity}</div>
+                     <td className="p-4 xl:p-6 align-top text-xs xl:text-sm space-y-1.5">
+                        <div className="flex flex-wrap gap-1">
+                            <Badge color="gray">{renderOption(s.productForm || '')}</Badge>
+                            <Badge color="purple">{renderOption(s.crystalType || '')}</Badge>
+                        </div>
+                        <div className="space-y-1">
+                             {s.originalSize && (
+                                <div className="flex items-center gap-1">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 w-8">{t('origLabel')}:</span>
+                                    <span className="font-medium">{s.originalSize}</span>
+                                </div>
+                             )}
+                             {s.processedSize && (
+                                <div className="flex items-center gap-1">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 w-8">{t('procLabel')}:</span>
+                                    <span className="font-medium">{s.processedSize}</span>
+                                </div>
+                             )}
+                             {!s.originalSize && !s.processedSize && <span className="text-slate-400">-</span>}
+                        </div>
+                        <div className="text-slate-400 text-[10px]">{s.isGraded}</div>
+                     </td>
+                     <td className="p-4 xl:p-6 align-top font-semibold text-slate-900 dark:text-white">
+                        {s.quantity}
                      </td>
                      <td className="p-4 xl:p-6 align-top max-w-xs">
                        <Badge color={['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status) ? 'blue' : ['Feedback Received', '已反馈'].includes(s.status) ? 'green' : 'yellow'}>
                          {renderOption(s.status)}
                        </Badge>
-                       <div className="text-xs xl:text-sm mt-1 text-slate-500 dark:text-slate-400 line-clamp-3 whitespace-pre-wrap">
+                       <div className="text-xs xl:text-sm mt-1 text-slate-500 dark:text-slate-400 line-clamp-3 whitespace-pre-wrap group-hover:line-clamp-none transition-all">
                           {s.statusDetails}
                        </div>
                      </td>
@@ -473,6 +580,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      </td>
                    </tr>
                  ))}
+                 {filteredSamples.length === 0 && (
+                     <tr>
+                         <td colSpan={8} className="p-8 text-center text-slate-500">No samples found matching filters.</td>
+                     </tr>
+                 )}
                </tbody>
              </table>
           </div>
