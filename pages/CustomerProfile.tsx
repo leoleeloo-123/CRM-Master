@@ -140,9 +140,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       docLinks: []
     };
 
+    // Prepend new interaction to the top. Do NOT sort to preserve existing/imported order.
     const updatedInteractions = [newInteraction, ...customer.interactions];
-    // Keep sorted by date descending
-    updatedInteractions.sort((a, b) => b.date.localeCompare(a.date));
     
     onUpdateCustomer({
       ...customer,
@@ -176,8 +175,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       return interaction;
     });
 
-    // Re-sort in case date changed
-    updatedInteractions.sort((a, b) => b.date.localeCompare(a.date));
+    // Do NOT re-sort. Keep items where they are.
 
     // Update last contact date if needed (simplistic check: just take max date)
     const maxDate = updatedInteractions.reduce((max, curr) => curr.date > max ? curr.date : max, '');
