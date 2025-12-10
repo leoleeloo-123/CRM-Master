@@ -79,8 +79,8 @@ export interface Sample {
   processedSize?: string; // e.g. "50nm"
   isGraded?: GradingStatus; // Graded/Ungraded
   
-  sampleName?: string; // Core info description
-  sampleDetails?: string; // Extra details
+  sampleName?: string; // Core info description (Generated or Mapped)
+  sampleDetails?: string; // Extra details (Mapped from 'Details')
   
   // Logistics & Metadata
   quantity: string; // 10 ct, 50 g, etc.
