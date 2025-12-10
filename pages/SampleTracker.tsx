@@ -99,8 +99,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
       productCategory: [],
       sampleIndex: 1,
       isGraded: 'Graded',
-      crystalType: 'Single Crystal',
-      productForm: 'Powder',
+      crystalType: tagOptions.crystalType[0] || 'Single Crystal',
+      productForm: tagOptions.productForm[0] || 'Powder',
       statusDetails: '',
       sampleName: ''
     });

@@ -40,10 +40,10 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const DEFAULT_TAGS: TagOptions = {
-  sampleStatus: ['Requested', 'Processing', 'Sent', 'Delivered', 'Testing', 'Feedback Received', 'Closed'],
-  crystalType: ['Single Crystal', 'Polycrystalline'],
-  productCategory: ['Agglomerated Diamond', 'Nano Diamond', 'Spherical Diamond', 'Diamond Ball', 'Micron', 'CVD'],
-  productForm: ['Powder', 'Suspension']
+  sampleStatus: ['已申请', '处理中', '已寄出', '已送达', '测试中', '已反馈', '已关闭'],
+  crystalType: ['单晶', '多晶'],
+  productCategory: ['聚晶', '纳米金刚石', '球形金刚石', '金刚石球', '微米粉', 'CVD'],
+  productForm: ['微粉', '悬浮液']
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

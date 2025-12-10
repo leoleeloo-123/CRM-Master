@@ -97,30 +97,32 @@ export const translations = {
     sinceUpdate: 'Since Update',
     test: 'Test',
     
-    // Sample Columns & Statuses
+    // Sample Columns & Statuses (UI Labels)
     colRequested: 'Requested',
     colProcessing: 'Processing',
     colSent: 'Sent / Testing',
     colFeedback: 'Feedback',
-    'Requested': 'Requested',
-    'Processing': 'Processing',
-    'Sent': 'Sent',
-    'Delivered': 'Delivered',
-    'Testing': 'Testing',
-    'Feedback Received': 'Feedback Received',
-    'Closed': 'Closed',
 
-    // Tech Specs (for dropdown translation)
-    'Single Crystal': 'Single Crystal',
-    'Polycrystalline': 'Polycrystalline',
-    'Powder': 'Powder',
-    'Suspension': 'Suspension',
-    'Agglomerated Diamond': 'Agglomerated Diamond',
-    'Nano Diamond': 'Nano Diamond',
-    'Spherical Diamond': 'Spherical Diamond',
-    'Diamond Ball': 'Diamond Ball',
-    'Micron': 'Micron',
+    // DATA KEYS: Map Chinese System Keys -> English Display
+    '单晶': 'Single Crystal',
+    '多晶': 'Polycrystalline',
+    '微粉': 'Powder',
+    '悬浮液': 'Suspension',
+    '聚晶': 'Agglomerated Diamond',
+    '纳米金刚石': 'Nano Diamond',
+    '球形金刚石': 'Spherical Diamond',
+    '金刚石球': 'Diamond Ball',
+    '微米粉': 'Micron',
     'CVD': 'CVD',
+
+    // Status Data Keys
+    '已申请': 'Requested',
+    '处理中': 'Processing',
+    '已寄出': 'Sent',
+    '已送达': 'Delivered',
+    '测试中': 'Testing',
+    '已反馈': 'Feedback Received',
+    '已关闭': 'Closed',
 
     // Sample Modal
     editSample: 'Edit Sample',
@@ -277,30 +279,32 @@ export const translations = {
     sinceUpdate: '距更新',
     test: '测试',
 
-    // Sample Columns & Statuses
+    // Sample Columns & Statuses (UI Labels)
     colRequested: '已申请',
     colProcessing: '处理中',
     colSent: '已寄出 / 测试中',
     colFeedback: '已反馈',
-    'Requested': '已申请',
-    'Processing': '处理中',
-    'Sent': '已寄出',
-    'Delivered': '已送达',
-    'Testing': '测试中',
-    'Feedback Received': '已反馈',
-    'Closed': '已关闭',
 
-    // Tech Specs (for dropdown translation)
-    'Single Crystal': '单晶',
-    'Polycrystalline': '多晶',
-    'Powder': '微粉',
-    'Suspension': '悬浮液',
-    'Agglomerated Diamond': '聚晶',
-    'Nano Diamond': '纳米金刚石',
-    'Spherical Diamond': '球形金刚石',
-    'Diamond Ball': '金刚石球',
-    'Micron': '微米粉',
+    // DATA KEYS: Map Chinese System Keys -> Chinese Display
+    '单晶': '单晶',
+    '多晶': '多晶',
+    '微粉': '微粉',
+    '悬浮液': '悬浮液',
+    '聚晶': '聚晶',
+    '纳米金刚石': '纳米金刚石',
+    '球形金刚石': '球形金刚石',
+    '金刚石球': '金刚石球',
+    '微米粉': '微米粉',
     'CVD': 'CVD',
+
+    // Status Data Keys
+    '已申请': '已申请',
+    '处理中': '处理中',
+    '已寄出': '已寄出',
+    '已送达': '已送达',
+    '测试中': '测试中',
+    '已反馈': '已反馈',
+    '已关闭': '已关闭',
 
     // Sample Modal
     editSample: '编辑样品',
@@ -364,46 +368,62 @@ export const translations = {
   }
 };
 
-// Aliases for common non-standard terms to canonical English keys
+// Aliases: Map Non-Standard/English terms to CANONICAL CHINESE KEYS
 const ALIASES: Record<string, string> = {
-  '团聚': 'Agglomerated Diamond',
-  '粉末': 'Powder',
-  '单晶': 'Single Crystal',
-  '多晶': 'Polycrystalline',
-  '微粉': 'Powder',
-  '悬浮液': 'Suspension',
-  '聚晶': 'Agglomerated Diamond',
-  '聚晶金刚石': 'Agglomerated Diamond',
-  '纳米': 'Nano Diamond',
-  '纳米金刚石': 'Nano Diamond'
+  // Crystal Types
+  'Single Crystal': '单晶',
+  'Polycrystalline': '多晶',
+  
+  // Forms
+  'Powder': '微粉',
+  '粉末': '微粉',
+  'Suspension': '悬浮液',
+  
+  // Categories
+  'Agglomerated Diamond': '聚晶',
+  'Agglomerated': '聚晶',
+  '团聚': '聚晶',
+  'Nano Diamond': '纳米金刚石',
+  'Nano': '纳米金刚石',
+  'Spherical Diamond': '球形金刚石',
+  'Diamond Ball': '金刚石球',
+  'Micron': '微米粉',
+
+  // Statuses
+  'Requested': '已申请',
+  'Processing': '处理中',
+  'Sent': '已寄出',
+  'Delivered': '已送达',
+  'Testing': '测试中',
+  'Feedback Received': '已反馈',
+  'Closed': '已关闭'
 };
 
 /**
- * Normalizes a term (tag) to its canonical English key if possible.
- * This ensures that imported Chinese terms (e.g., '单晶') are converted 
- * to system keys ('Single Crystal') so they can be properly translated 
- * in the UI when language switches.
+ * Normalizes a term (tag) to its canonical CHINESE key.
+ * 1. Checks if it is already a valid System Key (present in translations.en keys).
+ * 2. Checks ALIASES to convert English/Variant -> Chinese Key.
+ * 3. Checks if it is a Translation Value in current language? (Less strict, prioritize aliases).
  */
 export const getCanonicalTag = (term: string): string => {
   if (!term) return '';
   const trimmed = term.trim();
   
-  // 1. Check if it matches a known English Value
+  // 1. Is it already a System Key? (We check translations.en keys, which now contains Chinese keys)
+  // We use 'en' here just as a reference to the Master Key List.
   if (translations.en[trimmed as keyof typeof translations.en]) {
       return trimmed;
   }
 
-  // 2. Check Aliases (Custom Mappings for variation)
+  // 2. Check Aliases (English -> Chinese)
   if (ALIASES[trimmed]) {
       return ALIASES[trimmed];
   }
 
-  // 3. Check if it matches a known Chinese Value
-  const entry = Object.entries(translations.zh).find(([key, val]) => val === trimmed);
-  if (entry) {
-      return entry[0];
-  }
+  // 3. Check if it matches a known value (reverse lookup from EN translation?)
+  // If user passes 'Single Crystal', finding it in EN values returns '单晶' key.
+  const enEntry = Object.entries(translations.en).find(([key, val]) => val === trimmed);
+  if (enEntry) return enEntry[0];
 
-  // 4. Return original if no mapping found
   return trimmed;
 };
