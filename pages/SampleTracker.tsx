@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus } from '../types';
 import { Card, Badge, Button, Modal } from '../components/Common';
-import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, ExternalLink, Filter, CalendarDays } from 'lucide-react';
+import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, ExternalLink, Filter, CalendarDays, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, parseISO, isValid } from 'date-fns';
 
@@ -12,10 +12,14 @@ interface SampleTrackerProps {
 }
 
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
-  const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions } = useApp();
+  const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
+  // Drag and Drop State
+  const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
+  const [menuOpenColumn, setMenuOpenColumn] = useState<string | null>(null);
   
   // Filter States
   const [filterTestFinished, setFilterTestFinished] = useState<string>('all'); 
@@ -53,26 +57,32 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     return matchesSearch && matchesTest && matchesCrystal && matchesCategory && matchesForm;
   });
 
-  const columns: { id: SampleStatus | string; label: string; icon: React.ReactNode; color: string }[] = [
-    { id: 'Requested', label: t('colRequested'), icon: <ClipboardList className="w-4 h-4 xl:w-6 xl:h-6" />, color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
-    { id: 'Processing', label: t('colProcessing'), icon: <FlaskConical className="w-4 h-4 xl:w-6 xl:h-6" />, color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400' },
-    { id: 'Sent', label: t('colSent'), icon: <Truck className="w-4 h-4 xl:w-6 xl:h-6" />, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' },
-    { id: 'Feedback Received', label: t('colFeedback'), icon: <CheckCircle2 className="w-4 h-4 xl:w-6 xl:h-6" />, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' }
-  ];
-
-  const getColumnId = (status: string) => {
-    if (['Sent', 'Delivered', 'Testing', '已寄出', '已送达', '测试中'].includes(status)) return 'Sent';
-    if (['Feedback Received', 'Closed', '已反馈', '已关闭'].includes(status)) return 'Feedback Received';
-    if (['Requested', '已申请'].includes(status)) return 'Requested';
-    if (['Processing', '处理中'].includes(status)) return 'Processing';
-    // Fallback: Group custom unknown statuses into 'Processing' for board view
-    return 'Processing';
+  // Helper for dynamic colors based on string hash or predefined list
+  const getStatusStyle = (status: string, index: number) => {
+    const s = status.toLowerCase();
+    // Try to match known keywords for consistent semantic coloring
+    if (s.includes('request') || s.includes('申请') || s.includes('waiting') || s.includes('等待')) 
+       return { icon: <ClipboardList className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' };
+    if (s.includes('process') || s.includes('处理') || s.includes('production') || s.includes('制作')) 
+       return { icon: <FlaskConical className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400' };
+    if (s.includes('sent') || s.includes('寄出') || s.includes('transit') || s.includes('delivery') || s.includes('送达')) 
+       return { icon: <Truck className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' };
+    if (s.includes('feedback') || s.includes('反馈') || s.includes('result') || s.includes('结果') || s.includes('done') || s.includes('finish')) 
+       return { icon: <CheckCircle2 className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' };
+    
+    // Fallback cyclic colors
+    const colors = [
+      'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400',
+      'bg-pink-100 text-pink-600 dark:bg-pink-900/50 dark:text-pink-400',
+      'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/50 dark:text-cyan-400',
+      'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400'
+    ];
+    return { icon: <ClipboardList className="w-4 h-4 xl:w-5 xl:h-5" />, color: colors[index % colors.length] };
   };
 
   const handleOpenEdit = (sample: Sample) => {
      setCurrentSample({
        ...sample,
-       // Force update date to today on edit open, as per requirement
        lastStatusDate: format(new Date(), 'yyyy-MM-dd')
      });
      setIsAddModalOpen(true);
@@ -82,7 +92,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     setCurrentSample({
       customerId: '',
       customerName: '',
-      status: 'Requested',
+      status: tagOptions.sampleStatus[0] || 'Requested',
       isTestFinished: false,
       quantity: '',
       lastStatusDate: format(new Date(), 'yyyy-MM-dd'),
@@ -92,7 +102,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
       crystalType: 'Single Crystal',
       productForm: 'Powder',
       statusDetails: '',
-      sampleName: '' // Will be populated by catalog selection
+      sampleName: ''
     });
     setIsAddModalOpen(true);
   };
@@ -100,7 +110,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const handleProductSelect = (productName: string) => {
     const product = masterProducts.find(p => p.productName === productName);
     if (product) {
-      // Reverse Sync: Catalog -> Sample Form
       setCurrentSample(prev => ({
         ...prev,
         sampleName: product.productName,
@@ -111,11 +120,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         processedSize: product.processedSize || ''
       }));
     } else {
-       // Manual mode if "Custom" or cleared
-       setCurrentSample(prev => ({
-         ...prev,
-         sampleName: productName // Use raw text if not in catalog yet
-       }));
+       setCurrentSample(prev => ({ ...prev, sampleName: productName }));
     }
   };
 
@@ -125,21 +130,15 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     const form = s.productForm || '';
     const orig = s.originalSize || '';
     const proc = s.processedSize ? ` > ${s.processedSize}` : '';
-    
-    // Exact match to AppContext logic: `${crystal} ${catStr} ${form} - ${orig}${proc}`
-    // But we should be careful about empty spaces if fields are missing
     return `${crystal} ${catStr} ${form} - ${orig}${proc}`.trim().replace(/\s+/g, ' ');
   };
 
   const handleSpecChange = (field: keyof Sample, value: any) => {
     setCurrentSample(prev => {
         const next = { ...prev, [field]: value };
-        // Special handling for category array from single select
         if (field === 'productCategory' && typeof value === 'string') {
             next.productCategory = [value as ProductCategory];
         }
-        
-        // Regenerate name based on new specs
         const newName = generateSampleName(next);
         return { ...next, sampleName: newName };
     });
@@ -151,10 +150,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
        return;
      }
      
-     // Forward Sync: Ensure this product exists in Catalog
      syncSampleToCatalog(currentSample);
 
-     // Update existing or add new
      setSamples(prev => {
        const exists = prev.find(s => s.id === currentSample.id);
        if (exists) {
@@ -168,7 +165,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
      setIsAddModalOpen(false);
   };
 
-  // Helper to calculate days since update with color
   const renderDaysSinceUpdate = (dateStr: string) => {
     if (!dateStr || !isValid(parseISO(dateStr))) return <span className="text-slate-400">-</span>;
     const diff = differenceInDays(new Date(), parseISO(dateStr));
@@ -186,14 +182,59 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     );
   };
   
-  // Helper to render option with translation
-  // This tries to translate the key, if it matches the key it returns the raw value (assuming custom tag)
   const renderOption = (value: string) => {
       const translated = t(value as any);
-      // If the translated value is the same as the key, and the language is NOT english,
-      // it usually means missing translation. But here we assume custom tags are not in i18n.
-      // However, t() returns key if missing.
       return translated;
+  };
+
+  // --- Drag and Drop Handlers ---
+  
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedColumnIndex(index);
+    // Optional: Set transparent drag image or effect
+    e.dataTransfer.effectAllowed = 'move';
+    // Small hack to make standard drag image look better (optional)
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault(); // Essential to allow dropping
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedColumnIndex === null) return;
+    if (draggedColumnIndex === dropIndex) return;
+
+    const newStatuses = [...tagOptions.sampleStatus];
+    const [movedItem] = newStatuses.splice(draggedColumnIndex, 1);
+    newStatuses.splice(dropIndex, 0, movedItem);
+    
+    setTagOptions(prev => ({ ...prev, sampleStatus: newStatuses }));
+    setDraggedColumnIndex(null);
+  };
+
+  const moveColumn = (index: number, direction: 'left' | 'right') => {
+    if (direction === 'left' && index === 0) return;
+    if (direction === 'right' && index === tagOptions.sampleStatus.length - 1) return;
+    
+    const newStatuses = [...tagOptions.sampleStatus];
+    const targetIndex = direction === 'left' ? index - 1 : index + 1;
+    const temp = newStatuses[index];
+    newStatuses[index] = newStatuses[targetIndex];
+    newStatuses[targetIndex] = temp;
+    
+    setTagOptions(prev => ({ ...prev, sampleStatus: newStatuses }));
+    setMenuOpenColumn(null);
+  };
+
+  const deleteColumn = (status: string) => {
+    if (confirm(`Delete column "${status}"?`)) {
+      setTagOptions(prev => ({
+        ...prev,
+        sampleStatus: prev.sampleStatus.filter(s => s !== status)
+      }));
+    }
+    setMenuOpenColumn(null);
   };
 
   return (
@@ -249,24 +290,65 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
               <option value="finished">{t('filterTestFinished')}</option>
               <option value="ongoing">{t('filterTestOngoing')}</option>
             </select>
-            {/* ... other filters ... */}
          </div>
       </Card>
 
       {viewMode === 'board' && (
-        <div className="flex-1 overflow-x-auto">
-           <div className="flex gap-6 min-w-[1200px] xl:min-w-[1600px] h-full pb-4">
-             {columns.map(col => {
-               const colSamples = filteredSamples.filter(s => getColumnId(s.status) === col.id);
-               return (
-                 <div key={col.id} className="flex-1 min-w-[300px] xl:min-w-[400px] bg-slate-50 dark:bg-slate-900 rounded-xl p-4 xl:p-6 flex flex-col h-full border border-slate-200 dark:border-slate-800">
-                   <div className={`flex items-center gap-2 mb-4 px-2 py-1 xl:px-3 xl:py-2 rounded-lg w-fit ${col.color}`}>
-                     {col.icon}
-                     <span className="font-bold text-sm xl:text-lg uppercase">{col.label}</span>
-                     <span className="ml-1 bg-white dark:bg-slate-800 bg-opacity-50 px-1.5 py-0.5 rounded-full text-xs xl:text-sm">{colSamples.length}</span>
-                   </div>
+        <div className="flex-1 overflow-x-auto pb-4">
+           {/* Dynamic Kanban Board */}
+           <div className="flex gap-6 h-full min-w-[max-content] px-1">
+             {tagOptions.sampleStatus.map((status, index) => {
+               const colSamples = filteredSamples.filter(s => s.status === status);
+               const style = getStatusStyle(status, index);
+               const isMenuOpen = menuOpenColumn === status;
 
-                   <div className="space-y-3 xl:space-y-5 overflow-y-auto flex-1 pr-2">
+               return (
+                 <div 
+                    key={status} 
+                    className="flex-1 w-[300px] xl:w-[400px] shrink-0 bg-slate-50 dark:bg-slate-900 rounded-xl p-4 xl:p-6 flex flex-col h-full border border-slate-200 dark:border-slate-800 transition-colors"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDrop={(e) => handleDrop(e, index)}
+                 >
+                   <div className={`flex items-center justify-between mb-4 p-2 rounded-lg cursor-grab active:cursor-grabbing group ${style.color}`}>
+                     <div className="flex items-center gap-2">
+                       <GripVertical className="w-4 h-4 opacity-50" />
+                       {style.icon}
+                       <span className="font-bold text-sm xl:text-lg uppercase">{renderOption(status)}</span>
+                       <span className="ml-1 bg-white dark:bg-slate-800 bg-opacity-50 px-1.5 py-0.5 rounded-full text-xs xl:text-sm font-mono">{colSamples.length}</span>
+                     </div>
+                     <div className="relative">
+                       <button 
+                         onClick={() => setMenuOpenColumn(isMenuOpen ? null : status)}
+                         className="p-1 hover:bg-black/10 rounded"
+                       >
+                         <MoreHorizontal className="w-4 h-4" />
+                       </button>
+                       
+                       {isMenuOpen && (
+                         <div className="absolute right-0 top-8 bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 rounded-lg z-20 w-40 overflow-hidden py-1">
+                            <button onClick={() => moveColumn(index, 'left')} disabled={index===0} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 disabled:opacity-30">
+                              <ArrowLeft size={14} /> Move Left
+                            </button>
+                            <button onClick={() => moveColumn(index, 'right')} disabled={index===tagOptions.sampleStatus.length-1} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 disabled:opacity-30">
+                              <ArrowRight size={14} /> Move Right
+                            </button>
+                            <div className="h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
+                            <button onClick={() => deleteColumn(status)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                              <Trash2 size={14} /> Delete
+                            </button>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                   
+                   {/* Column Drop Overlay Highlight */}
+                   {draggedColumnIndex !== null && draggedColumnIndex !== index && (
+                      <div className="pointer-events-none absolute inset-0 bg-blue-500/5 border-2 border-blue-500 rounded-xl opacity-0 hover:opacity-100"></div>
+                   )}
+
+                   <div className="space-y-3 xl:space-y-5 overflow-y-auto flex-1 pr-2 min-h-[200px]">
                      {colSamples.map(sample => (
                        <Card key={sample.id} className="p-3 xl:p-5 hover:shadow-md cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500" onClick={() => handleOpenEdit(sample)}>
                          <div className="flex justify-between items-start mb-1">
@@ -303,6 +385,30 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                  </div>
                );
              })}
+             
+             {/* Fallback for samples with unknown status */}
+             {(() => {
+                const known = new Set(tagOptions.sampleStatus);
+                const unknownSamples = filteredSamples.filter(s => !known.has(s.status));
+                if (unknownSamples.length > 0) {
+                   return (
+                     <div className="flex-1 w-[300px] xl:w-[400px] shrink-0 bg-slate-100 dark:bg-slate-800 rounded-xl p-4 xl:p-6 flex flex-col h-full border border-dashed border-slate-300 dark:border-slate-600 opacity-80">
+                        <div className="flex items-center gap-2 mb-4 p-2 text-slate-500 font-bold uppercase">
+                           <div className="w-2 h-2 rounded-full bg-slate-400"></div> Uncategorized ({unknownSamples.length})
+                        </div>
+                        <div className="space-y-3 overflow-y-auto flex-1">
+                           {unknownSamples.map(sample => (
+                              <Card key={sample.id} className="p-4 opacity-75 hover:opacity-100 cursor-pointer" onClick={() => handleOpenEdit(sample)}>
+                                 <h4 className="font-bold">{sample.customerName}</h4>
+                                 <Badge color="gray">{sample.status}</Badge>
+                              </Card>
+                           ))}
+                        </div>
+                     </div>
+                   );
+                }
+                return null;
+             })()}
            </div>
         </div>
       )}
