@@ -24,6 +24,18 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     const isOverdue = actionDate && isBefore(actionDate, now);
     const isUpcoming = actionDate && isBefore(actionDate, addDays(now, 7)) && !isOverdue;
     return isOverdue || isUpcoming;
+  }).sort((a, b) => {
+    // 1. Sort by Rank (Ascending: 1 before 2)
+    if (a.rank !== b.rank) {
+      return a.rank - b.rank;
+    }
+    
+    // 2. Sort by Date (Ascending: Earliest date first)
+    // Use a large number for missing dates to push them to the bottom, though critical filter implies dates exist
+    const dateA = a.nextActionDate ? parseISO(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
+    const dateB = b.nextActionDate ? parseISO(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
+    
+    return dateA - dateB;
   });
 
   const activeSamples = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received'].includes(s.status)).length;
