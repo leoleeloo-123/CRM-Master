@@ -507,13 +507,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
     
     // New Step: Refresh Tags from the imported samples to add any new unique statuses/types
     if (importedSamples.length > 0) {
-        // If we are appending (not overriding), we should combine with existing to be safe, 
-        // but refreshTagsFromSamples just ADDS unique ones, so passing the new list is sufficient
-        // to check for NEW tags. However, if we replaced all samples, we want to rebuild tags entirely?
-        // Actually, the requirement is "options need to be based on user's import".
-        // If importMode is 'replace', maybe we should reset tags too?
-        // For safety, let's just ADD new tags found in the import.
-        refreshTagsFromSamples(importedSamples);
+        // Pass override flag to replace tags if in Replace mode
+        refreshTagsFromSamples(importedSamples, override);
     }
     
     setParsedPreview(null);

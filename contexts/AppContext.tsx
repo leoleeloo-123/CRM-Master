@@ -30,7 +30,7 @@ interface AppContextType {
   // Tag Management
   tagOptions: TagOptions;
   setTagOptions: (tags: TagOptions | ((prev: TagOptions) => TagOptions)) => void;
-  refreshTagsFromSamples: (samples: Sample[]) => void;
+  refreshTagsFromSamples: (samples: Sample[], replace?: boolean) => void;
   
   clearDatabase: () => void;
   isDemoData: boolean;
@@ -167,9 +167,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- Logic ---
 
-  const refreshTagsFromSamples = (sampleList: Sample[]) => {
+  const refreshTagsFromSamples = (sampleList: Sample[], replace: boolean = false) => {
     setTagOptionsState(prev => {
-      const newTags = { ...prev };
+      // If replace is true, start with empty lists to override existing ones
+      // If replace is false (merge), perform a shallow copy of arrays to append to them
+      const newTags = replace ? {
+          sampleStatus: [],
+          crystalType: [],
+          productCategory: [],
+          productForm: []
+      } : { 
+          sampleStatus: [...prev.sampleStatus],
+          crystalType: [...prev.crystalType],
+          productCategory: [...prev.productCategory],
+          productForm: [...prev.productForm]
+      };
+      
       const addUnique = (list: string[], item: string) => {
          if (item && !list.includes(item)) list.push(item);
       };
