@@ -1,5 +1,5 @@
 
-import { Customer, Sample } from '../types';
+import { Customer, Sample, MasterProduct } from '../types';
 
 // Mock Data updated with generic demo data to avoid data leakage
 export const MOCK_CUSTOMERS: Customer[] = [
@@ -130,13 +130,52 @@ export const MOCK_CUSTOMERS: Customer[] = [
   }
 ];
 
+export const MOCK_MASTER_PRODUCTS: MasterProduct[] = [
+  {
+    id: 'mp1',
+    productName: 'Polycrystalline Agglomerated Diamond Powder - 5um > 5um',
+    crystalType: 'Polycrystalline',
+    productCategory: ['Agglomerated Diamond'],
+    productForm: 'Powder',
+    originalSize: '5um',
+    processedSize: '5um'
+  },
+  {
+    id: 'mp2',
+    productName: 'Single Crystal Nano Diamond Suspension - 20nm > 20nm',
+    crystalType: 'Single Crystal',
+    productCategory: ['Nano Diamond'],
+    productForm: 'Suspension',
+    originalSize: '20nm',
+    processedSize: '20nm'
+  },
+  {
+    id: 'mp3',
+    productName: 'Single Crystal Micron Powder - 0.25um > 0.25um',
+    crystalType: 'Single Crystal',
+    productCategory: ['Micron'],
+    productForm: 'Powder',
+    originalSize: '0.25um',
+    processedSize: '0.25um'
+  },
+  {
+    id: 'mp4',
+    productName: 'Polycrystalline Diamond Ball Powder - 80um > 80um',
+    crystalType: 'Polycrystalline',
+    productCategory: ['Diamond Ball'],
+    productForm: 'Powder',
+    originalSize: '80um',
+    processedSize: '80um'
+  }
+];
+
 export const MOCK_SAMPLES: Sample[] = [
   {
     id: 's1',
     customerId: 'c1',
     customerName: 'Acme Corp',
     sampleIndex: 1,
-    sampleName: 'Agglomerated Diamond 5um',
+    sampleName: 'Polycrystalline Agglomerated Diamond Powder - 5um > 5um',
     productType: 'Powder',
     specs: '5um, Hydrophilic',
     quantity: '500g',
@@ -160,7 +199,7 @@ export const MOCK_SAMPLES: Sample[] = [
     customerId: 'c2',
     customerName: 'Nebula Industries',
     sampleIndex: 1,
-    sampleName: 'Nano Slurry Type-B',
+    sampleName: 'Single Crystal Nano Diamond Suspension - 20nm > 20nm',
     productType: 'Slurry',
     specs: '20nm, pH 7',
     quantity: '1 L',
@@ -183,7 +222,7 @@ export const MOCK_SAMPLES: Sample[] = [
     customerId: 'c3',
     customerName: 'Quantum Optics',
     sampleIndex: 1,
-    sampleName: 'Single Crystal 0.25um',
+    sampleName: 'Single Crystal Micron Powder - 0.25um > 0.25um',
     productType: 'Powder',
     specs: '0.25 micron',
     quantity: '1000 ct',
@@ -205,7 +244,7 @@ export const MOCK_SAMPLES: Sample[] = [
     customerId: 'c5',
     customerName: 'Global Wafer Co.',
     sampleIndex: 1,
-    sampleName: 'Diamond Ball 80um',
+    sampleName: 'Polycrystalline Diamond Ball Powder - 80um > 80um',
     productType: 'Diamond Ball',
     specs: '80 micron cluster',
     quantity: '50g',

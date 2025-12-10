@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus } from '../types';
-import { Card, Button, Badge, Modal } from '../components/Common';
+import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
 import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { differenceInDays, parseISO, isValid } from 'date-fns';
@@ -15,7 +15,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   onImportCustomers, 
   onImportSamples
 }) => {
-  const { t, clearDatabase, customers, samples } = useApp();
+  const { t, clearDatabase, customers, samples, syncSampleToCatalog } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
   const [importData, setImportData] = useState('');
   const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
@@ -306,11 +306,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
           const sampleIndex = parseInt(cols[1]) || 1;
           const statusDetails = cols[17] || ''; // Col 18 in 1-base is index 17
 
-          // Auto-generate sampleName since it's removed from columns
-          // Logic: Category + OriginalSize
+          // Auto-generate sampleName logic: [Crystal] [Category] [Form] - [Orig] > [Proc]
+          const crystal = cols[4] || '';
           const category = cols[5] || '';
+          const form = cols[6] || '';
           const origSize = cols[7] || '';
-          const generatedName = category ? `${category} ${origSize}`.trim() : (cols[12] || 'New Sample');
+          const procSize = cols[8] ? ` > ${cols[8]}` : '';
+          
+          const generatedName = `${crystal} ${category} ${form} - ${origSize}${procSize}`.trim();
 
           return {
             id: `new_s_${tempId}`,
@@ -364,9 +367,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
       onImportCustomers(parsedPreview as Customer[]);
     } else {
       // Upsert Logic for Samples: Merge based on CustomerID + SampleIndex
-      // Handled by onImportSamples or upstream in a real app, 
-      // here passing raw parsed list for App.tsx to handle (or simple append in this demo context)
-      onImportSamples(parsedPreview as Sample[]);
+      const samplesToImport = parsedPreview as Sample[];
+      
+      // FORWARD SYNC: Ensure all imported samples generate a MasterProduct
+      samplesToImport.forEach(s => {
+        syncSampleToCatalog(s);
+      });
+
+      onImportSamples(samplesToImport);
     }
 
     setImportStatus({ type: 'success', message: `Successfully imported ${parsedPreview.length} records!` });
@@ -477,18 +485,25 @@ const DataManagement: React.FC<DataManagementProps> = ({
                        {activeTab === 'customers' ? (
                          <>
                            <th className="p-3 whitespace-nowrap">Name</th>
+                           <th className="p-3 whitespace-nowrap">Rank</th>
                            <th className="p-3 whitespace-nowrap">Region</th>
+                           <th className="p-3 whitespace-nowrap">Summary</th>
                            <th className="p-3 whitespace-nowrap">Status</th>
+                           <th className="p-3 whitespace-nowrap">Next Step</th>
+                           <th className="p-3 whitespace-nowrap">Contacts</th>
                            <th className="p-3 whitespace-nowrap">Last Update</th>
                          </>
                        ) : (
                          <>
                            <th className="p-3 whitespace-nowrap">Customer</th>
                            <th className="p-3 whitespace-nowrap">Idx</th>
-                           <th className="p-3 whitespace-nowrap">Category</th>
-                           <th className="p-3 whitespace-nowrap">Details</th>
+                           <th className="p-3 whitespace-nowrap">Generated Name</th>
+                           <th className="p-3 whitespace-nowrap">Specs (Cry/Form/Size)</th>
+                           <th className="p-3 whitespace-nowrap">Qty</th>
                            <th className="p-3 whitespace-nowrap">Status</th>
+                           <th className="p-3 whitespace-nowrap">Test Finished</th>
                            <th className="p-3 whitespace-nowrap">Date</th>
+                           <th className="p-3 whitespace-nowrap">History</th>
                          </>
                        )}
                      </tr>
@@ -499,18 +514,30 @@ const DataManagement: React.FC<DataManagementProps> = ({
                          {activeTab === 'customers' ? (
                            <>
                              <td className="p-3 font-medium align-top">{row.name}</td>
+                             <td className="p-3 align-top"><RankStars rank={row.rank} /></td>
                              <td className="p-3 align-top">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td>
+                             <td className="p-3 align-top truncate max-w-[200px]" title={row.productSummary}>{row.productSummary}</td>
                              <td className="p-3 align-top"><Badge color="blue">{row.followUpStatus}</Badge></td>
+                             <td className="p-3 align-top truncate max-w-[150px]" title={row.interactions[0]?.nextSteps}>{row.interactions[0]?.nextSteps || '-'}</td>
+                             <td className="p-3 align-top truncate max-w-[150px]" title={row.contacts?.map((c:any) => c.name).join(', ')}>
+                               {row.contacts?.map((c:any) => c.name).join(', ')}
+                             </td>
                              <td className="p-3 align-top">{row.lastStatusUpdate}</td>
                            </>
                          ) : (
                            <>
                              <td className="p-3 font-medium align-top">{row.customerName}</td>
                              <td className="p-3 align-top">{row.sampleIndex}</td>
-                             <td className="p-3 align-top">{row.productCategory?.join(', ')}</td>
-                             <td className="p-3 align-top truncate max-w-[200px]">{row.sampleDetails}</td>
+                             <td className="p-3 align-top font-bold text-blue-600 dark:text-blue-400 max-w-[200px] truncate" title={row.sampleName}>{row.sampleName}</td>
+                             <td className="p-3 align-top text-[10px] whitespace-nowrap">
+                               <div>{row.crystalType} / {row.productForm}</div>
+                               <div>{row.originalSize} -&gt; {row.processedSize}</div>
+                             </td>
+                             <td className="p-3 align-top">{row.quantity}</td>
                              <td className="p-3 align-top"><Badge color="blue">{row.status}</Badge></td>
+                             <td className="p-3 align-top">{row.isTestFinished ? <CheckCircle2 size={14} className="text-green-500" /> : <span className="text-slate-400">-</span>}</td>
                              <td className="p-3 align-top">{row.lastStatusDate}</td>
+                             <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
                            </>
                          )}
                        </tr>

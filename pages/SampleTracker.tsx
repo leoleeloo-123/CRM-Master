@@ -12,7 +12,7 @@ interface SampleTrackerProps {
 }
 
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
-  const { t, setSamples } = useApp();
+  const { t, setSamples, masterProducts, syncSampleToCatalog } = useApp();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -66,19 +66,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     return status;
   };
 
-  const productCategories: ProductCategory[] = ['Agglomerated Diamond', 'Nano Diamond', 'Spherical Diamond', 'Diamond Ball', 'Micron', 'CVD'];
-  const crystalTypes: CrystalType[] = ['Single Crystal', 'Polycrystalline'];
-  const productForms: ProductForm[] = ['Powder', 'Suspension'];
-
-  const toggleCategory = (cat: ProductCategory) => {
-    const current = currentSample.productCategory || [];
-    if (current.includes(cat)) {
-      setCurrentSample({ ...currentSample, productCategory: current.filter(c => c !== cat) });
-    } else {
-      setCurrentSample({ ...currentSample, productCategory: [...current, cat] });
-    }
-  };
-
   const handleOpenEdit = (sample: Sample) => {
      setCurrentSample({
        ...sample,
@@ -89,7 +76,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   };
 
   const handleOpenNew = () => {
-    // Find next index logic could go here, but for now default to 1
     setCurrentSample({
       customerId: '',
       customerName: '',
@@ -102,17 +88,43 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
       isGraded: 'Graded',
       crystalType: 'Single Crystal',
       productForm: 'Powder',
-      statusDetails: ''
+      statusDetails: '',
+      sampleName: '' // Will be populated by catalog selection
     });
     setIsAddModalOpen(true);
   };
 
+  const handleProductSelect = (productName: string) => {
+    const product = masterProducts.find(p => p.productName === productName);
+    if (product) {
+      // Reverse Sync: Catalog -> Sample Form
+      setCurrentSample(prev => ({
+        ...prev,
+        sampleName: product.productName,
+        crystalType: product.crystalType,
+        productCategory: product.productCategory,
+        productForm: product.productForm,
+        originalSize: product.originalSize,
+        processedSize: product.processedSize || ''
+      }));
+    } else {
+       // Manual mode if "Custom" or cleared
+       setCurrentSample(prev => ({
+         ...prev,
+         sampleName: productName // Use raw text if not in catalog yet
+       }));
+    }
+  };
+
   const saveSample = () => {
      if (!currentSample.customerId || !currentSample.sampleName) {
-       alert('Please fill required fields (Customer, Sample Name)');
+       alert('Please fill required fields (Customer, Product)');
        return;
      }
      
+     // Forward Sync: Ensure this product exists in Catalog
+     syncSampleToCatalog(currentSample);
+
      // Update existing or add new
      setSamples(prev => {
        const exists = prev.find(s => s.id === currentSample.id);
@@ -292,7 +304,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                          {s.status}
                        </Badge>
                        <div className="text-xs xl:text-sm mt-1 text-slate-500 dark:text-slate-400 line-clamp-3 whitespace-pre-wrap">
-                          {/* Display status details plainly, maybe parse dates if needed */}
                           {s.statusDetails}
                        </div>
                      </td>
@@ -342,17 +353,58 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
             </div>
           </div>
 
-          {/* Core Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Sample Name *</label>
-               <input 
-                 type="text"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
-                 value={currentSample.sampleName || ''}
-                 onChange={e => setCurrentSample({...currentSample, sampleName: e.target.value})}
-               />
+          {/* Master Product Selection / Name */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+             <div className="flex flex-col md:flex-row gap-4">
+               <div className="flex-1">
+                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Product Catalog *</label>
+                 <select 
+                    className="w-full border rounded-lg p-2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                    value={masterProducts.find(p => p.productName === currentSample.sampleName) ? currentSample.sampleName : ''}
+                    onChange={(e) => handleProductSelect(e.target.value)}
+                 >
+                   <option value="">Select or Custom...</option>
+                   {masterProducts.map(p => (
+                     <option key={p.id} value={p.productName}>{p.productName}</option>
+                   ))}
+                 </select>
+               </div>
+               <div className="flex-1">
+                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Generated Product Name</label>
+                 <input 
+                   type="text"
+                   className="w-full border rounded-lg p-2 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500"
+                   value={currentSample.sampleName || ''}
+                   readOnly
+                   placeholder="Auto-generated based on specs below..."
+                 />
+                 <p className="text-xs text-slate-400 mt-1">
+                   Logic: Crystal + Category + Form - Orig {'>'} Processed
+                 </p>
+               </div>
              </div>
+             
+             {/* Read-Only Spec Preview (To Confirm Fill) */}
+             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-4 text-xs text-slate-500">
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="block font-bold">Crystal</span> {currentSample.crystalType || '-'}
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="block font-bold">Category</span> {currentSample.productCategory?.join(',') || '-'}
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="block font-bold">Form</span> {currentSample.productForm || '-'}
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="block font-bold">Original</span> {currentSample.originalSize || '-'}
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="block font-bold">Processed</span> {currentSample.processedSize || '-'}
+                </div>
+             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Sample SKU</label>
                <input 
@@ -362,74 +414,28 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                  onChange={e => setCurrentSample({...currentSample, sampleSKU: e.target.value})}
                />
              </div>
-          </div>
-
-          {/* Specs Grid */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-             <h4 className="font-bold text-sm text-slate-500 uppercase mb-3 border-b pb-1">Specifications</h4>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                   <label className="block text-xs font-bold text-slate-500 mb-1">Category</label>
-                   <select 
-                      className="w-full text-sm border rounded p-1.5 dark:bg-slate-900 dark:border-slate-600"
-                      onChange={(e) => toggleCategory(e.target.value as ProductCategory)}
-                      value="" 
-                   >
-                     <option value="" disabled>Add Category...</option>
-                     {productCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                   </select>
-                   <div className="flex flex-wrap gap-1 mt-2">
-                      {currentSample.productCategory?.map(c => (
-                        <span key={c} className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded cursor-pointer" onClick={() => toggleCategory(c)}>{c} &times;</span>
-                      ))}
-                   </div>
-                </div>
-                <div>
-                   <label className="block text-xs font-bold text-slate-500 mb-1">Form</label>
-                   <select 
-                      className="w-full text-sm border rounded p-1.5 dark:bg-slate-900 dark:border-slate-600"
-                      value={currentSample.productForm}
-                      onChange={(e) => setCurrentSample({...currentSample, productForm: e.target.value as ProductForm})}
-                   >
-                     {productForms.map(f => <option key={f} value={f}>{f}</option>)}
-                   </select>
-                </div>
-                <div>
-                   <label className="block text-xs font-bold text-slate-500 mb-1">Crystal Type</label>
-                   <select 
-                      className="w-full text-sm border rounded p-1.5 dark:bg-slate-900 dark:border-slate-600"
-                      value={currentSample.crystalType}
-                      onChange={(e) => setCurrentSample({...currentSample, crystalType: e.target.value as CrystalType})}
-                   >
-                     {crystalTypes.map(c => <option key={c} value={c}>{c}</option>)}
-                   </select>
-                </div>
-             </div>
-             
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-               <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Original Size</label>
-                  <input className="w-full text-sm border rounded p-1.5 dark:bg-slate-900 dark:border-slate-600" value={currentSample.originalSize || ''} onChange={e => setCurrentSample({...currentSample, originalSize: e.target.value})} placeholder="e.g. 10um"/>
-               </div>
-               <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Processed Size</label>
-                  <input className="w-full text-sm border rounded p-1.5 dark:bg-slate-900 dark:border-slate-600" value={currentSample.processedSize || ''} onChange={e => setCurrentSample({...currentSample, processedSize: e.target.value})} placeholder="e.g. 50nm"/>
-               </div>
-               <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Grading</label>
+             <div>
+               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Grading</label>
                   <select 
-                      className="w-full text-sm border rounded p-1.5 dark:bg-slate-900 dark:border-slate-600"
+                      className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600"
                       value={currentSample.isGraded}
                       onChange={(e) => setCurrentSample({...currentSample, isGraded: e.target.value as GradingStatus})}
                    >
                      <option value="Graded">Graded</option>
                      <option value="Ungraded">Ungraded</option>
                    </select>
-               </div>
-               <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Quantity</label>
-                  <input className="w-full text-sm border rounded p-1.5 dark:bg-slate-900 dark:border-slate-600" value={currentSample.quantity || ''} onChange={e => setCurrentSample({...currentSample, quantity: e.target.value})} placeholder="e.g. 50g"/>
-               </div>
+             </div>
+          </div>
+
+          {/* Logistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Quantity</label>
+                <input className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600" value={currentSample.quantity || ''} onChange={e => setCurrentSample({...currentSample, quantity: e.target.value})} placeholder="e.g. 50g"/>
+             </div>
+             <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Application</label>
+                <input className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600" value={currentSample.application || ''} onChange={e => setCurrentSample({...currentSample, application: e.target.value})} />
              </div>
           </div>
 
@@ -483,8 +489,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              />
           </div>
 
-          {/* Links & Logistics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Links */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tracking #</label>
                 <input className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600" value={currentSample.trackingNumber || ''} onChange={e => setCurrentSample({...currentSample, trackingNumber: e.target.value})} />
@@ -492,10 +498,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Label PDF Link</label>
                 <input className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600" value={currentSample.labelHyperlink || ''} onChange={e => setCurrentSample({...currentSample, labelHyperlink: e.target.value})} placeholder="https://..." />
-             </div>
-             <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Application</label>
-                <input className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600" value={currentSample.application || ''} onChange={e => setCurrentSample({...currentSample, application: e.target.value})} />
              </div>
           </div>
 

@@ -1,8 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Language, translations } from '../utils/i18n';
-import { Customer, Sample } from '../types';
-import { MOCK_CUSTOMERS, MOCK_SAMPLES } from '../services/dataService';
+import { Customer, Sample, MasterProduct } from '../types';
+import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
 
@@ -20,8 +20,11 @@ interface AppContextType {
   // Data State
   customers: Customer[];
   samples: Sample[];
+  masterProducts: MasterProduct[];
   setCustomers: (customers: Customer[] | ((prev: Customer[]) => Customer[])) => void;
   setSamples: (samples: Sample[] | ((prev: Sample[]) => Sample[])) => void;
+  syncSampleToCatalog: (sample: Partial<Sample>) => void;
+  
   clearDatabase: () => void;
   isDemoData: boolean;
   setIsDemoData: (isDemo: boolean) => void;
@@ -68,6 +71,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem('samples');
     return saved ? JSON.parse(saved) : MOCK_SAMPLES;
   });
+  
+  const [masterProducts, setMasterProducts] = useState<MasterProduct[]>(() => {
+    const saved = localStorage.getItem('masterProducts');
+    return saved ? JSON.parse(saved) : MOCK_MASTER_PRODUCTS;
+  });
 
   // Initial system preference check
   useEffect(() => {
@@ -92,9 +100,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Apply Root Font Size
   useEffect(() => {
     const root = window.document.documentElement;
-    // Current design is "Large". Large = 100% (16px).
-    // Medium = 90% (approx 14.4px).
-    // Small = 80% (approx 12.8px).
     let sizeValue = '100%';
     if (fontSize === 'medium') sizeValue = '90%';
     if (fontSize === 'small') sizeValue = '80%';
@@ -111,6 +116,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('samples', JSON.stringify(samples));
   }, [samples]);
+
+  useEffect(() => {
+    localStorage.setItem('masterProducts', JSON.stringify(masterProducts));
+  }, [masterProducts]);
 
   useEffect(() => {
     localStorage.setItem('isDemoData', String(isDemoData));
@@ -142,12 +151,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSamplesState(val);
   };
 
+  // --- FORWARD SYNC: Sample -> MasterProductCatalog ---
+  const syncSampleToCatalog = (sample: Partial<Sample>) => {
+    // Generate Product Name based on logic:
+    // [Crystal] [Category] [Form] - [Original] > [Processed]
+    
+    const catStr = sample.productCategory?.join(', ') || '';
+    const crystal = sample.crystalType || '';
+    const form = sample.productForm || '';
+    const orig = sample.originalSize || '';
+    const proc = sample.processedSize ? ` > ${sample.processedSize}` : '';
+    
+    const generatedName = `${crystal} ${catStr} ${form} - ${orig}${proc}`;
+    
+    // Check if exists (Upsert Logic: Create if not exists)
+    setMasterProducts(prev => {
+      const exists = prev.find(p => p.productName === generatedName);
+      if (exists) return prev; // Do nothing if exists
+      
+      const newProduct: MasterProduct = {
+        id: `mp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        productName: generatedName,
+        crystalType: sample.crystalType!,
+        productCategory: sample.productCategory || [],
+        productForm: sample.productForm!,
+        originalSize: sample.originalSize!,
+        processedSize: sample.processedSize
+      };
+      
+      return [...prev, newProduct];
+    });
+    
+    return generatedName;
+  };
+
   const clearDatabase = () => {
     setCustomersState([]);
     setSamplesState([]);
-    setIsDemoData(false); // It's no longer demo data, it's empty data
+    setMasterProducts([]);
+    setIsDemoData(false);
     localStorage.removeItem('customers');
     localStorage.removeItem('samples');
+    localStorage.removeItem('masterProducts');
     localStorage.setItem('isDemoData', 'false');
   };
 
@@ -164,6 +209,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       t,
       customers, setCustomers,
       samples, setSamples,
+      masterProducts, syncSampleToCatalog,
       clearDatabase,
       isDemoData, setIsDemoData
     }}>

@@ -56,6 +56,17 @@ export type ProductForm = 'Powder' | 'Suspension';
 export type ProductCategory = 'Agglomerated Diamond' | 'Nano Diamond' | 'Spherical Diamond' | 'Diamond Ball' | 'Micron' | 'CVD';
 export type GradingStatus = 'Graded' | 'Ungraded';
 
+// New Master Product Catalog Interface
+export interface MasterProduct {
+  id: string;
+  productName: string; // Unique Key
+  crystalType: CrystalType;
+  productCategory: ProductCategory[];
+  productForm: ProductForm;
+  originalSize: string;
+  processedSize?: string;
+}
+
 export interface Sample {
   id: string;
   customerId: string;
