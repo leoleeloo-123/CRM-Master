@@ -99,7 +99,6 @@ export interface Sample {
   
   trackingNumber?: string;
   
-  labelHyperlink?: string; // PDF Link
   trackingLink?: string; // Hyperlink for tracking
 
   // Legacy fields kept for compatibility or mapped

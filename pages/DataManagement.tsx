@@ -90,7 +90,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   };
 
   const handleExportSamples = () => {
-    // Columns strictly following the requirement (19 Columns)
+    // Columns strictly following the requirement (18 Columns now, removed Label Link)
     const headers = [
       "1.Customer", 
       "2.Sample Index", 
@@ -102,15 +102,15 @@ const DataManagement: React.FC<DataManagementProps> = ({
       "8.Original Size", 
       "9.Processed Size", 
       "10.Is Graded", 
-      "11.Sample SKU", 
-      "12.Label Hyperlink", 
-      "13.Details", 
-      "14.Quantity", 
-      "15.Customer Application", 
-      "16.Status Date", 
-      "17.Days Since Update", 
-      "18.Status Details", 
-      "19.Tracking #"
+      "11.Sample SKU",
+      // Removed 12. Label Hyperlink
+      "12.Details", 
+      "13.Quantity", 
+      "14.Customer Application", 
+      "15.Status Date", 
+      "16.Days Since Update", 
+      "17.Status Details", 
+      "18.Tracking #"
     ];
 
     const rows = samples.map(s => {
@@ -135,7 +135,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
          s.processedSize,
          s.isGraded,
          s.sampleSKU,
-         s.labelHyperlink,
+         // s.labelHyperlink removed
          s.sampleDetails,
          s.quantity,
          s.application,
@@ -295,16 +295,17 @@ const DataManagement: React.FC<DataManagementProps> = ({
           } as Customer;
 
         } else {
-          // --- SAMPLE IMPORT LOGIC (19 Columns) ---
+          // --- SAMPLE IMPORT LOGIC (18 Columns) ---
           // 0:Customer, 1:Index, 2:Status, 3:TestFinished, 4:Crystal, 5:Category, 6:Form, 
-          // 7:OrigSize, 8:ProcSize, 9:Graded, 10:SKU, 11:LabelLink, 12:Details, 
-          // 13:Qty, 14:App, 15:Date, 16:DaysSince(Ignore), 17:StatusDetails, 18:Tracking
+          // 7:OrigSize, 8:ProcSize, 9:Graded, 10:SKU, 
+          // REMOVED: LabelLink
+          // 11:Details, 12:Qty, 13:App, 14:Date, 15:DaysSince(Ignore), 16:StatusDetails, 17:Tracking
 
           const custName = cols[0] || 'Unknown';
           const matchedCustomer = customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
           
           const sampleIndex = parseInt(cols[1]) || 1;
-          const statusDetails = cols[17] || ''; // Col 18 in 1-base is index 17
+          const statusDetails = cols[16] || ''; // Was 17
 
           // Auto-generate sampleName logic: [Crystal] [Category] [Form] - [Orig] > [Proc]
           const crystal = cols[4] || '';
@@ -330,14 +331,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
             processedSize: cols[8] || '',
             isGraded: (cols[9] as GradingStatus) || 'Graded',
             sampleSKU: cols[10] || '',
-            labelHyperlink: cols[11] || '',
-            sampleDetails: cols[12] || '', // Mapping Details to sampleDetails
-            quantity: cols[13] || '',
-            application: cols[14] || '',
-            lastStatusDate: normalizeDate(cols[15]) || new Date().toISOString().split('T')[0],
-            // Col 16 is Days Since (Ignored)
+            // removed labelHyperlink
+            sampleDetails: cols[11] || '', 
+            quantity: cols[12] || '',
+            application: cols[13] || '',
+            lastStatusDate: normalizeDate(cols[14]) || new Date().toISOString().split('T')[0],
+            // Col 15 is Days Since (Ignored)
             statusDetails: statusDetails,
-            trackingNumber: cols[18] || '',
+            trackingNumber: cols[17] || '', // Was 18
             
             sampleName: generatedName, // Core field for UI
             
@@ -422,7 +423,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
                     {activeTab === 'customers' 
                       ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
-                      : "1.Customer | 2.Index | 3.Status | 4.Finished(Yes/No) | 5.Crystal | 6.Category | 7.Form | 8.OrigSize | 9.ProcSize | 10.Graded | 11.SKU | 12.LabelLink | 13.Details | 14.Qty | 15.App | 16.Date | 17.DaysSince(Ignore) | 18.History | 19.Tracking"
+                      : "1.Customer | 2.Index | 3.Status | 4.Finished(Yes/No) | 5.Crystal | 6.Category | 7.Form | 8.OrigSize | 9.ProcSize | 10.Graded | 11.SKU | 12.Details | 13.Qty | 14.App | 15.Date | 16.DaysSince(Ignore) | 17.History | 18.Tracking"
                     }
                   </p>
                   <p className="mt-2 text-xs text-slate-500 italic">

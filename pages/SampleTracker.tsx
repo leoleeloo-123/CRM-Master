@@ -291,7 +291,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      <td className="p-4 xl:p-6 align-top">
                        <div className="font-medium text-blue-600 dark:text-blue-400 text-base xl:text-lg">{s.sampleName}</div>
                        <div className="text-xs xl:text-sm text-slate-500 mt-1">{s.sampleSKU ? `SKU: ${s.sampleSKU}` : ''}</div>
-                       {s.labelHyperlink && <a href={s.labelHyperlink} target="_blank" className="text-blue-500 underline text-xs" onClick={(e) => e.stopPropagation()}>Label PDF</a>}
                      </td>
                      <td className="p-4 xl:p-6 align-top text-xs xl:text-sm">
                         <div>{s.productForm} | {s.crystalType}</div>
@@ -489,15 +488,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              />
           </div>
 
-          {/* Links */}
+          {/* Links - Removed Label PDF Link input here */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tracking #</label>
                 <input className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600" value={currentSample.trackingNumber || ''} onChange={e => setCurrentSample({...currentSample, trackingNumber: e.target.value})} />
-             </div>
-             <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Label PDF Link</label>
-                <input className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600" value={currentSample.labelHyperlink || ''} onChange={e => setCurrentSample({...currentSample, labelHyperlink: e.target.value})} placeholder="https://..." />
              </div>
           </div>
 
