@@ -54,33 +54,41 @@ export type SampleStatus = 'Requested' | 'Processing' | 'Sent' | 'Delivered' | '
 export type CrystalType = 'Single Crystal' | 'Polycrystalline';
 export type ProductForm = 'Powder' | 'Suspension';
 export type ProductCategory = 'Agglomerated Diamond' | 'Nano Diamond' | 'Spherical Diamond' | 'Diamond Ball' | 'Micron' | 'CVD';
+export type GradingStatus = 'Graded' | 'Ungraded';
 
 export interface Sample {
   id: string;
   customerId: string;
   customerName: string;
   
-  // New Fields
-  serialNumber?: string; // Customer specific serial
+  // -- New Fields per latest request --
+  sampleIndex: number; // Integer, used for sorting per customer
+  sampleSKU?: string; // Internal SKU
+  
   status: SampleStatus;
+  lastStatusDate: string; // Date of status update
+  statusDetails?: string; // "【Date】Details ||| 【Date】Details"
+  
   isTestFinished: boolean; // Test Finished vs Ongoing
   
-  crystalType?: CrystalType;
+  // Technical Specs
+  crystalType?: CrystalType; // Single/Poly
   productCategory?: ProductCategory[]; // Multi-select
-  productForm?: ProductForm;
+  productForm?: ProductForm; // Powder/Suspension
+  originalSize?: string; // e.g. "10um"
+  processedSize?: string; // e.g. "50nm"
+  isGraded?: GradingStatus; // Graded/Ungraded
   
   sampleName?: string; // Core info description
-  sampleLabelId?: string; // Optional ID for label
-  sampleLabelLink?: string; // Hyperlink for label PDF
   sampleDetails?: string; // Extra details
   
-  quantity: string;
+  // Logistics & Metadata
+  quantity: string; // 10 ct, 50 g, etc.
   application?: string; // Customer application
   
-  lastStatusDate: string; // Date of status update
-  statusDetails?: string; // Summary of status (me/them)
-  
   trackingNumber?: string;
+  
+  labelHyperlink?: string; // PDF Link
   trackingLink?: string; // Hyperlink for tracking
 
   // Legacy fields kept for compatibility or mapped
