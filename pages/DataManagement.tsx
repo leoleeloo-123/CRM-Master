@@ -90,27 +90,25 @@ const DataManagement: React.FC<DataManagementProps> = ({
   };
 
   const handleExportSamples = () => {
-    // Columns strictly following the requirement (18 Columns now, removed Label Link)
+    // Columns strictly following the 17 Columns structure
     const headers = [
       "1.Customer", 
-      "2.Sample Index", 
-      "3.Status", 
-      "4.Test Finished", 
-      "5.Crystal Type", 
-      "6.Sample Category", 
-      "7.Form", 
-      "8.Original Size", 
-      "9.Processed Size", 
-      "10.Is Graded", 
-      "11.Sample SKU",
-      // Removed 12. Label Hyperlink
-      "12.Details", 
-      "13.Quantity", 
-      "14.Customer Application", 
-      "15.Status Date", 
-      "16.Days Since Update", 
-      "17.Status Details", 
-      "18.Tracking #"
+      "2.Status", 
+      "3.Test Finished", 
+      "4.Crystal Type", 
+      "5.Sample Category", 
+      "6.Form", 
+      "7.Original Size", 
+      "8.Processed Size", 
+      "9.Is Graded", 
+      "10.Sample SKU", 
+      "11.Details", // Restored
+      "12.Quantity", 
+      "13.Customer Application", 
+      "14.Status Date", 
+      "15.Days Since Update", 
+      "16.Status Details", 
+      "17.Tracking #"
     ];
 
     const rows = samples.map(s => {
@@ -125,7 +123,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
        return [
          s.customerName,
-         s.sampleIndex || 1,
          s.status,
          s.isTestFinished ? 'Yes' : 'No',
          s.crystalType,
@@ -135,8 +132,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
          s.processedSize,
          s.isGraded,
          s.sampleSKU,
-         // s.labelHyperlink removed
-         s.sampleDetails,
+         s.sampleDetails, // Restored
          s.quantity,
          s.application,
          s.lastStatusDate,
@@ -171,6 +167,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const yearLastMatch = trimmed.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/);
     if (yearLastMatch) return `${yearLastMatch[3]}-${yearLastMatch[1].padStart(2, '0')}-${yearLastMatch[2].padStart(2, '0')}`;
     
+    // Handle yyyy/mm/dd specific
+    const yearFirstSlash = trimmed.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    if (yearFirstSlash) return `${yearFirstSlash[1]}-${yearFirstSlash[2].padStart(2, '0')}-${yearFirstSlash[3].padStart(2, '0')}`;
+
     const dateObj = new Date(trimmed);
     if (!isNaN(dateObj.getTime())) {
       const y = dateObj.getFullYear();
@@ -194,6 +194,19 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
     try {
       const rows = importData.trim().split('\n').filter(r => r.trim() !== '');
+      
+      // Pre-calc Sample Indexes
+      const customerIndexMap = new Map<string, number>();
+      if (activeTab === 'samples') {
+          samples.forEach(s => {
+             const lowerName = s.customerName.toLowerCase();
+             const currentMax = customerIndexMap.get(lowerName) || 0;
+             if (s.sampleIndex > currentMax) {
+                 customerIndexMap.set(lowerName, s.sampleIndex);
+             }
+          });
+      }
+
       const parsed = rows.map((row, index) => {
         const cols = row.split('\t').map(c => c.trim());
         const tempId = Math.random().toString(36).substr(2, 9);
@@ -295,24 +308,32 @@ const DataManagement: React.FC<DataManagementProps> = ({
           } as Customer;
 
         } else {
-          // --- SAMPLE IMPORT LOGIC (18 Columns) ---
-          // 0:Customer, 1:Index, 2:Status, 3:TestFinished, 4:Crystal, 5:Category, 6:Form, 
-          // 7:OrigSize, 8:ProcSize, 9:Graded, 10:SKU, 
-          // REMOVED: LabelLink
-          // 11:Details, 12:Qty, 13:App, 14:Date, 15:DaysSince(Ignore), 16:StatusDetails, 17:Tracking
+          // --- SAMPLE IMPORT LOGIC (17 Columns) ---
+          // 0:Customer, 
+          // 1:Status, 
+          // 2:TestFinished, 
+          // 3:Crystal, 4:Category, 5:Form, 6:OrigSize, 7:ProcSize, 8:Graded, 9:SKU, 
+          // 10:Details (Restored)
+          // 11:Qty, 12:App, 13:Date, 14:DaysSince(Ignore), 15:History, 16:Tracking
+          
+          // REMOVED: Index (Auto-generated), LabelLink
 
           const custName = cols[0] || 'Unknown';
           const matchedCustomer = customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
           
-          const sampleIndex = parseInt(cols[1]) || 1;
-          const statusDetails = cols[16] || ''; // Was 17
+          // Auto-generate Index
+          const lowerCustName = custName.toLowerCase();
+          let nextIndex = (customerIndexMap.get(lowerCustName) || 0) + 1;
+          customerIndexMap.set(lowerCustName, nextIndex);
+          
+          const statusDetails = cols[15] || '';
 
           // Auto-generate sampleName logic: [Crystal] [Category] [Form] - [Orig] > [Proc]
-          const crystal = cols[4] || '';
-          const category = cols[5] || '';
-          const form = cols[6] || '';
-          const origSize = cols[7] || '';
-          const procSize = cols[8] ? ` > ${cols[8]}` : '';
+          const crystal = cols[3] || '';
+          const category = cols[4] || '';
+          const form = cols[5] || '';
+          const origSize = cols[6] || '';
+          const procSize = cols[7] ? ` > ${cols[7]}` : '';
           
           const generatedName = `${crystal} ${category} ${form} - ${origSize}${procSize}`.trim();
 
@@ -320,31 +341,31 @@ const DataManagement: React.FC<DataManagementProps> = ({
             id: `new_s_${tempId}`,
             customerId: matchedCustomer ? matchedCustomer.id : 'unknown',
             customerName: custName,
-            sampleIndex: sampleIndex,
+            sampleIndex: nextIndex,
             
-            status: (cols[2] as SampleStatus) || 'Requested',
-            isTestFinished: (cols[3] || '').toLowerCase() === 'yes' || (cols[3] || '').toLowerCase() === 'true',
-            crystalType: (cols[4] as CrystalType) || 'Polycrystalline',
-            productCategory: cols[5] ? cols[5].split(',').map(c => c.trim() as ProductCategory) : [],
-            productForm: (cols[6] as ProductForm) || 'Powder',
-            originalSize: cols[7] || '',
-            processedSize: cols[8] || '',
-            isGraded: (cols[9] as GradingStatus) || 'Graded',
-            sampleSKU: cols[10] || '',
-            // removed labelHyperlink
-            sampleDetails: cols[11] || '', 
-            quantity: cols[12] || '',
-            application: cols[13] || '',
-            lastStatusDate: normalizeDate(cols[14]) || new Date().toISOString().split('T')[0],
-            // Col 15 is Days Since (Ignored)
+            status: (cols[1] as SampleStatus) || 'Requested',
+            isTestFinished: (cols[2] || '').toLowerCase() === 'yes' || (cols[2] || '').toLowerCase() === 'true',
+            crystalType: (cols[3] as CrystalType) || 'Polycrystalline',
+            productCategory: cols[4] ? cols[4].split(',').map(c => c.trim() as ProductCategory) : [],
+            productForm: (cols[5] as ProductForm) || 'Powder',
+            originalSize: cols[6] || '',
+            processedSize: cols[7] || '',
+            isGraded: (cols[8] as GradingStatus) || 'Graded',
+            sampleSKU: cols[9] || '',
+            sampleDetails: cols[10] || '', // Restored
+            
+            quantity: cols[11] || '',
+            application: cols[12] || '',
+            lastStatusDate: normalizeDate(cols[13]) || new Date().toISOString().split('T')[0],
+            // Col 14 is Days Since (Ignored)
             statusDetails: statusDetails,
-            trackingNumber: cols[17] || '', // Was 18
+            trackingNumber: cols[16] || '',
             
             sampleName: generatedName, // Core field for UI
             
             // Legacy/Mapping
             productType: generatedName,
-            specs: cols[7] ? `${cols[7]} -> ${cols[8]}` : '',
+            specs: cols[6] ? `${cols[6]} -> ${cols[7]}` : '',
             requestDate: new Date().toISOString().split('T')[0],
           } as Sample;
         }
@@ -367,7 +388,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
     if (activeTab === 'customers') {
       onImportCustomers(parsedPreview as Customer[]);
     } else {
-      // Upsert Logic for Samples: Merge based on CustomerID + SampleIndex
+      // Upsert Logic removed as we lack ID/Index in input.
+      // We assume Appending / Creating New Samples with auto-generated Index.
       const samplesToImport = parsedPreview as Sample[];
       
       // FORWARD SYNC: Ensure all imported samples generate a MasterProduct
@@ -423,11 +445,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
                     {activeTab === 'customers' 
                       ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
-                      : "1.Customer | 2.Index | 3.Status | 4.Finished(Yes/No) | 5.Crystal | 6.Category | 7.Form | 8.OrigSize | 9.ProcSize | 10.Graded | 11.SKU | 12.Details | 13.Qty | 14.App | 15.Date | 16.DaysSince(Ignore) | 17.History | 18.Tracking"
+                      : "1.Customer | 2.Status | 3.Finished(Yes/No) | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking"
                     }
                   </p>
                   <p className="mt-2 text-xs text-slate-500 italic">
-                    Samples Note: Use 'Customer Name' + 'Sample Index' to update existing records.<br/>
+                    Samples Note: <b>Sample Index will be auto-generated.</b><br/>
                     Status Details (History): Use "|||" to separate history entries. Use "【YYYY-MM-DD】" at start of entry for date parsing.
                   </p>
                </div>
