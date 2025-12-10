@@ -25,6 +25,8 @@ export const translations = {
     status: 'Status',
     rank: 'Rank',
     daysAgo: 'Days Ago',
+    add: 'Add',
+    remove: 'Remove',
     
     // Dashboard
     totalCustomers: 'Total Customers',
@@ -95,11 +97,30 @@ export const translations = {
     sinceUpdate: 'Since Update',
     test: 'Test',
     
-    // Sample Columns
+    // Sample Columns & Statuses
     colRequested: 'Requested',
     colProcessing: 'Processing',
     colSent: 'Sent / Testing',
     colFeedback: 'Feedback',
+    'Requested': 'Requested',
+    'Processing': 'Processing',
+    'Sent': 'Sent',
+    'Delivered': 'Delivered',
+    'Testing': 'Testing',
+    'Feedback Received': 'Feedback Received',
+    'Closed': 'Closed',
+
+    // Tech Specs (for dropdown translation)
+    'Single Crystal': 'Single Crystal',
+    'Polycrystalline': 'Polycrystalline',
+    'Powder': 'Powder',
+    'Suspension': 'Suspension',
+    'Agglomerated Diamond': 'Agglomerated Diamond',
+    'Nano Diamond': 'Nano Diamond',
+    'Spherical Diamond': 'Spherical Diamond',
+    'Diamond Ball': 'Diamond Ball',
+    'Micron': 'Micron',
+    'CVD': 'CVD',
 
     // Sample Modal
     editSample: 'Edit Sample',
@@ -146,6 +167,15 @@ export const translations = {
     chinese: 'Chinese (Simplified)',
     settingsDesc: 'Customize your application experience.',
     
+    // Tag Management
+    tagManagement: 'Tag Management',
+    tagDesc: 'Manage the dropdown options for samples.',
+    tagsSampleStatus: 'Sample Status',
+    tagsCrystalType: 'Crystal Types',
+    tagsProductCategory: 'Product Categories',
+    tagsProductForm: 'Product Forms',
+    addTagPlaceholder: 'Add new option...',
+    
     // Font Size
     fontSize: 'Font Size',
     fontSmall: 'Small',
@@ -175,6 +205,8 @@ export const translations = {
     status: '状态',
     rank: '等级',
     daysAgo: '天前',
+    add: '添加',
+    remove: '移除',
 
     // Dashboard
     totalCustomers: '客户总数',
@@ -245,11 +277,30 @@ export const translations = {
     sinceUpdate: '距更新',
     test: '测试',
 
-    // Sample Columns
+    // Sample Columns & Statuses
     colRequested: '已申请',
     colProcessing: '处理中',
     colSent: '已寄出 / 测试中',
     colFeedback: '已反馈',
+    'Requested': '已申请',
+    'Processing': '处理中',
+    'Sent': '已寄出',
+    'Delivered': '已送达',
+    'Testing': '测试中',
+    'Feedback Received': '已反馈',
+    'Closed': '已关闭',
+
+    // Tech Specs (for dropdown translation)
+    'Single Crystal': '单晶',
+    'Polycrystalline': '多晶',
+    'Powder': '微粉',
+    'Suspension': '悬浮液',
+    'Agglomerated Diamond': '聚晶',
+    'Nano Diamond': '纳米金刚石',
+    'Spherical Diamond': '球形金刚石',
+    'Diamond Ball': '金刚石球',
+    'Micron': '微米粉',
+    'CVD': 'CVD',
 
     // Sample Modal
     editSample: '编辑样品',
@@ -295,6 +346,15 @@ export const translations = {
     english: '英文',
     chinese: '中文 (简体)',
     settingsDesc: '自定义您的应用程序体验。',
+
+    // Tag Management
+    tagManagement: '标签管理 (下拉菜单选项)',
+    tagDesc: '管理样品信息的下拉菜单选项。',
+    tagsSampleStatus: '样品状态',
+    tagsCrystalType: '晶体类型',
+    tagsProductCategory: '产品分类',
+    tagsProductForm: '产品形态',
+    addTagPlaceholder: '添加新选项...',
     
     // Font Size
     fontSize: '字体大小',
@@ -302,4 +362,32 @@ export const translations = {
     fontMedium: '中',
     fontLarge: '大',
   }
+};
+
+/**
+ * Normalizes a term (tag) to its canonical English key if possible.
+ * This ensures that imported Chinese terms (e.g., '单晶') are converted 
+ * to system keys ('Single Crystal') so they can be properly translated 
+ * in the UI when language switches.
+ */
+export const getCanonicalTag = (term: string): string => {
+  if (!term) return '';
+  const trimmed = term.trim();
+  
+  // 1. Check if it matches a known English Value (which is also the Key for Sample Types)
+  // We can check if the key exists in translations.en
+  if (translations.en[trimmed as keyof typeof translations.en]) {
+      return trimmed;
+  }
+
+  // 2. Check if it matches a known Chinese Value
+  // We iterate over translations.zh to find the key
+  const entry = Object.entries(translations.zh).find(([key, val]) => val === trimmed);
+  if (entry) {
+      // found key (e.g. 'Single Crystal')
+      return entry[0];
+  }
+
+  // 3. Return original if no mapping found (Custom Tag)
+  return trimmed;
 };

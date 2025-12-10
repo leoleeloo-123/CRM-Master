@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Language, translations } from '../utils/i18n';
-import { Customer, Sample, MasterProduct } from '../types';
+import { Customer, Sample, MasterProduct, TagOptions } from '../types';
 import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
@@ -27,12 +27,24 @@ interface AppContextType {
   setSamples: (samples: Sample[] | ((prev: Sample[]) => Sample[])) => void;
   syncSampleToCatalog: (sample: Partial<Sample>) => void;
   
+  // Tag Management
+  tagOptions: TagOptions;
+  setTagOptions: (tags: TagOptions | ((prev: TagOptions) => TagOptions)) => void;
+  refreshTagsFromSamples: (samples: Sample[]) => void;
+  
   clearDatabase: () => void;
   isDemoData: boolean;
   setIsDemoData: (isDemo: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+const DEFAULT_TAGS: TagOptions = {
+  sampleStatus: ['Requested', 'Processing', 'Sent', 'Delivered', 'Testing', 'Feedback Received', 'Closed'],
+  crystalType: ['Single Crystal', 'Polycrystalline'],
+  productCategory: ['Agglomerated Diamond', 'Nano Diamond', 'Spherical Diamond', 'Diamond Ball', 'Micron', 'CVD'],
+  productForm: ['Powder', 'Suspension']
+};
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Theme State
@@ -83,6 +95,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem('masterProducts');
     return saved ? JSON.parse(saved) : MOCK_MASTER_PRODUCTS;
   });
+  
+  // Tag Options State
+  const [tagOptions, setTagOptionsState] = useState<TagOptions>(() => {
+    const saved = localStorage.getItem('tagOptions');
+    return saved ? JSON.parse(saved) : DEFAULT_TAGS;
+  });
 
   // --- Effects for Persistence ---
 
@@ -132,6 +150,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('isDemoData', String(isDemoData));
   }, [isDemoData]);
 
+  useEffect(() => {
+    localStorage.setItem('tagOptions', JSON.stringify(tagOptions));
+  }, [tagOptions]);
+
   // --- Setters ---
 
   const toggleTheme = (newTheme: 'light' | 'dark') => setTheme(newTheme);
@@ -141,8 +163,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setUserName = (name: string) => setUserNameState(name);
   const setCustomers = (val: Customer[] | ((prev: Customer[]) => Customer[])) => setCustomersState(val);
   const setSamples = (val: Sample[] | ((prev: Sample[]) => Sample[])) => setSamplesState(val);
+  const setTagOptions = (val: TagOptions | ((prev: TagOptions) => TagOptions)) => setTagOptionsState(val);
 
   // --- Logic ---
+
+  const refreshTagsFromSamples = (sampleList: Sample[]) => {
+    setTagOptionsState(prev => {
+      const newTags = { ...prev };
+      const addUnique = (list: string[], item: string) => {
+         if (item && !list.includes(item)) list.push(item);
+      };
+
+      sampleList.forEach(s => {
+        if (s.status) addUnique(newTags.sampleStatus, s.status);
+        if (s.crystalType) addUnique(newTags.crystalType, s.crystalType);
+        if (s.productForm) addUnique(newTags.productForm, s.productForm);
+        if (s.productCategory) {
+           s.productCategory.forEach(cat => addUnique(newTags.productCategory, cat));
+        }
+      });
+      return newTags;
+    });
+  };
 
   const syncSampleToCatalog = (sample: Partial<Sample>) => {
     const catStr = sample.productCategory?.join(', ') || '';
@@ -178,11 +220,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSamplesState([]);
     setMasterProducts([]);
     setIsDemoData(false);
+    setTagOptionsState(DEFAULT_TAGS); // Reset tags to default
     // Note: We deliberately do NOT clear companyName or userName here.
     localStorage.removeItem('customers');
     localStorage.removeItem('samples');
     localStorage.removeItem('masterProducts');
     localStorage.setItem('isDemoData', 'false');
+    localStorage.setItem('tagOptions', JSON.stringify(DEFAULT_TAGS));
   };
 
   const t = (key: keyof typeof translations['en']) => {
@@ -201,7 +245,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       samples, setSamples,
       masterProducts, syncSampleToCatalog,
       clearDatabase,
-      isDemoData, setIsDemoData
+      isDemoData, setIsDemoData,
+      tagOptions, setTagOptions, refreshTagsFromSamples
     }}>
       {children}
     </AppContext.Provider>

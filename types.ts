@@ -1,9 +1,9 @@
 
 export type Rank = 1 | 2 | 3 | 4 | 5; // 1 is Highest Importance, 5 is Lowest
 
-export type CustomerStatus = 'Active' | 'Pending' | 'Inactive' | 'Prospect';
+export type CustomerStatus = 'Active' | 'Pending' | 'Inactive' | 'Prospect' | string;
 
-export type FollowUpStatus = 'My Turn' | 'Waiting for Customer' | 'No Action' | 'Scheduled';
+export type FollowUpStatus = 'My Turn' | 'Waiting for Customer' | 'No Action' | 'Scheduled' | string;
 
 export interface Contact {
   name: string;
@@ -49,11 +49,11 @@ export interface Customer {
   docLinks?: string[]; // General document links for the company
 }
 
-export type SampleStatus = 'Requested' | 'Processing' | 'Sent' | 'Delivered' | 'Testing' | 'Feedback Received' | 'Closed';
+export type SampleStatus = 'Requested' | 'Processing' | 'Sent' | 'Delivered' | 'Testing' | 'Feedback Received' | 'Closed' | string;
 
-export type CrystalType = 'Single Crystal' | 'Polycrystalline';
-export type ProductForm = 'Powder' | 'Suspension';
-export type ProductCategory = 'Agglomerated Diamond' | 'Nano Diamond' | 'Spherical Diamond' | 'Diamond Ball' | 'Micron' | 'CVD';
+export type CrystalType = 'Single Crystal' | 'Polycrystalline' | string;
+export type ProductForm = 'Powder' | 'Suspension' | string;
+export type ProductCategory = 'Agglomerated Diamond' | 'Nano Diamond' | 'Spherical Diamond' | 'Diamond Ball' | 'Micron' | 'CVD' | string;
 export type GradingStatus = 'Graded' | 'Ungraded';
 
 // New Master Product Catalog Interface
@@ -115,4 +115,11 @@ export interface DashboardStats {
   activeSamples: number;
   upcomingActions: number;
   overdueActions: number;
+}
+
+export interface TagOptions {
+  sampleStatus: string[];
+  crystalType: string[];
+  productCategory: string[];
+  productForm: string[];
 }

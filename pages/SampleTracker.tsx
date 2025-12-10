@@ -12,7 +12,7 @@ interface SampleTrackerProps {
 }
 
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
-  const { t, setSamples, masterProducts, syncSampleToCatalog } = useApp();
+  const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions } = useApp();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -61,9 +61,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   ];
 
   const getColumnId = (status: string) => {
-    if (['Sent', 'Delivered', 'Testing'].includes(status)) return 'Sent';
-    if (['Feedback Received', 'Closed'].includes(status)) return 'Feedback Received';
-    return status;
+    if (['Sent', 'Delivered', 'Testing', '已寄出', '已送达', '测试中'].includes(status)) return 'Sent';
+    if (['Feedback Received', 'Closed', '已反馈', '已关闭'].includes(status)) return 'Feedback Received';
+    if (['Requested', '已申请'].includes(status)) return 'Requested';
+    if (['Processing', '处理中'].includes(status)) return 'Processing';
+    // Fallback: Group custom unknown statuses into 'Processing' for board view
+    return 'Processing';
   };
 
   const handleOpenEdit = (sample: Sample) => {
@@ -182,11 +185,16 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
       </div>
     );
   };
-
-  // Options for Dropdowns
-  const CRYSTAL_TYPES: CrystalType[] = ['Single Crystal', 'Polycrystalline'];
-  const PRODUCT_FORMS: ProductForm[] = ['Powder', 'Suspension'];
-  const PRODUCT_CATEGORIES: ProductCategory[] = ['Agglomerated Diamond', 'Nano Diamond', 'Spherical Diamond', 'Diamond Ball', 'Micron', 'CVD'];
+  
+  // Helper to render option with translation
+  // This tries to translate the key, if it matches the key it returns the raw value (assuming custom tag)
+  const renderOption = (value: string) => {
+      const translated = t(value as any);
+      // If the translated value is the same as the key, and the language is NOT english,
+      // it usually means missing translation. But here we assume custom tags are not in i18n.
+      // However, t() returns key if missing.
+      return translated;
+  };
 
   return (
     <div className="h-[calc(100vh-2rem)] xl:h-[calc(100vh-3rem)] flex flex-col">
@@ -271,8 +279,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                          <p className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 font-bold mt-1">{sample.sampleName}</p>
                          
                          <div className="flex flex-wrap gap-1 mt-2 xl:mt-3">
-                            <Badge color="blue">{sample.productForm}</Badge>
-                            <Badge color="purple">{sample.crystalType}</Badge>
+                            <Badge color="blue">{renderOption(sample.productForm || '')}</Badge>
+                            <Badge color="purple">{renderOption(sample.crystalType || '')}</Badge>
                          </div>
 
                          <div className="mt-2 text-xs xl:text-base text-slate-600 dark:text-slate-300 line-clamp-2">
@@ -324,14 +332,14 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                        <div className="text-xs xl:text-sm text-slate-500 mt-1">{s.sampleSKU ? `SKU: ${s.sampleSKU}` : ''}</div>
                      </td>
                      <td className="p-4 xl:p-6 align-top text-xs xl:text-sm">
-                        <div>{s.productForm} | {s.crystalType}</div>
+                        <div>{renderOption(s.productForm || '')} | {renderOption(s.crystalType || '')}</div>
                         <div>{s.originalSize} -&gt; {s.processedSize}</div>
                         <div>{s.isGraded}</div>
                         <div className="font-semibold">{s.quantity}</div>
                      </td>
                      <td className="p-4 xl:p-6 align-top max-w-xs">
-                       <Badge color={['Sent', 'Delivered'].includes(s.status) ? 'blue' : s.status === 'Feedback Received' ? 'green' : 'yellow'}>
-                         {s.status}
+                       <Badge color={['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status) ? 'blue' : ['Feedback Received', '已反馈'].includes(s.status) ? 'green' : 'yellow'}>
+                         {renderOption(s.status)}
                        </Badge>
                        <div className="text-xs xl:text-sm mt-1 text-slate-500 dark:text-slate-400 line-clamp-3 whitespace-pre-wrap">
                           {s.statusDetails}
@@ -423,7 +431,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      value={currentSample.crystalType || ''}
                      onChange={(e) => handleSpecChange('crystalType', e.target.value)}
                   >
-                    {CRYSTAL_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                    {tagOptions.crystalType.map(type => <option key={type} value={type}>{renderOption(type)}</option>)}
                   </select>
                 </div>
                 
@@ -435,7 +443,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      onChange={(e) => handleSpecChange('productCategory', e.target.value)}
                   >
                     <option value="">-</option>
-                    {PRODUCT_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    {tagOptions.productCategory.map(cat => <option key={cat} value={cat}>{renderOption(cat)}</option>)}
                   </select>
                 </div>
 
@@ -446,7 +454,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      value={currentSample.productForm || ''}
                      onChange={(e) => handleSpecChange('productForm', e.target.value)}
                   >
-                     {PRODUCT_FORMS.map(form => <option key={form} value={form}>{form}</option>)}
+                     {tagOptions.productForm.map(form => <option key={form} value={form}>{renderOption(form)}</option>)}
                   </select>
                 </div>
 
@@ -516,13 +524,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   value={currentSample.status}
                   onChange={(e) => setCurrentSample({...currentSample, status: e.target.value as SampleStatus})}
                 >
-                  <option value="Requested">{t('colRequested')}</option>
-                  <option value="Processing">{t('colProcessing')}</option>
-                  <option value="Sent">{t('colSent')}</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Testing">Testing</option>
-                  <option value="Feedback Received">{t('colFeedback')}</option>
-                  <option value="Closed">Closed</option>
+                  {tagOptions.sampleStatus.map(status => (
+                     <option key={status} value={status}>{renderOption(status)}</option>
+                  ))}
                 </select>
              </div>
              <div>

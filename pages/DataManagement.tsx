@@ -6,6 +6,7 @@ import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConi
 import { useApp } from '../contexts/AppContext';
 import { differenceInDays, parseISO, isValid } from 'date-fns';
 import * as XLSX from 'xlsx';
+import { getCanonicalTag } from '../utils/i18n';
 
 interface DataManagementProps {
   onImportCustomers: (newCustomers: Customer[], override?: boolean) => void;
@@ -16,7 +17,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   onImportCustomers, 
   onImportSamples
 }) => {
-  const { t, clearDatabase, customers, samples, syncSampleToCatalog, companyName, userName } = useApp();
+  const { t, clearDatabase, customers, samples, syncSampleToCatalog, companyName, userName, refreshTagsFromSamples } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
   
   // Text Import State
@@ -203,14 +204,19 @@ const DataManagement: React.FC<DataManagementProps> = ({
     
     const statusDetails = safeCol(15) || '';
 
+    // Normalize Tags using getCanonicalTag
+    const status = getCanonicalTag(safeCol(1)) as SampleStatus || 'Requested';
+    const crystal = getCanonicalTag(safeCol(3)) || '';
+    const form = getCanonicalTag(safeCol(5)) || 'Powder';
+    const categories = safeCol(4) ? safeCol(4).split(',').map(c => getCanonicalTag(c.trim()) as ProductCategory) : [];
+    
+    const categoryStr = categories.join(', ');
+
     // Auto-generate sampleName logic: [Crystal] [Category] [Form] - [Orig] > [Proc]
-    const crystal = safeCol(3) || '';
-    const category = safeCol(4) || '';
-    const form = safeCol(5) || '';
     const origSize = safeCol(6) || '';
     const procSize = safeCol(7) ? ` > ${safeCol(7)}` : '';
     
-    const generatedName = `${crystal} ${category} ${form} - ${origSize}${procSize}`.trim();
+    const generatedName = `${crystal} ${categoryStr} ${form} - ${origSize}${procSize}`.trim();
 
     return {
       id: `new_s_${tempIdPrefix}`,
@@ -218,11 +224,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
       customerName: custName,
       sampleIndex: nextIndex,
       
-      status: (safeCol(1) as SampleStatus) || 'Requested',
+      status: status,
       isTestFinished: (safeCol(2) || '').toLowerCase() === 'yes' || (safeCol(2) || '').toLowerCase() === 'true',
-      crystalType: (safeCol(3) as CrystalType) || 'Polycrystalline',
-      productCategory: safeCol(4) ? safeCol(4).split(',').map(c => c.trim() as ProductCategory) : [],
-      productForm: (safeCol(5) as ProductForm) || 'Powder',
+      crystalType: crystal as CrystalType,
+      productCategory: categories,
+      productForm: form as ProductForm,
       originalSize: safeCol(6) || '',
       processedSize: safeCol(7) || '',
       isGraded: (safeCol(8) as GradingStatus) || 'Graded',
@@ -473,16 +479,18 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
   const confirmImport = () => {
     const override = importMode === 'replace';
-    
+    let importedSamples: Sample[] = [];
+
     if (excelPreview) {
        // Import Both
        if (excelPreview.customers.length > 0) {
          onImportCustomers(excelPreview.customers, override);
        }
        if (excelPreview.samples.length > 0) {
+         importedSamples = excelPreview.samples;
          // Auto-sync samples to catalog
-         excelPreview.samples.forEach(s => syncSampleToCatalog(s));
-         onImportSamples(excelPreview.samples, override);
+         importedSamples.forEach(s => syncSampleToCatalog(s));
+         onImportSamples(importedSamples, override);
        }
        setImportStatus({ type: 'success', message: `Imported ${excelPreview.customers.length} Customers and ${excelPreview.samples.length} Samples.` });
     } else if (parsedPreview) {
@@ -490,11 +498,22 @@ const DataManagement: React.FC<DataManagementProps> = ({
        if (activeTab === 'customers') {
          onImportCustomers(parsedPreview as Customer[], override);
        } else {
-         const s = parsedPreview as Sample[];
-         s.forEach(x => syncSampleToCatalog(x));
-         onImportSamples(s, override);
+         importedSamples = parsedPreview as Sample[];
+         importedSamples.forEach(x => syncSampleToCatalog(x));
+         onImportSamples(importedSamples, override);
        }
        setImportStatus({ type: 'success', message: `Imported ${parsedPreview.length} records.` });
+    }
+    
+    // New Step: Refresh Tags from the imported samples to add any new unique statuses/types
+    if (importedSamples.length > 0) {
+        // If we are appending (not overriding), we should combine with existing to be safe, 
+        // but refreshTagsFromSamples just ADDS unique ones, so passing the new list is sufficient
+        // to check for NEW tags. However, if we replaced all samples, we want to rebuild tags entirely?
+        // Actually, the requirement is "options need to be based on user's import".
+        // If importMode is 'replace', maybe we should reset tags too?
+        // For safety, let's just ADD new tags found in the import.
+        refreshTagsFromSamples(importedSamples);
     }
     
     setParsedPreview(null);
