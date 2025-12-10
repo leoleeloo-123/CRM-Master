@@ -116,6 +116,32 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     }
   };
 
+  const generateSampleName = (s: Partial<Sample>) => {
+    const catStr = s.productCategory?.join(', ') || '';
+    const crystal = s.crystalType || '';
+    const form = s.productForm || '';
+    const orig = s.originalSize || '';
+    const proc = s.processedSize ? ` > ${s.processedSize}` : '';
+    
+    // Exact match to AppContext logic: `${crystal} ${catStr} ${form} - ${orig}${proc}`
+    // But we should be careful about empty spaces if fields are missing
+    return `${crystal} ${catStr} ${form} - ${orig}${proc}`.trim().replace(/\s+/g, ' ');
+  };
+
+  const handleSpecChange = (field: keyof Sample, value: any) => {
+    setCurrentSample(prev => {
+        const next = { ...prev, [field]: value };
+        // Special handling for category array from single select
+        if (field === 'productCategory' && typeof value === 'string') {
+            next.productCategory = [value as ProductCategory];
+        }
+        
+        // Regenerate name based on new specs
+        const newName = generateSampleName(next);
+        return { ...next, sampleName: newName };
+    });
+  };
+
   const saveSample = () => {
      if (!currentSample.customerId || !currentSample.sampleName) {
        alert('Please fill required fields (Customer, Product)');
@@ -156,6 +182,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
       </div>
     );
   };
+
+  // Options for Dropdowns
+  const CRYSTAL_TYPES: CrystalType[] = ['Single Crystal', 'Polycrystalline'];
+  const PRODUCT_FORMS: ProductForm[] = ['Powder', 'Suspension'];
+  const PRODUCT_CATEGORIES: ProductCategory[] = ['Agglomerated Diamond', 'Nano Diamond', 'Spherical Diamond', 'Diamond Ball', 'Micron', 'CVD'];
 
   return (
     <div className="h-[calc(100vh-2rem)] xl:h-[calc(100vh-3rem)] flex flex-col">
@@ -383,22 +414,60 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                </div>
              </div>
              
-             {/* Read-Only Spec Preview (To Confirm Fill) */}
-             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-4 text-xs text-slate-500">
-                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
-                  <span className="block font-bold">{t('crystal')}</span> {currentSample.crystalType || '-'}
+             {/* Editable Spec Grid */}
+             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t('crystal')}</label>
+                  <select 
+                     className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                     value={currentSample.crystalType || ''}
+                     onChange={(e) => handleSpecChange('crystalType', e.target.value)}
+                  >
+                    {CRYSTAL_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                  </select>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
-                  <span className="block font-bold">{t('category')}</span> {currentSample.productCategory?.join(',') || '-'}
+                
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t('category')}</label>
+                  <select 
+                     className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                     value={currentSample.productCategory?.[0] || ''}
+                     onChange={(e) => handleSpecChange('productCategory', e.target.value)}
+                  >
+                    <option value="">-</option>
+                    {PRODUCT_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
-                  <span className="block font-bold">{t('form')}</span> {currentSample.productForm || '-'}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t('form')}</label>
+                  <select 
+                     className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                     value={currentSample.productForm || ''}
+                     onChange={(e) => handleSpecChange('productForm', e.target.value)}
+                  >
+                     {PRODUCT_FORMS.map(form => <option key={form} value={form}>{form}</option>)}
+                  </select>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
-                  <span className="block font-bold">{t('original')}</span> {currentSample.originalSize || '-'}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t('original')}</label>
+                  <input 
+                     className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                     value={currentSample.originalSize || ''}
+                     placeholder="e.g. 10um"
+                     onChange={(e) => handleSpecChange('originalSize', e.target.value)}
+                  />
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
-                  <span className="block font-bold">{t('processed')}</span> {currentSample.processedSize || '-'}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t('processed')}</label>
+                  <input 
+                     className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
+                     value={currentSample.processedSize || ''}
+                     placeholder="e.g. 50nm"
+                     onChange={(e) => handleSpecChange('processedSize', e.target.value)}
+                  />
                 </div>
              </div>
           </div>
