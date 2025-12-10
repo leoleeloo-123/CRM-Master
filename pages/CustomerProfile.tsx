@@ -242,6 +242,19 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     return s;
   };
 
+  // Helper to dynamically display sample name
+  const getDisplaySampleName = (s: Sample) => {
+    if (s.crystalType && s.productCategory?.length) {
+      const catStr = s.productCategory.map(c => t(c as any)).join(', ');
+      const crystal = t(s.crystalType as any);
+      const form = t((s.productForm || '') as any);
+      const orig = s.originalSize || '';
+      const proc = s.processedSize ? ` > ${s.processedSize}` : '';
+      return `${crystal} ${catStr} ${form} - ${orig}${proc}`.trim().replace(/\s+/g, ' ');
+    }
+    return s.sampleName || s.productType;
+  };
+
   const currentStatusNormalized = normalizeStatus(customer.followUpStatus);
 
   return (
@@ -696,7 +709,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                             </div>
                             <div>
                               <div className="flex items-center gap-2 xl:gap-3">
-                                <h4 className="font-bold text-slate-800 dark:text-white text-sm xl:text-xl">{sample.productType}</h4>
+                                <h4 className="font-bold text-slate-800 dark:text-white text-sm xl:text-xl">{getDisplaySampleName(sample)}</h4>
                                 <Badge color="gray">{sample.quantity}</Badge>
                               </div>
                               <p className="text-sm xl:text-lg text-slate-600 dark:text-slate-300 mt-1">{t('specs')}: {sample.specs}</p>

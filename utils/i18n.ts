@@ -352,9 +352,9 @@ export const translations = {
     tagDesc: '管理样品信息的下拉菜单选项。',
     tagsSampleStatus: '样品状态',
     tagsCrystalType: '晶体类型',
-    tagsProductCategory: '产品分类',
-    tagsProductForm: '产品形态',
-    addTagPlaceholder: '添加新选项...',
+    tagsProductCategory: 'Product Categories',
+    tagsProductForm: 'Product Forms',
+    addTagPlaceholder: 'Add new option...',
     
     // Font Size
     fontSize: '字体大小',
@@ -362,6 +362,20 @@ export const translations = {
     fontMedium: '中',
     fontLarge: '大',
   }
+};
+
+// Aliases for common non-standard terms to canonical English keys
+const ALIASES: Record<string, string> = {
+  '团聚': 'Agglomerated Diamond',
+  '粉末': 'Powder',
+  '单晶': 'Single Crystal',
+  '多晶': 'Polycrystalline',
+  '微粉': 'Powder',
+  '悬浮液': 'Suspension',
+  '聚晶': 'Agglomerated Diamond',
+  '聚晶金刚石': 'Agglomerated Diamond',
+  '纳米': 'Nano Diamond',
+  '纳米金刚石': 'Nano Diamond'
 };
 
 /**
@@ -374,20 +388,22 @@ export const getCanonicalTag = (term: string): string => {
   if (!term) return '';
   const trimmed = term.trim();
   
-  // 1. Check if it matches a known English Value (which is also the Key for Sample Types)
-  // We can check if the key exists in translations.en
+  // 1. Check if it matches a known English Value
   if (translations.en[trimmed as keyof typeof translations.en]) {
       return trimmed;
   }
 
-  // 2. Check if it matches a known Chinese Value
-  // We iterate over translations.zh to find the key
+  // 2. Check Aliases (Custom Mappings for variation)
+  if (ALIASES[trimmed]) {
+      return ALIASES[trimmed];
+  }
+
+  // 3. Check if it matches a known Chinese Value
   const entry = Object.entries(translations.zh).find(([key, val]) => val === trimmed);
   if (entry) {
-      // found key (e.g. 'Single Crystal')
       return entry[0];
   }
 
-  // 3. Return original if no mapping found (Custom Tag)
+  // 4. Return original if no mapping found
   return trimmed;
 };

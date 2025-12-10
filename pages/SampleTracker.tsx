@@ -186,6 +186,20 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
       const translated = t(value as any);
       return translated;
   };
+  
+  // Dynamic Display Name for Sample
+  const getDisplaySampleName = (s: Sample) => {
+    // If we have structure, try to localize
+    if (s.crystalType && s.productCategory?.length) {
+      const catStr = s.productCategory.map(c => t(c as any)).join(', ');
+      const crystal = t(s.crystalType as any);
+      const form = t((s.productForm || '') as any);
+      const orig = s.originalSize || '';
+      const proc = s.processedSize ? ` > ${s.processedSize}` : '';
+      return `${crystal} ${catStr} ${form} - ${orig}${proc}`.trim().replace(/\s+/g, ' ');
+    }
+    return s.sampleName;
+  };
 
   // --- Drag and Drop Handlers ---
   
@@ -358,7 +372,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                            <span className="text-xs xl:text-sm text-slate-400 dark:text-slate-500">{sample.requestDate}</span>
                          </div>
                          <h4 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{sample.customerName}</h4>
-                         <p className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 font-bold mt-1">{sample.sampleName}</p>
+                         <p className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 font-bold mt-1">{getDisplaySampleName(sample)}</p>
                          
                          <div className="flex flex-wrap gap-1 mt-2 xl:mt-3">
                             <Badge color="blue">{renderOption(sample.productForm || '')}</Badge>
@@ -434,7 +448,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      <td className="p-4 xl:p-6 align-top font-mono font-bold text-slate-500">{s.sampleIndex}</td>
                      <td className="p-4 xl:p-6 align-top font-bold text-base xl:text-lg">{s.customerName}</td>
                      <td className="p-4 xl:p-6 align-top">
-                       <div className="font-medium text-blue-600 dark:text-blue-400 text-base xl:text-lg">{s.sampleName}</div>
+                       <div className="font-medium text-blue-600 dark:text-blue-400 text-base xl:text-lg">{getDisplaySampleName(s)}</div>
                        <div className="text-xs xl:text-sm text-slate-500 mt-1">{s.sampleSKU ? `SKU: ${s.sampleSKU}` : ''}</div>
                      </td>
                      <td className="p-4 xl:p-6 align-top text-xs xl:text-sm">
