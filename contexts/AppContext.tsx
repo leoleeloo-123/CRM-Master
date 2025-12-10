@@ -48,7 +48,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // Font Size State
-  // Default is 'large' because user said current size is Large
   const [fontSize, setFontSizeState] = useState<FontSize>(() => {
     const savedSize = localStorage.getItem('fontSize');
     return (savedSize === 'small' || savedSize === 'medium' || savedSize === 'large') ? savedSize : 'large';
@@ -61,12 +60,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // User Name State
   const [userName, setUserNameState] = useState<string>(() => {
-    return localStorage.getItem('userName') || 'User';
+    const saved = localStorage.getItem('userName');
+    return saved !== null ? saved : 'User';
   });
 
   // Data State with Persistence
   const [isDemoData, setIsDemoData] = useState<boolean>(() => {
-    return localStorage.getItem('isDemoData') !== 'false'; // Default true unless explicitly false
+    return localStorage.getItem('isDemoData') !== 'false';
   });
 
   const [customers, setCustomersState] = useState<Customer[]>(() => {
@@ -84,38 +84,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : MOCK_MASTER_PRODUCTS;
   });
 
-  // Initial system preference check
-  useEffect(() => {
-    if (!localStorage.getItem('theme')) {
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        setTheme('dark');
-      }
-    }
-  }, []);
+  // --- Effects for Persistence ---
 
-  // Update HTML class for Tailwind dark mode
   useEffect(() => {
-    const root = window.document.documentElement;
     if (theme === 'dark') {
-      root.classList.add('dark');
+      document.documentElement.classList.add('dark');
     } else {
-      root.classList.remove('dark');
+      document.documentElement.classList.remove('dark');
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Apply Root Font Size
   useEffect(() => {
-    const root = window.document.documentElement;
+    const root = document.documentElement;
     let sizeValue = '100%';
     if (fontSize === 'medium') sizeValue = '90%';
     if (fontSize === 'small') sizeValue = '80%';
-    
     root.style.fontSize = sizeValue;
     localStorage.setItem('fontSize', fontSize);
   }, [fontSize]);
 
-  // Persist Data Changes
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem('companyName', companyName);
+  }, [companyName]);
+
+  useEffect(() => {
+    localStorage.setItem('userName', userName);
+  }, [userName]);
+
   useEffect(() => {
     localStorage.setItem('customers', JSON.stringify(customers));
   }, [customers]);
@@ -132,42 +132,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('isDemoData', String(isDemoData));
   }, [isDemoData]);
 
-  const toggleTheme = (newTheme: 'light' | 'dark') => {
-    setTheme(newTheme);
-  };
+  // --- Setters ---
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('language', lang);
-  }
+  const toggleTheme = (newTheme: 'light' | 'dark') => setTheme(newTheme);
+  const setLanguage = (lang: Language) => setLanguageState(lang);
+  const setFontSize = (size: FontSize) => setFontSizeState(size);
+  const setCompanyName = (name: string) => setCompanyNameState(name);
+  const setUserName = (name: string) => setUserNameState(name);
+  const setCustomers = (val: Customer[] | ((prev: Customer[]) => Customer[])) => setCustomersState(val);
+  const setSamples = (val: Sample[] | ((prev: Sample[]) => Sample[])) => setSamplesState(val);
 
-  const setFontSize = (size: FontSize) => {
-    setFontSizeState(size);
-  }
+  // --- Logic ---
 
-  const setCompanyName = (name: string) => {
-    setCompanyNameState(name);
-    localStorage.setItem('companyName', name);
-  }
-
-  const setUserName = (name: string) => {
-    setUserNameState(name);
-    localStorage.setItem('userName', name);
-  }
-
-  const setCustomers = (val: Customer[] | ((prev: Customer[]) => Customer[])) => {
-    setCustomersState(val);
-  };
-
-  const setSamples = (val: Sample[] | ((prev: Sample[]) => Sample[])) => {
-    setSamplesState(val);
-  };
-
-  // --- FORWARD SYNC: Sample -> MasterProductCatalog ---
   const syncSampleToCatalog = (sample: Partial<Sample>) => {
-    // Generate Product Name based on logic:
-    // [Crystal] [Category] [Form] - [Original] > [Processed]
-    
     const catStr = sample.productCategory?.join(', ') || '';
     const crystal = sample.crystalType || '';
     const form = sample.productForm || '';
@@ -176,10 +153,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const generatedName = `${crystal} ${catStr} ${form} - ${orig}${proc}`;
     
-    // Check if exists (Upsert Logic: Create if not exists)
     setMasterProducts(prev => {
       const exists = prev.find(p => p.productName === generatedName);
-      if (exists) return prev; // Do nothing if exists
+      if (exists) return prev;
       
       const newProduct: MasterProduct = {
         id: `mp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -202,6 +178,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSamplesState([]);
     setMasterProducts([]);
     setIsDemoData(false);
+    // Note: We deliberately do NOT clear companyName or userName here.
     localStorage.removeItem('customers');
     localStorage.removeItem('samples');
     localStorage.removeItem('masterProducts');
