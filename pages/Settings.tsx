@@ -2,20 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Moon, Sun, Monitor, Languages, Building2, Save, Type } from 'lucide-react';
+import { Moon, Sun, Monitor, Languages, Building2, Save, Type, User } from 'lucide-react';
 
 const Settings: React.FC = () => {
-  const { theme, toggleTheme, language, setLanguage, fontSize, setFontSize, companyName, setCompanyName, t } = useApp();
+  const { theme, toggleTheme, language, setLanguage, fontSize, setFontSize, companyName, setCompanyName, userName, setUserName, t } = useApp();
   
   const [localCompanyName, setLocalCompanyName] = useState(companyName);
+  const [localUserName, setLocalUserName] = useState(userName);
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     setLocalCompanyName(companyName);
-  }, [companyName]);
+    setLocalUserName(userName);
+  }, [companyName, userName]);
 
-  const handleSaveCompany = () => {
+  const handleSaveProfile = () => {
     setCompanyName(localCompanyName);
+    setUserName(localUserName);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
   };
@@ -32,27 +35,45 @@ const Settings: React.FC = () => {
         {/* Company Settings */}
         <Card className="p-8">
           <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-700">
-            <Building2 className="text-blue-600" size={28} /> Company Profile
+            <Building2 className="text-blue-600" size={28} /> Organization & User Profile
           </h3>
           
-          <div className="max-w-xl">
-            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-              Organization Name
-            </label>
-            <div className="flex gap-4">
-              <input 
-                type="text" 
-                value={localCompanyName}
-                onChange={(e) => setLocalCompanyName(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-lg"
-                placeholder="Enter company name..."
-              />
-              <Button onClick={handleSaveCompany} className="flex items-center gap-2 px-6">
+          <div className="max-w-3xl space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Organization Name
+                </label>
+                <input 
+                  type="text" 
+                  value={localCompanyName}
+                  onChange={(e) => setLocalCompanyName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-lg"
+                  placeholder="Enter company name..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  User Name
+                </label>
+                <input 
+                  type="text" 
+                  value={localUserName}
+                  onChange={(e) => setLocalUserName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-lg"
+                  placeholder="Enter your name..."
+                />
+              </div>
+            </div>
+            
+            <div className="pt-2">
+              <Button onClick={handleSaveProfile} className="flex items-center gap-2 px-6">
                 <Save size={20} /> {isSaved ? 'Saved!' : t('save')}
               </Button>
             </div>
+            
             <p className="text-sm text-slate-500 mt-2">
-              This name will be displayed in the sidebar and used for document headers.
+              The Organization Name is displayed in the sidebar. Both names are used in export filenames.
             </p>
           </div>
         </Card>

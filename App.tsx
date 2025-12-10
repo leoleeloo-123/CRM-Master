@@ -41,17 +41,20 @@ const AppContent: React.FC = () => {
     setCustomers((prev: Customer[]) => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
   };
 
-  const handleImportCustomers = (importedCustomers: Customer[]) => {
-    // If we are currently using Demo Data, clear it before importing
-    let baseCustomers = customers;
-    if (isDemoData) {
-      baseCustomers = [];
-      setIsDemoData(false); // Disable demo mode flag
-      setShowDemoBanner(false); // Hide banner
+  const handleImportCustomers = (importedCustomers: Customer[], override: boolean = false) => {
+    // If override is true or using demo data, we replace the list
+    if (override || isDemoData) {
+      setCustomers(importedCustomers);
+      if (isDemoData) {
+        setIsDemoData(false); 
+        setShowDemoBanner(false);
+      }
+      return;
     }
 
+    // Otherwise Merge Logic
     const customerMap = new Map<string, Customer>();
-    baseCustomers.forEach(c => {
+    customers.forEach(c => {
       customerMap.set(c.name.toLowerCase().trim(), c);
     });
 
@@ -60,6 +63,7 @@ const AppContent: React.FC = () => {
       const existing = customerMap.get(normalizedName);
 
       if (existing) {
+        // Update existing but keep ID
         newCust.id = existing.id;
         customerMap.set(normalizedName, newCust);
       } else {

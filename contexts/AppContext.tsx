@@ -15,6 +15,8 @@ interface AppContextType {
   setFontSize: (size: FontSize) => void;
   companyName: string;
   setCompanyName: (name: string) => void;
+  userName: string;
+  setUserName: (name: string) => void;
   t: (key: keyof typeof translations['en']) => string;
   
   // Data State
@@ -55,6 +57,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Company Name State
   const [companyName, setCompanyNameState] = useState<string>(() => {
     return localStorage.getItem('companyName') || 'Navi Material';
+  });
+
+  // User Name State
+  const [userName, setUserNameState] = useState<string>(() => {
+    return localStorage.getItem('userName') || 'User';
   });
 
   // Data State with Persistence
@@ -143,6 +150,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('companyName', name);
   }
 
+  const setUserName = (name: string) => {
+    setUserNameState(name);
+    localStorage.setItem('userName', name);
+  }
+
   const setCustomers = (val: Customer[] | ((prev: Customer[]) => Customer[])) => {
     setCustomersState(val);
   };
@@ -205,7 +217,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       theme, toggleTheme, 
       language, setLanguage,
       fontSize, setFontSize,
-      companyName, setCompanyName, 
+      companyName, setCompanyName,
+      userName, setUserName,
       t,
       customers, setCustomers,
       samples, setSamples,

@@ -8,7 +8,7 @@ import { differenceInDays, parseISO, isValid } from 'date-fns';
 import * as XLSX from 'xlsx';
 
 interface DataManagementProps {
-  onImportCustomers: (newCustomers: Customer[]) => void;
+  onImportCustomers: (newCustomers: Customer[], override?: boolean) => void;
   onImportSamples: (newSamples: Sample[], override?: boolean) => void;
 }
 
@@ -16,7 +16,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   onImportCustomers, 
   onImportSamples
 }) => {
-  const { t, clearDatabase, customers, samples, syncSampleToCatalog } = useApp();
+  const { t, clearDatabase, customers, samples, syncSampleToCatalog, companyName, userName } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
   
   // Text Import State
@@ -31,7 +31,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   const [importStatus, setImportStatus] = useState<{type: 'success' | 'error' | 'info', message: string} | null>(null);
   
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
-  const [shouldOverride, setShouldOverride] = useState(true); 
+  const [importMode, setImportMode] = useState<'merge' | 'replace'>('replace');
 
   // --- HELPERS ---
 
@@ -189,11 +189,12 @@ const DataManagement: React.FC<DataManagementProps> = ({
     } as Customer;
   };
 
-  const rowToSample = (cols: any[], tempIdPrefix: string, indexMap: Map<string, number>): Sample => {
+  const rowToSample = (cols: any[], tempIdPrefix: string, indexMap: Map<string, number>, lookupCustomers: Customer[]): Sample => {
     const safeCol = (i: number) => cols[i] !== undefined && cols[i] !== null ? String(cols[i]).trim() : '';
 
     const custName = safeCol(0) || 'Unknown';
-    const matchedCustomer = customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
+    // Link to customer: Prefer the one in lookupCustomers (which might include newly parsed ones)
+    const matchedCustomer = lookupCustomers.find(c => c.name.toLowerCase() === custName.toLowerCase());
     
     // Auto-generate Index
     const lowerCustName = custName.toLowerCase();
@@ -323,7 +324,27 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const sampSheet = XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]);
     XLSX.utils.book_append_sheet(wb, sampSheet, "Samples");
 
-    XLSX.writeFile(wb, "navi_material_database.xlsx");
+    // Filename Logic: Master TB_[Organization]_[User]_[Timestamp].xlsx
+    // Timestamp: Eastern Time
+    const now = new Date();
+    // Get ET Date object by string conversion
+    const etDate = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    
+    // Manual formatting for sortable filename: YYYYMMDD_HHmm
+    const year = etDate.getFullYear();
+    const month = String(etDate.getMonth() + 1).padStart(2, '0');
+    const day = String(etDate.getDate()).padStart(2, '0');
+    const hour = String(etDate.getHours()).padStart(2, '0');
+    const minute = String(etDate.getMinutes()).padStart(2, '0');
+
+    const timestamp = `${year}${month}${day}_${hour}${minute}`;
+    // Sanitize names to be filename safe
+    const safeOrg = companyName.replace(/[^a-z0-9]/gi, '_');
+    const safeUser = userName.replace(/[^a-z0-9]/gi, '_');
+    
+    const fileName = `Master TB_${safeOrg}_${safeUser}_${timestamp}.xlsx`;
+
+    XLSX.writeFile(wb, fileName);
   };
 
 
@@ -352,10 +373,9 @@ const DataManagement: React.FC<DataManagementProps> = ({
         if (activeTab === 'customers') {
           return rowToCustomer(cols, tempId);
         } else {
-          // For paste text, we need a fresh map for this batch or reuse existing?
-          // For simplicity in text paste, we calculate fresh map
+          // For paste text, we calculate fresh map for this batch
           const indexMap = new Map<string, number>(); 
-          if (!shouldOverride) {
+          if (importMode === 'merge') {
              // Populate if appending
               samples.forEach(s => {
                  const lowerName = s.customerName.toLowerCase();
@@ -363,9 +383,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                  if (s.sampleIndex > currentMax) indexMap.set(lowerName, s.sampleIndex);
               });
           }
-          // Note: Index logic is imperfect for line-by-line paste without full context, 
-          // but good enough for simple preview.
-          return rowToSample(cols, tempId, indexMap);
+          return rowToSample(cols, tempId, indexMap, customers);
         }
       });
 
@@ -388,7 +406,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
         
-        // Parse Customers
+        // Parse Customers First
         let parsedCustomers: Customer[] = [];
         if (wb.Sheets['Customers']) {
            const rawRows = XLSX.utils.sheet_to_json(wb.Sheets['Customers'], { header: 1 });
@@ -398,13 +416,19 @@ const DataManagement: React.FC<DataManagementProps> = ({
            );
         }
 
+        // Determine Customer List to Link Samples Against
+        // If replacing, we should check against the NEW customer list primarily.
+        // If merging, we check against BOTH (new ones take precedence or merge logic?)
+        // Safer to just combine them for lookup: New ones + Existing ones
+        const lookupCustomers = [...parsedCustomers, ...customers];
+
         // Parse Samples
         let parsedSamples: Sample[] = [];
         if (wb.Sheets['Samples']) {
            const rawRows = XLSX.utils.sheet_to_json(wb.Sheets['Samples'], { header: 1 });
            const indexMap = new Map<string, number>();
            
-           if (!shouldOverride) {
+           if (importMode === 'merge') {
               samples.forEach(s => {
                  const lowerName = s.customerName.toLowerCase();
                  const currentMax = indexMap.get(lowerName) || 0;
@@ -413,7 +437,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
            }
 
            parsedSamples = rawRows.slice(1).filter((r: any) => r.length > 0).map((row: any) => 
-             rowToSample(row, Math.random().toString(36).substr(2, 9), indexMap)
+             rowToSample(row, Math.random().toString(36).substr(2, 9), indexMap, lookupCustomers)
            );
         }
 
@@ -448,25 +472,27 @@ const DataManagement: React.FC<DataManagementProps> = ({
   };
 
   const confirmImport = () => {
+    const override = importMode === 'replace';
+    
     if (excelPreview) {
        // Import Both
        if (excelPreview.customers.length > 0) {
-         onImportCustomers(excelPreview.customers);
+         onImportCustomers(excelPreview.customers, override);
        }
        if (excelPreview.samples.length > 0) {
          // Auto-sync samples to catalog
          excelPreview.samples.forEach(s => syncSampleToCatalog(s));
-         onImportSamples(excelPreview.samples, shouldOverride);
+         onImportSamples(excelPreview.samples, override);
        }
        setImportStatus({ type: 'success', message: `Imported ${excelPreview.customers.length} Customers and ${excelPreview.samples.length} Samples.` });
     } else if (parsedPreview) {
        // Text Import (Single Type)
        if (activeTab === 'customers') {
-         onImportCustomers(parsedPreview as Customer[]);
+         onImportCustomers(parsedPreview as Customer[], override);
        } else {
          const s = parsedPreview as Sample[];
          s.forEach(x => syncSampleToCatalog(x));
-         onImportSamples(s, shouldOverride);
+         onImportSamples(s, override);
        }
        setImportStatus({ type: 'success', message: `Imported ${parsedPreview.length} records.` });
     }
@@ -550,18 +576,24 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   </p>
                </div>
                
-               <div className="flex flex-col gap-2 items-end">
-                 {/* Override Toggle Checkbox for Samples */}
-                 {activeTab === 'samples' && !parsedPreview && (
-                   <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer bg-white dark:bg-slate-800 px-3 py-1 rounded border border-slate-200 dark:border-slate-700">
-                      <input 
-                        type="checkbox" 
-                        checked={shouldOverride} 
-                        onChange={(e) => setShouldOverride(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 rounded"
-                      />
-                      <span>Override Existing Samples</span>
-                   </label>
+               <div className="flex flex-col gap-3 items-end">
+                 {/* Import Mode Selection */}
+                 {!parsedPreview && !excelPreview && (
+                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <button 
+                        onClick={() => setImportMode('merge')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${importMode === 'merge' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                      >
+                        Merge / Append
+                      </button>
+                      <div className="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
+                      <button 
+                         onClick={() => setImportMode('replace')}
+                         className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${importMode === 'replace' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                      >
+                        Replace All
+                      </button>
+                    </div>
                  )}
 
                  {!parsedPreview ? (
@@ -575,7 +607,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                      {activeTab === 'samples' && (
                        <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
                          <RefreshCcw size={14} />
-                         {shouldOverride ? 'Mode: Replace All' : 'Mode: Append New'}
+                         {importMode === 'replace' ? 'Mode: Replace All' : 'Mode: Append New'}
                        </div>
                      )}
                      <div className="flex gap-2">
