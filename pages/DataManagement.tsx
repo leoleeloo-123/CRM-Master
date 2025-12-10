@@ -217,6 +217,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const procSize = safeCol(7) ? ` > ${safeCol(7)}` : '';
     
     const generatedName = `${crystal} ${categoryStr} ${form} - ${origSize}${procSize}`.trim();
+    
+    // Check "Finished" column for Yes/True/是
+    const finishedVal = (safeCol(2) || '').toLowerCase();
+    const isTestFinished = ['yes', 'true', '是', 'y', '1'].includes(finishedVal);
 
     return {
       id: `new_s_${tempIdPrefix}`,
@@ -225,7 +229,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       sampleIndex: nextIndex,
       
       status: status,
-      isTestFinished: (safeCol(2) || '').toLowerCase() === 'yes' || (safeCol(2) || '').toLowerCase() === 'true',
+      isTestFinished: isTestFinished,
       crystalType: crystal as CrystalType,
       productCategory: categories,
       productForm: form as ProductForm,
