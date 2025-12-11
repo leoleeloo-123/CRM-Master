@@ -1,9 +1,10 @@
 
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel } from '../components/Common';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X, Trash2, Star, CheckSquare } from 'lucide-react';
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X, Trash2, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -31,6 +32,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   // Contacts Edit State
   const [isEditingContacts, setIsEditingContacts] = useState(false);
   const [editContactsList, setEditContactsList] = useState<Contact[]>([]);
+  
+  // Exhibition Tag Edit State
+  const [newExhibitionTag, setNewExhibitionTag] = useState('');
+  const [isAddingTag, setIsAddingTag] = useState(false);
 
   // New Interaction State
   const [isAddingInteraction, setIsAddingInteraction] = useState(false);
@@ -120,6 +125,28 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setEditNextStepText(customer.interactions[0]?.nextSteps || '');
     setEditNextStepDate(customer.nextActionDate || '');
     setIsEditingNextStep(true);
+  };
+
+  // --- Exhibition Tag Handlers ---
+  const handleAddExhibitionTag = () => {
+    if (!newExhibitionTag.trim()) return;
+    const updatedTags = [...customer.tags, newExhibitionTag.trim()];
+    onUpdateCustomer({
+      ...customer,
+      tags: updatedTags
+    });
+    setNewExhibitionTag('');
+    setIsAddingTag(false);
+  };
+
+  const handleDeleteExhibitionTag = (tagToDelete: string) => {
+    if (window.confirm(`Remove exhibition tag "${tagToDelete}"?`)) {
+      const updatedTags = customer.tags.filter(t => t !== tagToDelete);
+      onUpdateCustomer({
+        ...customer,
+        tags: updatedTags
+      });
+    }
   };
 
   // --- New Interaction Handlers ---
@@ -431,24 +458,46 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
            </Card>
            
+           {/* REPLACED: Document Links -> Exhibitions (Tags) */}
            <Card className="p-6 xl:p-8 space-y-4 xl:space-y-6">
              <h3 className="font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-700 pb-2 flex items-center gap-2 text-base xl:text-xl">
-                <LinkIcon className={iconClass} /> {t('docLinks')}
+                <Tag className={iconClass} /> {t('exhibitions')}
              </h3>
-             <div className="space-y-2 xl:space-y-3">
-               {customer.docLinks && customer.docLinks.length > 0 ? (
-                 customer.docLinks.map((link, i) => (
-                   <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm xl:text-base text-blue-600 dark:text-blue-400 hover:underline p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded">
-                     <ExternalLink className={iconClass} />
-                     <span className="truncate">Document {i + 1}</span>
-                   </a>
-                 ))
+             <div className="space-y-3">
+               <div className="flex flex-wrap gap-2">
+                 {customer.tags && customer.tags.length > 0 ? (
+                   customer.tags.map((tag, i) => (
+                     <div key={i} className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-full text-sm group">
+                       <span className="truncate max-w-[150px]">{tag}</span>
+                       <button onClick={() => handleDeleteExhibitionTag(tag)} className="ml-1 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <X className="w-3 h-3" />
+                       </button>
+                     </div>
+                   ))
+                 ) : (
+                   <p className="text-xs xl:text-sm text-slate-400 italic">No exhibition info recorded.</p>
+                 )}
+               </div>
+
+               {isAddingTag ? (
+                 <div className="flex gap-2 items-center mt-2">
+                   <input 
+                      type="text" 
+                      className="w-full border rounded px-2 py-1 text-sm dark:bg-slate-900 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="Enter exhibition name..."
+                      value={newExhibitionTag}
+                      onChange={(e) => setNewExhibitionTag(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddExhibitionTag()}
+                      autoFocus
+                   />
+                   <button onClick={handleAddExhibitionTag} className="text-blue-600 bg-blue-50 p-1.5 rounded"><Save className="w-4 h-4" /></button>
+                   <button onClick={() => setIsAddingTag(false)} className="text-red-500 bg-red-50 p-1.5 rounded"><X className="w-4 h-4" /></button>
+                 </div>
                ) : (
-                 <p className="text-xs xl:text-sm text-slate-400 italic">No documents linked.</p>
+                 <Button variant="ghost" onClick={() => setIsAddingTag(true)} className="w-full text-xs xl:text-sm flex items-center justify-center gap-1 mt-2">
+                    <Plus className={iconClass} /> {t('addExhibition')}
+                 </Button>
                )}
-               <Button variant="ghost" className="w-full text-xs xl:text-sm flex items-center justify-center gap-1 mt-2">
-                  <Plus className={iconClass} /> Add Link
-               </Button>
              </div>
            </Card>
          </div>

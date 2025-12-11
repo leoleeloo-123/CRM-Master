@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel } from '../components/Common';
@@ -15,7 +16,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const navigate = useNavigate();
-  const { t } = useApp();
+  const { t, tagOptions } = useApp();
 
   const criticalCustomers = customers.filter(c => {
     if (c.rank > 2) return false;
@@ -38,15 +39,34 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     return dateA - dateB;
   });
 
-  const activeSamples = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received'].includes(s.status)).length;
-  const pendingFeedback = samples.filter(s => s.status === 'Sent' || s.status === 'Delivered').length;
+  const activeSamples = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received', '已送达', '已关闭', '已反馈'].includes(s.status)).length;
+  // Broadly define pending feedback as Sent or Delivered but not Closed
+  const pendingFeedback = samples.filter(s => ['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status)).length;
   
-  const sampleStatusData = [
-    { name: 'Requested', value: samples.filter(s => s.status === 'Requested').length, color: '#94a3b8' },
-    { name: 'Processing', value: samples.filter(s => s.status === 'Processing').length, color: '#f59e0b' },
-    { name: 'Sent', value: samples.filter(s => s.status === 'Sent').length, color: '#3b82f6' },
-    { name: 'Feedback', value: samples.filter(s => s.status === 'Feedback Received').length, color: '#10b981' },
-  ];
+  // --- Dynamic Sample Pipeline Data ---
+  // Generate colors cyclically
+  const COLORS = ['#94a3b8', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4'];
+  
+  // 1. Aggregate counts based on tagOptions.sampleStatus to preserve order
+  const sampleStatusData = tagOptions.sampleStatus.map((status, index) => {
+    return {
+      name: t(status as any) || status,
+      value: samples.filter(s => s.status === status).length,
+      color: COLORS[index % COLORS.length]
+    };
+  }).filter(item => item.value > 0); // Only show non-zero statuses
+
+  // 2. Catch any samples with statuses NOT in the configured list
+  const knownStatuses = new Set(tagOptions.sampleStatus);
+  const otherCount = samples.filter(s => !knownStatuses.has(s.status)).length;
+  
+  if (otherCount > 0) {
+    sampleStatusData.push({
+      name: 'Other',
+      value: otherCount,
+      color: '#64748b' // Slate-500
+    });
+  }
 
   const regionDataRaw = customers.reduce((acc, curr) => {
     // Check if region is an array (it should be now), but fallback to string handling just in case of old data
@@ -181,35 +201,41 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         <div className="space-y-6 xl:space-y-10">
            <Card className="p-5 xl:p-8">
              <h3 className="font-bold text-slate-800 dark:text-white mb-4 xl:mb-6 text-base xl:text-xl">{t('samplePipeline')}</h3>
-             <div className="h-64 xl:h-80 w-full">
-               <ResponsiveContainer width="100%" height="100%">
-                 <PieChart>
-                   <Pie
-                     data={sampleStatusData}
-                     cx="50%"
-                     cy="50%"
-                     innerRadius={70}
-                     outerRadius={95}
-                     paddingAngle={5}
-                     dataKey="value"
-                   >
-                     {sampleStatusData.map((entry, index) => (
-                       <Cell key={`cell-${index}`} fill={entry.color} />
-                     ))}
-                   </Pie>
-                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff', fontSize: '14px' }} />
-                   <legend />
-                 </PieChart>
-               </ResponsiveContainer>
-             </div>
-             <div className="grid grid-cols-2 gap-2 mt-2 xl:mt-4">
-               {sampleStatusData.map(d => (
-                 <div key={d.name} className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300">
-                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }}></div>
-                   <span>{d.name}: {d.value}</span>
+             {sampleStatusData.length > 0 ? (
+               <>
+                 <div className="h-64 xl:h-80 w-full">
+                   <ResponsiveContainer width="100%" height="100%">
+                     <PieChart>
+                       <Pie
+                         data={sampleStatusData}
+                         cx="50%"
+                         cy="50%"
+                         innerRadius={70}
+                         outerRadius={95}
+                         paddingAngle={5}
+                         dataKey="value"
+                       >
+                         {sampleStatusData.map((entry, index) => (
+                           <Cell key={`cell-${index}`} fill={entry.color} />
+                         ))}
+                       </Pie>
+                       <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff', fontSize: '14px' }} />
+                       <legend />
+                     </PieChart>
+                   </ResponsiveContainer>
                  </div>
-               ))}
-             </div>
+                 <div className="grid grid-cols-2 gap-2 mt-2 xl:mt-4">
+                   {sampleStatusData.map(d => (
+                     <div key={d.name} className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300">
+                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }}></div>
+                       <span>{d.name}: {d.value}</span>
+                     </div>
+                   ))}
+                 </div>
+               </>
+             ) : (
+               <div className="h-64 flex items-center justify-center text-slate-400 italic">No sample data available.</div>
+             )}
            </Card>
 
            <Card className="p-5 xl:p-8">

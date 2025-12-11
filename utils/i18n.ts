@@ -1,4 +1,5 @@
 
+
 export type Language = 'en' | 'zh';
 
 export const translations = {
@@ -50,6 +51,8 @@ export const translations = {
     samples: 'Samples',
     keyContacts: 'Key Contacts',
     docLinks: 'Document Links',
+    exhibitions: 'Exhibitions',
+    addExhibition: 'Add Exhibition',
     productSummary: 'Status & Product Summary',
     lastUpdated: 'Last Updated',
     daysSinceUpdate: 'Days Since Update',
@@ -235,6 +238,8 @@ export const translations = {
     samples: '样品',
     keyContacts: '关键联系人',
     docLinks: '文档链接',
+    exhibitions: '展会信息',
+    addExhibition: '添加展会',
     productSummary: '状态与产品总结',
     lastUpdated: '最后更新',
     daysSinceUpdate: '距更新天数',
@@ -293,7 +298,7 @@ export const translations = {
     '多晶': '多晶',
     '微粉': '微粉',
     '悬浮液': '悬浮液',
-    '聚晶': '聚晶',
+    '聚晶': '团聚',
     '纳米金刚石': '纳米金刚石',
     '球形金刚石': '球形金刚石',
     '金刚石球': '金刚石球',

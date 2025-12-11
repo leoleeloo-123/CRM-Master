@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus } from '../types';
 import { Card, Badge, Button, Modal } from '../components/Common';
@@ -298,91 +299,89 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         </div>
       </div>
 
-      {/* Advanced Filter Bar */}
+      {/* Advanced Filter Bar - Split into 2 separate rows as requested */}
       <Card className="p-4 xl:p-6 mb-6 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
          <div className="flex flex-col gap-4">
-             {/* Row 1: Search & Basic Filters */}
-             <div className="flex flex-col xl:flex-row gap-4">
-                 <div className="relative flex-1">
-                   <Search className="absolute left-3 top-2.5 xl:top-3.5 text-slate-400 w-4 h-4 xl:w-6 xl:h-6" />
-                   <input 
-                     type="text" 
-                     placeholder={t('searchSample')}
-                     className="w-full pl-9 xl:pl-12 pr-4 py-2 xl:py-3 text-sm xl:text-lg border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                     value={searchTerm}
-                     onChange={(e) => setSearchTerm(e.target.value)}
-                   />
-                 </div>
-                 
-                 <div className="flex flex-wrap gap-2 items-center text-sm xl:text-base">
-                    <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mr-2 font-medium">
-                      <Filter className="w-4 h-4 xl:w-5 xl:h-5" /> {t('filters')}:
-                    </div>
-                    
-                    <select 
-                      className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 max-w-[150px]"
-                      value={filterCustomer}
-                      onChange={(e) => setFilterCustomer(e.target.value)}
-                    >
-                      <option value="">{t('customer')}</option>
-                      {customerFilterOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-
-                    <select 
-                      className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 max-w-[150px]"
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value)}
-                    >
-                      <option value="">{t('status')}</option>
-                      {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{renderOption(s)}</option>)}
-                    </select>
-
-                    <select 
-                      className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                      value={filterTestFinished}
-                      onChange={(e) => setFilterTestFinished(e.target.value)}
-                    >
-                      <option value="all">{t('filterTestAll')}</option>
-                      <option value="finished">{t('filterTestFinished')}</option>
-                      <option value="ongoing">{t('filterTestOngoing')}</option>
-                    </select>
-                 </div>
+             {/* Row 1: Search Bar (Full Width) */}
+             <div className="relative w-full">
+               <Search className="absolute left-3 top-2.5 xl:top-3.5 text-slate-400 w-4 h-4 xl:w-6 xl:h-6" />
+               <input 
+                 type="text" 
+                 placeholder={t('searchSample')}
+                 className="w-full pl-9 xl:pl-12 pr-4 py-2 xl:py-3 text-sm xl:text-lg border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+               />
              </div>
+             
+             {/* Row 2: All Filters (Combined) */}
+             <div className="flex flex-wrap gap-2 items-center text-sm xl:text-base">
+                <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mr-2 font-medium shrink-0">
+                  <Filter className="w-4 h-4 xl:w-5 xl:h-5" /> {t('filters')}:
+                </div>
+                
+                <select 
+                  className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 max-w-[150px]"
+                  value={filterCustomer}
+                  onChange={(e) => setFilterCustomer(e.target.value)}
+                >
+                  <option value="">{t('customer')}</option>
+                  {customerFilterOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
 
-             {/* Row 2: Detailed Specs Filters */}
-             <div className="flex flex-wrap gap-2 items-center text-sm xl:text-base border-t border-slate-200 dark:border-slate-700 pt-3">
-                 <select 
-                    className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                    value={filterCrystalType}
-                    onChange={(e) => setFilterCrystalType(e.target.value)}
-                 >
-                    <option value="">{t('crystal')}: All</option>
-                    {tagOptions.crystalType.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
-                 </select>
+                <select 
+                  className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 max-w-[150px]"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="">{t('status')}</option>
+                  {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{renderOption(s)}</option>)}
+                </select>
 
-                 <select 
-                    className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                 >
-                    <option value="">{t('category')}: All</option>
-                    {tagOptions.productCategory.map(c => <option key={c} value={c}>{renderOption(c)}</option>)}
-                 </select>
+                <select 
+                  className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 xl:px-3 xl:py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                  value={filterTestFinished}
+                  onChange={(e) => setFilterTestFinished(e.target.value)}
+                >
+                  <option value="all">{t('filterTestAll')}</option>
+                  <option value="finished">{t('filterTestFinished')}</option>
+                  <option value="ongoing">{t('filterTestOngoing')}</option>
+                </select>
 
-                 <select 
-                    className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                    value={filterForm}
-                    onChange={(e) => setFilterForm(e.target.value)}
-                 >
-                    <option value="">{t('form')}: All</option>
-                    {tagOptions.productForm.map(f => <option key={f} value={f}>{renderOption(f)}</option>)}
-                 </select>
+                <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1 hidden md:block"></div>
 
-                 {hasActiveFilters && (
-                    <button onClick={resetFilters} className="ml-auto text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
-                        <X size={14} /> Clear All
-                    </button>
-                 )}
+                <select 
+                   className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                   value={filterCrystalType}
+                   onChange={(e) => setFilterCrystalType(e.target.value)}
+                >
+                   <option value="">{t('crystal')}: All</option>
+                   {tagOptions.crystalType.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
+                </select>
+
+                <select 
+                   className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                   value={filterCategory}
+                   onChange={(e) => setFilterCategory(e.target.value)}
+                >
+                   <option value="">{t('category')}: All</option>
+                   {tagOptions.productCategory.map(c => <option key={c} value={c}>{renderOption(c)}</option>)}
+                </select>
+
+                <select 
+                   className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                   value={filterForm}
+                   onChange={(e) => setFilterForm(e.target.value)}
+                >
+                   <option value="">{t('form')}: All</option>
+                   {tagOptions.productForm.map(f => <option key={f} value={f}>{renderOption(f)}</option>)}
+                </select>
+
+                {hasActiveFilters && (
+                   <button onClick={resetFilters} className="ml-auto text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
+                       <X size={14} /> Clear All
+                   </button>
+                )}
              </div>
          </div>
       </Card>
