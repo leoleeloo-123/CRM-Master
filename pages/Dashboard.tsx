@@ -1,11 +1,16 @@
 
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel } from '../components/Common';
-import { AlertTriangle, Calendar, ArrowRight, Activity, FlaskConical } from 'lucide-react';
+import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { format, isBefore, parseISO, addDays } from 'date-fns';
+import { 
+  format, isBefore, parseISO, addDays, 
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, 
+  isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, 
+  addDays as dateAddDays, subDays, isToday 
+} from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 
@@ -13,6 +18,192 @@ interface DashboardProps {
   customers: Customer[];
   samples: Sample[];
 }
+
+type CalendarView = 'day' | 'week' | 'month';
+
+const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) => {
+  const { t } = useApp();
+  const navigate = useNavigate();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState<CalendarView>('month');
+
+  // Filter for Tier 1 & 2 customers with valid next action dates
+  const events = customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
+    ...c,
+    dateObj: parseISO(c.nextActionDate!)
+  }));
+
+  const handlePrev = () => {
+    if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
+    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
+    if (view === 'day') setCurrentDate(subDays(currentDate, 1));
+  };
+
+  const handleNext = () => {
+    if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
+    if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
+    if (view === 'day') setCurrentDate(dateAddDays(currentDate, 1));
+  };
+
+  const handleToday = () => setCurrentDate(new Date());
+
+  const getUrgencyColor = (dateStr: string) => {
+    const urgency = getUrgencyLevel(dateStr);
+    if (urgency === 'urgent') return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 border-red-200";
+    if (urgency === 'warning') return "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-200";
+    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border-emerald-200";
+  };
+
+  const renderEventBadge = (c: any, compact = true) => (
+    <div 
+      key={c.id} 
+      onClick={(e) => { e.stopPropagation(); navigate(`/customers/${c.id}`); }}
+      className={`cursor-pointer rounded px-1.5 py-0.5 text-[10px] xl:text-xs font-medium border truncate transition-all hover:scale-105 hover:shadow-sm mb-1 ${getUrgencyColor(c.nextActionDate!)}`}
+      title={`${c.name} - ${c.interactions[0]?.nextSteps || 'No next step'}`}
+    >
+      {compact ? c.name.substring(0, 10) + (c.name.length > 10 ? '..' : '') : c.name}
+    </div>
+  );
+
+  const renderMonthView = () => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(monthStart);
+    const startDate = startOfWeek(monthStart);
+    const endDate = endOfWeek(monthEnd);
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return (
+      <div className="w-full">
+         <div className="grid grid-cols-7 mb-2">
+            {weekDays.map(d => (
+              <div key={d} className="text-center text-xs font-bold text-slate-500 uppercase">{d}</div>
+            ))}
+         </div>
+         <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(80px,auto)]">
+            {days.map(day => {
+               const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
+               const isCurrentMonth = isSameMonth(day, monthStart);
+               const isDayToday = isToday(day);
+               
+               return (
+                 <div 
+                   key={day.toISOString()} 
+                   className={`p-1 border rounded-lg flex flex-col gap-1 min-h-[80px] ${isCurrentMonth ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900 border-transparent opacity-50'} ${isDayToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+                 >
+                    <span className={`text-xs font-bold self-end px-1.5 rounded-full ${isDayToday ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
+                      {format(day, 'd')}
+                    </span>
+                    <div className="flex-1 overflow-y-auto max-h-[100px] scrollbar-hide">
+                       {dayEvents.map(e => renderEventBadge(e))}
+                    </div>
+                 </div>
+               );
+            })}
+         </div>
+      </div>
+    );
+  };
+
+  const renderWeekView = () => {
+    const startDate = startOfWeek(currentDate);
+    const days = Array.from({ length: 7 }).map((_, i) => dateAddDays(startDate, i));
+
+    return (
+      <div className="grid grid-cols-7 gap-2 h-full min-h-[300px]">
+        {days.map(day => {
+           const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
+           const isDayToday = isToday(day);
+           
+           return (
+             <div key={day.toISOString()} className={`flex flex-col border rounded-lg overflow-hidden ${isDayToday ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700'}`}>
+                <div className={`p-2 text-center text-sm font-bold border-b border-slate-100 dark:border-slate-700 ${isDayToday ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                   <div>{format(day, 'EEE')}</div>
+                   <div className="text-lg">{format(day, 'd')}</div>
+                </div>
+                <div className="p-2 flex-1 bg-white dark:bg-slate-800 space-y-2 overflow-y-auto">
+                   {dayEvents.map(e => renderEventBadge(e, false))}
+                </div>
+             </div>
+           );
+        })}
+      </div>
+    );
+  };
+
+  const renderDayView = () => {
+     const dayEvents = events.filter(e => isSameDay(e.dateObj, currentDate));
+     
+     return (
+       <div className="min-h-[300px] bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+          <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+             {format(currentDate, 'EEEE, MMMM do')}
+             {isToday(currentDate) && <Badge color="blue">Today</Badge>}
+          </h4>
+          {dayEvents.length === 0 ? (
+             <p className="text-slate-400 italic">No critical actions scheduled for this day.</p>
+          ) : (
+             <div className="space-y-3">
+               {dayEvents.map(e => (
+                 <div key={e.id} onClick={() => navigate(`/customers/${e.id}`)} className="flex items-start gap-4 p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:shadow-md cursor-pointer transition-all bg-slate-50 dark:bg-slate-900/50">
+                    <div className={`w-1 self-stretch rounded-full ${getUrgencyLevel(e.nextActionDate!) === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
+                    <div className="flex-1">
+                       <div className="flex justify-between">
+                          <h5 className="font-bold text-slate-800 dark:text-white text-lg">{e.name}</h5>
+                          <RankStars rank={e.rank} />
+                       </div>
+                       <p className="text-slate-600 dark:text-slate-300 mt-1">{e.interactions[0]?.nextSteps || 'Check details'}</p>
+                       <div className="mt-2 flex gap-2">
+                          <Badge color="gray">{e.status}</Badge>
+                       </div>
+                    </div>
+                 </div>
+               ))}
+             </div>
+          )}
+       </div>
+     );
+  };
+
+  return (
+    <Card className="p-4 xl:p-6 h-full flex flex-col">
+       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+          <div className="flex items-center gap-2">
+             <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+             <h3 className="font-bold text-slate-800 dark:text-white text-lg">{t('calendar')}</h3>
+             <span className="text-sm font-medium text-slate-500 dark:text-slate-400 ml-2 hidden md:inline">
+                {format(currentDate, 'MMMM yyyy')}
+             </span>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
+             <button onClick={() => setView('day')} className={`px-3 py-1 text-xs font-bold rounded ${view === 'day' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewDay')}</button>
+             <button onClick={() => setView('week')} className={`px-3 py-1 text-xs font-bold rounded ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewWeek')}</button>
+             <button onClick={() => setView('month')} className={`px-3 py-1 text-xs font-bold rounded ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
+          </div>
+
+          <div className="flex items-center gap-1">
+             <button onClick={handlePrev} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronLeft size={16}/></button>
+             <button onClick={handleToday} className="px-2 py-1 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 rounded">{t('today')}</button>
+             <button onClick={handleNext} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronRight size={16}/></button>
+          </div>
+       </div>
+       
+       <div className="flex-1">
+          {view === 'month' && renderMonthView()}
+          {view === 'week' && renderWeekView()}
+          {view === 'day' && renderDayView()}
+       </div>
+       <div className="mt-2 flex gap-4 text-xs text-slate-500 justify-end">
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Urgent (&lt;7d)</div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-400"></div> Warning (&lt;14d)</div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Safe</div>
+       </div>
+    </Card>
+  );
+};
+
 
 const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const navigate = useNavigate();
@@ -32,7 +223,6 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     }
     
     // 2. Sort by Date (Ascending: Earliest date first)
-    // Use a large number for missing dates to push them to the bottom, though critical filter implies dates exist
     const dateA = a.nextActionDate ? parseISO(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
     const dateB = b.nextActionDate ? parseISO(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
     
@@ -117,7 +307,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </Card>
         <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-purple-500">
           <div className="p-3 xl:p-4 bg-purple-50 dark:bg-purple-900/50 rounded-full text-purple-600 dark:text-purple-400">
-            <Calendar className={iconClass} />
+            <CalendarIcon className={iconClass} />
           </div>
           <div>
             <p className="text-sm xl:text-base text-slate-500 dark:text-slate-400">{t('pendingFeedback')}</p>
@@ -136,7 +326,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-10">
-        <div className="lg:col-span-2 space-y-4 xl:space-y-6">
+        
+        {/* Left Column: Priority Attention (Now Narrower - col-span-1) */}
+        <div className="lg:col-span-1 space-y-4 xl:space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg xl:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 xl:w-7 xl:h-7 text-amber-500" />
@@ -156,7 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 <p>{t('noCriticalActions')}</p>
               </Card>
             ) : (
-              criticalCustomers.map(c => {
+              criticalCustomers.slice(0, 5).map(c => { // Limited to 5 items to fit narrower column
                 const urgency = getUrgencyLevel(c.nextActionDate);
                 let dateColor = "text-slate-500 dark:text-slate-400";
                 if (urgency === 'urgent') dateColor = "text-red-600 dark:text-red-500 font-bold";
@@ -164,94 +356,104 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 if (urgency === 'safe') dateColor = "text-emerald-600 dark:text-emerald-500 font-bold";
 
                 return (
-                  <Card key={c.id} className="p-4 xl:p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/customers/${c.id}`)}>
-                    <div className="flex justify-between items-start">
-                      <div className="flex gap-3 xl:gap-5">
-                        <div className={`w-1 xl:w-2 self-stretch rounded-full ${urgency === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
-                        <div>
-                          <div className="flex items-center gap-2 xl:gap-4">
-                            <h4 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{c.name}</h4>
-                            <RankStars rank={c.rank} />
-                          </div>
-                          <p className="text-sm xl:text-base text-slate-600 dark:text-slate-300 mt-1">{c.interactions[0]?.nextSteps || "Update required"}</p>
-                          <div className="flex gap-2 mt-2">
-                            {c.tags.slice(0, 2).map(t => <Badge key={t} color="gray">{t}</Badge>)}
-                          </div>
-                        </div>
+                  <Card key={c.id} className="p-3 xl:p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/customers/${c.id}`)}>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between items-start">
+                         <div className="flex gap-2">
+                             <div className={`w-1.5 self-stretch rounded-full ${urgency === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
+                             <div>
+                                <h4 className="font-bold text-slate-800 dark:text-white text-sm xl:text-base">{c.name}</h4>
+                                <div className="mt-1">
+                                   <RankStars rank={c.rank} />
+                                </div>
+                             </div>
+                         </div>
+                         <div className={`flex items-center gap-1 text-xs xl:text-sm font-medium ${dateColor}`}>
+                           <CalendarIcon className="w-3 h-3 xl:w-4 xl:h-4" />
+                           <span>
+                             {c.nextActionDate ? format(parseISO(c.nextActionDate), 'MMM d') : 'N/A'}
+                           </span>
+                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className={`flex items-center justify-end gap-1 text-sm xl:text-base font-medium ${dateColor}`}>
-                          <Calendar className="w-3.5 h-3.5 xl:w-5 xl:h-5" />
-                          <span>
-                            {c.nextActionDate ? format(parseISO(c.nextActionDate), 'MMM d') : 'N/A'}
-                          </span>
-                        </div>
-                        <div className="mt-1 xl:mt-2">
-                            <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
-                        </div>
+                      <p className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 line-clamp-2 pl-3.5">
+                         {c.interactions[0]?.nextSteps || "Update required"}
+                      </p>
+                      <div className="flex justify-between items-center pl-3.5 mt-1">
+                         <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
                       </div>
                     </div>
                   </Card>
                 );
               })
             )}
+            {criticalCustomers.length > 5 && (
+               <div className="text-center text-sm text-slate-500 dark:text-slate-400">
+                  + {criticalCustomers.length - 5} more items
+               </div>
+            )}
           </div>
         </div>
 
-        <div className="space-y-6 xl:space-y-10">
-           <Card className="p-5 xl:p-8">
-             <h3 className="font-bold text-slate-800 dark:text-white mb-4 xl:mb-6 text-base xl:text-xl">{t('samplePipeline')}</h3>
-             {sampleStatusData.length > 0 ? (
-               <>
-                 <div className="h-64 xl:h-80 w-full">
-                   <ResponsiveContainer width="100%" height="100%">
-                     <PieChart>
-                       <Pie
-                         data={sampleStatusData}
-                         cx="50%"
-                         cy="50%"
-                         innerRadius={70}
-                         outerRadius={95}
-                         paddingAngle={5}
-                         dataKey="value"
-                       >
-                         {sampleStatusData.map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.color} />
-                         ))}
-                       </Pie>
-                       <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff', fontSize: '14px' }} />
-                       <legend />
-                     </PieChart>
-                   </ResponsiveContainer>
-                 </div>
-                 <div className="grid grid-cols-2 gap-2 mt-2 xl:mt-4">
-                   {sampleStatusData.map(d => (
-                     <div key={d.name} className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300">
-                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }}></div>
-                       <span>{d.name}: {d.value}</span>
-                     </div>
-                   ))}
-                 </div>
-               </>
-             ) : (
-               <div className="h-64 flex items-center justify-center text-slate-400 italic">No sample data available.</div>
-             )}
-           </Card>
+        {/* Right Column: Calendar & Charts (Now Wider - col-span-2) */}
+        <div className="lg:col-span-2 space-y-6 xl:space-y-10">
+           
+           {/* NEW CALENDAR COMPONENT */}
+           <DashboardCalendar customers={customers} />
 
-           <Card className="p-5 xl:p-8">
-             <h3 className="font-bold text-slate-800 dark:text-white mb-4 xl:mb-6 text-base xl:text-xl">{t('customersByRegion')}</h3>
-             <div className="h-40 xl:h-60 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={regionData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                    <XAxis dataKey="name" tick={{fontSize: 12, fill: '#64748b'}} />
-                    <YAxis allowDecimals={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }} />
-                    <Bar dataKey="count" fill="#475569" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-             </div>
-           </Card>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="p-5 xl:p-8">
+                <h3 className="font-bold text-slate-800 dark:text-white mb-4 xl:mb-6 text-base xl:text-xl">{t('samplePipeline')}</h3>
+                {sampleStatusData.length > 0 ? (
+                  <>
+                    <div className="h-48 xl:h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={sampleStatusData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={75}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {sampleStatusData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff', fontSize: '14px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {sampleStatusData.map(d => (
+                        <div key={d.name} className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }}></div>
+                          <span className="truncate">{d.name}: {d.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-48 flex items-center justify-center text-slate-400 italic">No sample data available.</div>
+                )}
+              </Card>
+
+              <Card className="p-5 xl:p-8">
+                <h3 className="font-bold text-slate-800 dark:text-white mb-4 xl:mb-6 text-base xl:text-xl">{t('customersByRegion')}</h3>
+                <div className="h-48 xl:h-64 w-full">
+                   <ResponsiveContainer width="100%" height="100%">
+                     <BarChart data={regionData}>
+                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                       <XAxis dataKey="name" tick={{fontSize: 10, fill: '#64748b'}} interval={0} angle={-30} textAnchor="end" height={50} />
+                       <YAxis allowDecimals={false} tick={{fontSize: 12, fill: '#64748b'}} />
+                       <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }} />
+                       <Bar dataKey="count" fill="#475569" radius={[4, 4, 0, 0]} />
+                     </BarChart>
+                   </ResponsiveContainer>
+                </div>
+              </Card>
+           </div>
         </div>
       </div>
     </div>

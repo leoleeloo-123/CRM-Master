@@ -38,6 +38,10 @@ export const translations = {
     noCriticalActions: 'No critical actions pending. Great job!',
     samplePipeline: 'Sample Pipeline',
     customersByRegion: 'Customers by Region',
+    calendar: 'Calendar',
+    viewDay: 'Day',
+    viewWeek: 'Week',
+    viewMonth: 'Month',
 
     // Customer List
     customerDatabase: 'Customer Database',
@@ -225,6 +229,10 @@ export const translations = {
     noCriticalActions: '暂无紧急事项，干得漂亮！',
     samplePipeline: '样品流程统计',
     customersByRegion: '客户地区分布',
+    calendar: '工作日历',
+    viewDay: '日视图',
+    viewWeek: '周视图',
+    viewMonth: '月视图',
 
     // Customer List
     customerDatabase: '客户数据库',
