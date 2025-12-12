@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel } from '../components/Common';
@@ -58,10 +57,11 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
     <div 
       key={c.id} 
       onClick={(e) => { e.stopPropagation(); navigate(`/customers/${c.id}`); }}
-      className={`cursor-pointer rounded px-1.5 py-0.5 text-xs xl:text-sm font-medium border truncate transition-all hover:scale-105 hover:shadow-sm mb-1 ${getUrgencyColor(c.nextActionDate!)}`}
+      className={`cursor-pointer rounded px-2 py-1 text-xs xl:text-sm font-medium border truncate transition-all hover:scale-105 hover:shadow-sm mb-1 ${getUrgencyColor(c.nextActionDate!)}`}
       title={`${c.name} - ${c.interactions[0]?.nextSteps || 'No next step'}`}
     >
-      {compact ? c.name.substring(0, 10) + (c.name.length > 10 ? '..' : '') : c.name}
+      {/* Show full name but truncated with CSS, instead of hard substring */}
+      {c.name}
     </div>
   );
 
@@ -81,7 +81,8 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
               <div key={d} className="text-center text-sm xl:text-base font-bold text-slate-500 uppercase">{d}</div>
             ))}
          </div>
-         <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(60px,auto)]">
+         {/* Increased min-height for cells to 120px to allow more content */}
+         <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(120px,auto)]">
             {days.map(day => {
                const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
                const isCurrentMonth = isSameMonth(day, monthStart);
@@ -90,13 +91,14 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
                return (
                  <div 
                    key={day.toISOString()} 
-                   className={`p-1 border rounded-lg flex flex-col gap-1 min-h-[60px] transition-colors ${isCurrentMonth ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900 border-transparent opacity-50'} ${isDayToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+                   className={`p-2 border rounded-lg flex flex-col gap-1 min-h-[120px] transition-colors ${isCurrentMonth ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900 border-transparent opacity-50'} ${isDayToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
                  >
-                    <span className={`text-sm xl:text-lg font-bold self-end px-1.5 rounded-full ${isDayToday ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
+                    <span className={`text-sm xl:text-lg font-bold self-end px-2 rounded-full ${isDayToday ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
                       {format(day, 'd')}
                     </span>
-                    <div className="flex-1 overflow-y-auto max-h-[100px] scrollbar-hide">
-                       {dayEvents.map(e => renderEventBadge(e))}
+                    {/* Removed max-height so cell grows with content */}
+                    <div className="flex-1 flex flex-col gap-1">
+                       {dayEvents.map(e => renderEventBadge(e, false))}
                     </div>
                  </div>
                );
@@ -122,7 +124,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
                    <div className="text-sm xl:text-base font-bold uppercase">{format(day, 'EEE')}</div>
                    <div className="text-xl xl:text-2xl font-extrabold">{format(day, 'd')}</div>
                 </div>
-                <div className="p-2 flex-1 bg-white dark:bg-slate-800 space-y-2 overflow-y-auto min-h-[100px]">
+                <div className="p-2 flex-1 bg-white dark:bg-slate-800 space-y-2 min-h-[150px]">
                    {dayEvents.length > 0 ? dayEvents.map(e => renderEventBadge(e, false)) : <div className="text-xs text-slate-300 text-center py-4">-</div>}
                 </div>
              </div>
@@ -167,7 +169,8 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   };
 
   return (
-    <Card className="p-4 xl:p-6 h-full flex flex-col">
+    // Removed h-full to allow calendar to shrink to fit content (reducing whitespace)
+    <Card className="p-4 xl:p-6 flex flex-col">
        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
           <div className="flex items-center gap-2">
              <CalendarIcon className="w-5 h-5 xl:w-6 xl:h-6 text-blue-600 dark:text-blue-400" />
@@ -195,7 +198,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
           {view === 'week' && renderWeekView()}
           {view === 'day' && renderDayView()}
        </div>
-       <div className="mt-2 flex gap-4 text-xs text-slate-500 justify-end">
+       <div className="mt-4 flex gap-4 text-xs text-slate-500 justify-end">
           <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Urgent (&lt;7d)</div>
           <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-400"></div> Warning (&lt;14d)</div>
           <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Safe</div>
