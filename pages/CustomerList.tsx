@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Customer } from '../types';
-import { Card, Button, RankStars, StatusIcon } from '../components/Common';
+import { Customer, Rank, CustomerStatus } from '../types';
+import { Card, Button, RankStars, StatusIcon, Modal } from '../components/Common';
 import { Search, Plus, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
@@ -12,9 +12,19 @@ interface CustomerListProps {
 
 const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
   const navigate = useNavigate();
-  const { t } = useApp();
+  const { t, setCustomers } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRank, setFilterRank] = useState<number | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
+  // New Customer State
+  const [newCustomer, setNewCustomer] = useState<{name: string, region: string, rank: Rank, contactName: string, contactEmail: string}>({
+    name: '',
+    region: '',
+    rank: 3,
+    contactName: '',
+    contactEmail: ''
+  });
 
   const filteredCustomers = customers.filter(c => {
     const regionString = Array.isArray(c.region) ? c.region.join(' ') : c.region;
@@ -28,13 +38,44 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
   const getStatusLabel = (status: string | undefined) => {
     if (!status) return '';
     const s = status.trim();
-    // Handle FollowUpStatus
     if (s === 'My Turn' || s === '我方跟进') return t('statusMyTurn');
     if (s === 'Waiting for Customer' || s === '等待对方') return t('statusWaiting');
     if (s === 'No Action' || s === '暂无') return t('statusNoAction');
-    
-    // Fallback for other statuses or display as is
     return s;
+  };
+
+  const handleCreateCustomer = () => {
+    if (!newCustomer.name) {
+      alert('Customer Name is required');
+      return;
+    }
+
+    const newId = `c_${Date.now()}`;
+    const now = new Date().toISOString().split('T')[0];
+
+    const customer: Customer = {
+       id: newId,
+       name: newCustomer.name,
+       region: [newCustomer.region || 'Unknown'],
+       rank: newCustomer.rank,
+       status: 'Active',
+       productSummary: '',
+       lastStatusUpdate: now,
+       followUpStatus: 'No Action',
+       contacts: newCustomer.contactName ? [{
+         name: newCustomer.contactName,
+         title: '',
+         email: newCustomer.contactEmail,
+         isPrimary: true
+       }] : [],
+       lastContactDate: now,
+       tags: [],
+       interactions: []
+    };
+
+    setCustomers(prev => [...prev, customer]);
+    setIsAddModalOpen(false);
+    navigate(`/customers/${newId}`);
   };
 
   return (
@@ -45,7 +86,10 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
           <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg">{t('manageClients')}</p>
         </div>
         <div className="flex gap-2">
-           <Button className="flex items-center gap-2" onClick={() => navigate('/data-management')}>
+           <Button className="flex items-center gap-2" onClick={() => setIsAddModalOpen(true)}>
+             <Plus className="w-4 h-4 xl:w-5 xl:h-5" /> {t('add')}
+           </Button>
+           <Button variant="secondary" className="flex items-center gap-2" onClick={() => navigate('/data-management')}>
              <Plus className="w-4 h-4 xl:w-5 xl:h-5" /> {t('import')}
            </Button>
         </div>
@@ -154,6 +198,72 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
           </table>
         </div>
       </Card>
+
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Customer">
+         <div className="space-y-4">
+            <div>
+               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Company Name *</label>
+               <input 
+                  className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                  value={newCustomer.name}
+                  onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                  autoFocus
+               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Region</label>
+                 <input 
+                    className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                    value={newCustomer.region}
+                    onChange={(e) => setNewCustomer({...newCustomer, region: e.target.value})}
+                    placeholder="e.g. Asia"
+                 />
+              </div>
+              <div>
+                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Rank</label>
+                 <select 
+                    className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                    value={newCustomer.rank}
+                    onChange={(e) => setNewCustomer({...newCustomer, rank: Number(e.target.value) as Rank})}
+                 >
+                    <option value={1}>1 - Highest</option>
+                    <option value={2}>2 - High</option>
+                    <option value={3}>3 - Medium</option>
+                    <option value={4}>4 - Low</option>
+                    <option value={5}>5 - Lowest</option>
+                 </select>
+              </div>
+            </div>
+            
+            <div className="border-t border-slate-100 dark:border-slate-700 pt-4 mt-2">
+               <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Primary Contact (Optional)</h4>
+               <div className="grid grid-cols-2 gap-4">
+                  <div>
+                     <label className="block text-xs font-bold text-slate-500 mb-1">Name</label>
+                     <input 
+                        className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm"
+                        value={newCustomer.contactName}
+                        onChange={(e) => setNewCustomer({...newCustomer, contactName: e.target.value})}
+                     />
+                  </div>
+                  <div>
+                     <label className="block text-xs font-bold text-slate-500 mb-1">Email</label>
+                     <input 
+                        className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-sm"
+                        value={newCustomer.contactEmail}
+                        onChange={(e) => setNewCustomer({...newCustomer, contactEmail: e.target.value})}
+                     />
+                  </div>
+               </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+               <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+               <Button onClick={handleCreateCustomer}>Create Customer</Button>
+            </div>
+         </div>
+      </Modal>
     </div>
   );
 };

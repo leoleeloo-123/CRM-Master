@@ -1,11 +1,11 @@
 
-
 import React, { useState } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus } from '../types';
 import { Card, Badge, Button, Modal } from '../components/Common';
 import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, parseISO, isValid } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface SampleTrackerProps {
   samples: Sample[];
@@ -13,6 +13,7 @@ interface SampleTrackerProps {
 }
 
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
+  const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,11 +93,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   };
 
   const handleOpenEdit = (sample: Sample) => {
-     setCurrentSample({
-       ...sample,
-       lastStatusDate: format(new Date(), 'yyyy-MM-dd')
-     });
-     setIsAddModalOpen(true);
+     navigate(`/samples/${sample.id}`);
   };
 
   const handleOpenNew = () => {
@@ -590,8 +587,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         </Card>
       )}
 
-      {/* New/Edit Sample Modal */}
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={currentSample.id ? t('editSample') : t('createSample')}>
+      {/* New/Edit Sample Modal - Modified to only be "New Sample" */}
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={t('createSample')}>
         <div className="space-y-6">
           
           {/* Customer & Index Row */}
@@ -605,7 +602,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   const customer = customers.find(c => c.id === e.target.value);
                   setCurrentSample({...currentSample, customerId: e.target.value, customerName: customer?.name || ''});
                 }}
-                disabled={!!currentSample.id} // Disable changing customer on edit
               >
                 <option value="">{t('selectCustomer')}</option>
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -792,7 +788,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              />
           </div>
 
-          {/* Links - Removed Label PDF Link input here */}
+          {/* Links */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('trackingNum')}</label>

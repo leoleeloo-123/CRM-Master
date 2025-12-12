@@ -1,10 +1,9 @@
 
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel } from '../components/Common';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X, Trash2, Tag } from 'lucide-react';
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X, Trash2, Tag, List } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -33,9 +32,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isEditingContacts, setIsEditingContacts] = useState(false);
   const [editContactsList, setEditContactsList] = useState<Contact[]>([]);
   
-  // Exhibition Tag Edit State
-  const [newExhibitionTag, setNewExhibitionTag] = useState('');
-  const [isAddingTag, setIsAddingTag] = useState(false);
+  // Exhibition List Edit State
+  const [isEditingExhibitions, setIsEditingExhibitions] = useState(false);
+  const [editExhibitionList, setEditExhibitionList] = useState<string[]>([]);
+  const [newExhibitionInput, setNewExhibitionInput] = useState('');
 
   // New Interaction State
   const [isAddingInteraction, setIsAddingInteraction] = useState(false);
@@ -100,7 +100,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   // --- Next Step Handlers ---
   const handleSaveNextStep = () => {
     const updatedInteractions = [...customer.interactions];
-    // Update the most recent interaction (index 0) or create one if missing
     if (updatedInteractions.length > 0) {
       updatedInteractions[0] = { ...updatedInteractions[0], nextSteps: editNextStepText };
     } else {
@@ -127,27 +126,34 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setIsEditingNextStep(true);
   };
 
-  // --- Exhibition Tag Handlers ---
-  const handleAddExhibitionTag = () => {
-    if (!newExhibitionTag.trim()) return;
-    const updatedTags = [...customer.tags, newExhibitionTag.trim()];
-    onUpdateCustomer({
-      ...customer,
-      tags: updatedTags
-    });
-    setNewExhibitionTag('');
-    setIsAddingTag(false);
+  // --- Exhibition List Handlers ---
+  const startEditExhibitions = () => {
+    setEditExhibitionList([...customer.tags]);
+    setIsEditingExhibitions(true);
   };
 
-  const handleDeleteExhibitionTag = (tagToDelete: string) => {
-    if (window.confirm(`Remove exhibition tag "${tagToDelete}"?`)) {
-      const updatedTags = customer.tags.filter(t => t !== tagToDelete);
-      onUpdateCustomer({
-        ...customer,
-        tags: updatedTags
-      });
+  const handleSaveExhibitions = () => {
+    onUpdateCustomer({ ...customer, tags: editExhibitionList });
+    setIsEditingExhibitions(false);
+  };
+
+  const handleAddExhibitionItem = () => {
+    if (newExhibitionInput.trim()) {
+      setEditExhibitionList([...editExhibitionList, newExhibitionInput.trim()]);
+      setNewExhibitionInput('');
     }
   };
+
+  const handleRemoveExhibitionItem = (idx: number) => {
+     setEditExhibitionList(editExhibitionList.filter((_, i) => i !== idx));
+  };
+  
+  const handleExhibitionItemChange = (idx: number, val: string) => {
+      const newList = [...editExhibitionList];
+      newList[idx] = val;
+      setEditExhibitionList(newList);
+  };
+
 
   // --- New Interaction Handlers ---
   const startAddInteraction = () => {
@@ -167,13 +173,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       docLinks: []
     };
 
-    // Prepend new interaction to the top. Do NOT sort to preserve existing/imported order.
     const updatedInteractions = [newInteraction, ...customer.interactions];
     
     onUpdateCustomer({
       ...customer,
       interactions: updatedInteractions,
-      // Update Last Contact Date if the new interaction is more recent
       lastContactDate: newInteractionDate > (customer.lastContactDate || '') ? newInteractionDate : customer.lastContactDate
     });
 
@@ -202,9 +206,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       return interaction;
     });
 
-    // Do NOT re-sort. Keep items where they are.
-
-    // Update last contact date if needed (simplistic check: just take max date)
     const maxDate = updatedInteractions.reduce((max, curr) => curr.date > max ? curr.date : max, '');
     
     onUpdateCustomer({
@@ -252,7 +253,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     urgencyIconClass = "text-emerald-500";
   }
 
-  // Helper for Status Label Translation and Normalization
   const getStatusLabel = (status: string) => {
     if (status === 'My Turn' || status === '我方跟进') return t('statusMyTurn');
     if (status === 'Waiting for Customer' || status === '等待对方') return t('statusWaiting');
@@ -269,7 +269,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     return s;
   };
 
-  // Helper to dynamically display sample name
   const getDisplaySampleName = (s: Sample) => {
     if (s.crystalType && s.productCategory?.length) {
       const catStr = s.productCategory.map(c => t(c as any)).join(', ');
@@ -306,7 +305,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
        {/* Top Metrics Bar: Tracking Timers */}
        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-8 h-auto lg:h-40">
-          {/* 1. Status Card */}
           <Card className="p-4 xl:p-6 border-l-4 border-l-blue-500 flex flex-col justify-between h-full">
              <div>
                 <span className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 font-bold uppercase mb-1 block">{t('status')}</span>
@@ -329,13 +327,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
           </Card>
 
-          {/* 2. Days Until DDL (Remaining) - High Priority */}
           <DaysCounter date={customer.nextActionDate} label={t('daysUntilDDL')} type="remaining" />
-          
-          {/* 3. Days Since Update (Elapsed) */}
           <DaysCounter date={customer.lastStatusUpdate} label={t('daysSinceUpdate')} type="elapsed" />
           
-          {/* 4. Reply Counters (Split) */}
           <div className="flex gap-2 xl:gap-4 h-full">
              <div className="flex-1 h-full"><DaysCounter date={customer.lastCustomerReplyDate} label={t('unrepliedDays')} type="elapsed" /></div>
              <div className="flex-1 h-full"><DaysCounter date={customer.lastMyReplyDate} label={t('unfollowedDays')} type="elapsed" /></div>
@@ -364,7 +358,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
              <div className="space-y-4 xl:space-y-6">
                {!isEditingContacts ? (
-                 // VIEW MODE
                  customer.contacts.map((contact, idx) => (
                    <div key={idx} className="flex gap-3 xl:gap-4 items-start border-b border-slate-50 dark:border-slate-700/50 last:border-0 pb-3 xl:pb-4 last:pb-0">
                      <div className="w-8 h-8 xl:w-10 xl:h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-xs xl:text-sm shrink-0">
@@ -396,10 +389,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                    </div>
                  ))
                ) : (
-                 // EDIT MODE
                  <div className="space-y-6">
                    {editContactsList.map((contact, idx) => (
                      <div key={idx} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-3 border border-slate-200 dark:border-slate-700">
+                        {/* Edit contact fields... (abbreviated for brevity as logic is same as before) */}
                         <div className="grid grid-cols-2 gap-3">
                            <div>
                              <label className="text-[10px] uppercase font-bold text-slate-400">{t('contactName')}</label>
@@ -458,45 +451,65 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
            </Card>
            
-           {/* REPLACED: Document Links -> Exhibitions (Tags) */}
+           {/* REPLACED: Exhibitions List View */}
            <Card className="p-6 xl:p-8 space-y-4 xl:space-y-6">
-             <h3 className="font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-700 pb-2 flex items-center gap-2 text-base xl:text-xl">
-                <Tag className={iconClass} /> {t('exhibitions')}
-             </h3>
+             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-2">
+                <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-base xl:text-xl">
+                    <List className={iconClass} /> {t('exhibitions')}
+                </h3>
+                {!isEditingExhibitions ? (
+                  <button onClick={startEditExhibitions} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <Edit className="w-4 h-4 xl:w-5 xl:h-5" />
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={handleSaveExhibitions} className="text-emerald-700 bg-white dark:bg-slate-700 p-1.5 rounded shadow-sm"><Save className="w-4 h-4" /></button>
+                    <button onClick={() => setIsEditingExhibitions(false)} className="text-red-500 bg-white dark:bg-slate-700 p-1.5 rounded shadow-sm"><X className="w-4 h-4" /></button>
+                  </div>
+                )}
+             </div>
+             
              <div className="space-y-3">
-               <div className="flex flex-wrap gap-2">
-                 {customer.tags && customer.tags.length > 0 ? (
-                   customer.tags.map((tag, i) => (
-                     <div key={i} className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-full text-sm group">
-                       <span className="truncate max-w-[150px]">{tag}</span>
-                       <button onClick={() => handleDeleteExhibitionTag(tag)} className="ml-1 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <X className="w-3 h-3" />
-                       </button>
-                     </div>
-                   ))
-                 ) : (
-                   <p className="text-xs xl:text-sm text-slate-400 italic">No exhibition info recorded.</p>
-                 )}
-               </div>
-
-               {isAddingTag ? (
-                 <div className="flex gap-2 items-center mt-2">
-                   <input 
-                      type="text" 
-                      className="w-full border rounded px-2 py-1 text-sm dark:bg-slate-900 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      placeholder="Enter exhibition name..."
-                      value={newExhibitionTag}
-                      onChange={(e) => setNewExhibitionTag(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddExhibitionTag()}
-                      autoFocus
-                   />
-                   <button onClick={handleAddExhibitionTag} className="text-blue-600 bg-blue-50 p-1.5 rounded"><Save className="w-4 h-4" /></button>
-                   <button onClick={() => setIsAddingTag(false)} className="text-red-500 bg-red-50 p-1.5 rounded"><X className="w-4 h-4" /></button>
-                 </div>
+               {!isEditingExhibitions ? (
+                  <ul className="space-y-2">
+                    {customer.tags && customer.tags.length > 0 ? (
+                        customer.tags.map((tag, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm xl:text-base text-slate-700 dark:text-slate-300">
+                           <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
+                           <span>{tag}</span>
+                        </li>
+                        ))
+                    ) : (
+                        <p className="text-xs xl:text-sm text-slate-400 italic">No exhibitions recorded.</p>
+                    )}
+                  </ul>
                ) : (
-                 <Button variant="ghost" onClick={() => setIsAddingTag(true)} className="w-full text-xs xl:text-sm flex items-center justify-center gap-1 mt-2">
-                    <Plus className={iconClass} /> {t('addExhibition')}
-                 </Button>
+                  <div className="space-y-3">
+                     {editExhibitionList.map((tag, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                           <input 
+                              type="text" 
+                              className="w-full border rounded p-1.5 text-sm dark:bg-slate-900 dark:border-slate-600"
+                              value={tag}
+                              onChange={(e) => handleExhibitionItemChange(i, e.target.value)}
+                           />
+                           <button onClick={() => handleRemoveExhibitionItem(i)} className="text-red-500 hover:bg-red-50 p-1.5 rounded">
+                              <Trash2 size={16} />
+                           </button>
+                        </div>
+                     ))}
+                     <div className="flex gap-2 items-center mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <input 
+                           type="text"
+                           className="flex-1 border rounded p-1.5 text-sm dark:bg-slate-900 dark:border-slate-600"
+                           placeholder="Add exhibition..."
+                           value={newExhibitionInput}
+                           onChange={(e) => setNewExhibitionInput(e.target.value)}
+                           onKeyDown={(e) => e.key === 'Enter' && handleAddExhibitionItem()}
+                        />
+                        <button onClick={handleAddExhibitionItem} className="text-blue-600 bg-blue-50 p-1.5 rounded"><Plus size={16} /></button>
+                     </div>
+                  </div>
                )}
              </div>
            </Card>
@@ -504,7 +517,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
          {/* Main Content Area */}
          <div className="lg:col-span-2">
-            {/* Status & Product Summary Box - IMPORTANT */}
+            {/* Status & Product Summary Box */}
             <Card className="mb-6 xl:mb-10 border-l-4 border-l-emerald-500">
                <div className="p-4 xl:p-6 bg-emerald-50/50 dark:bg-emerald-900/20 flex justify-between items-start border-b border-emerald-100 dark:border-emerald-800">
                   <h3 className="font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-2 text-base xl:text-xl">
@@ -555,11 +568,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
               </button>
             </div>
 
-            {/* Overview Tab (Merged History) */}
+            {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6 xl:space-y-8">
                 
-                {/* Next Steps Highlight - NOW EDITABLE */}
+                {/* Next Steps Highlight */}
                 <div className={`border p-4 xl:p-6 rounded-lg mb-6 xl:mb-8 transition-colors ${urgencyClass}`}>
                   <div className="flex justify-between items-start mb-2">
                      <div className="flex items-center gap-3 xl:gap-5 mb-1">
@@ -741,7 +754,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             {activeTab === 'samples' && (
               <div className="space-y-4 xl:space-y-6">
                  <div className="flex justify-end">
-                   <Button className="flex items-center gap-2 text-sm xl:text-base"><Plus className={iconClass} /> {t('newRequest')}</Button>
+                   <Button className="flex items-center gap-2 text-sm xl:text-base" onClick={() => navigate('/samples')}><Plus className={iconClass} /> {t('newRequest')}</Button>
                  </div>
                  {customerSamples.length === 0 ? (
                    <div className="text-center p-8 xl:p-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-slate-400">
@@ -750,7 +763,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                    </div>
                  ) : (
                    customerSamples.map(sample => (
-                     <Card key={sample.id} className="p-4 xl:p-6 hover:shadow-md transition-all">
+                     <Card key={sample.id} className="p-4 xl:p-6 hover:shadow-md transition-all cursor-pointer" onClick={() => navigate(`/samples/${sample.id}`)}>
                        <div className="flex justify-between items-start">
                          <div className="flex gap-4 xl:gap-6">
                             <div className="p-3 xl:p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg h-fit">
