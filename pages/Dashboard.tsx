@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel } from '../components/Common';
-import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { 
   format, isBefore, parseISO, addDays, 
@@ -58,7 +58,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
     <div 
       key={c.id} 
       onClick={(e) => { e.stopPropagation(); navigate(`/customers/${c.id}`); }}
-      className={`cursor-pointer rounded px-1.5 py-0.5 text-[10px] xl:text-xs font-medium border truncate transition-all hover:scale-105 hover:shadow-sm mb-1 ${getUrgencyColor(c.nextActionDate!)}`}
+      className={`cursor-pointer rounded px-1.5 py-0.5 text-xs xl:text-sm font-medium border truncate transition-all hover:scale-105 hover:shadow-sm mb-1 ${getUrgencyColor(c.nextActionDate!)}`}
       title={`${c.name} - ${c.interactions[0]?.nextSteps || 'No next step'}`}
     >
       {compact ? c.name.substring(0, 10) + (c.name.length > 10 ? '..' : '') : c.name}
@@ -78,10 +78,10 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
       <div className="w-full">
          <div className="grid grid-cols-7 mb-2">
             {weekDays.map(d => (
-              <div key={d} className="text-center text-xs font-bold text-slate-500 uppercase">{d}</div>
+              <div key={d} className="text-center text-sm xl:text-base font-bold text-slate-500 uppercase">{d}</div>
             ))}
          </div>
-         <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(80px,auto)]">
+         <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(60px,auto)]">
             {days.map(day => {
                const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
                const isCurrentMonth = isSameMonth(day, monthStart);
@@ -90,9 +90,9 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
                return (
                  <div 
                    key={day.toISOString()} 
-                   className={`p-1 border rounded-lg flex flex-col gap-1 min-h-[80px] ${isCurrentMonth ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900 border-transparent opacity-50'} ${isDayToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+                   className={`p-1 border rounded-lg flex flex-col gap-1 min-h-[60px] transition-colors ${isCurrentMonth ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900 border-transparent opacity-50'} ${isDayToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
                  >
-                    <span className={`text-xs font-bold self-end px-1.5 rounded-full ${isDayToday ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
+                    <span className={`text-sm xl:text-lg font-bold self-end px-1.5 rounded-full ${isDayToday ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
                       {format(day, 'd')}
                     </span>
                     <div className="flex-1 overflow-y-auto max-h-[100px] scrollbar-hide">
@@ -111,7 +111,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
     const days = Array.from({ length: 7 }).map((_, i) => dateAddDays(startDate, i));
 
     return (
-      <div className="grid grid-cols-7 gap-2 h-full min-h-[300px]">
+      <div className="grid grid-cols-7 gap-2 h-auto">
         {days.map(day => {
            const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
            const isDayToday = isToday(day);
@@ -119,11 +119,11 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
            return (
              <div key={day.toISOString()} className={`flex flex-col border rounded-lg overflow-hidden ${isDayToday ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700'}`}>
                 <div className={`p-2 text-center text-sm font-bold border-b border-slate-100 dark:border-slate-700 ${isDayToday ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                   <div>{format(day, 'EEE')}</div>
-                   <div className="text-lg">{format(day, 'd')}</div>
+                   <div className="text-sm xl:text-base font-bold uppercase">{format(day, 'EEE')}</div>
+                   <div className="text-xl xl:text-2xl font-extrabold">{format(day, 'd')}</div>
                 </div>
-                <div className="p-2 flex-1 bg-white dark:bg-slate-800 space-y-2 overflow-y-auto">
-                   {dayEvents.map(e => renderEventBadge(e, false))}
+                <div className="p-2 flex-1 bg-white dark:bg-slate-800 space-y-2 overflow-y-auto min-h-[100px]">
+                   {dayEvents.length > 0 ? dayEvents.map(e => renderEventBadge(e, false)) : <div className="text-xs text-slate-300 text-center py-4">-</div>}
                 </div>
              </div>
            );
@@ -136,13 +136,13 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
      const dayEvents = events.filter(e => isSameDay(e.dateObj, currentDate));
      
      return (
-       <div className="min-h-[300px] bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
-          <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 h-auto">
+          <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
              {format(currentDate, 'EEEE, MMMM do')}
              {isToday(currentDate) && <Badge color="blue">Today</Badge>}
           </h4>
           {dayEvents.length === 0 ? (
-             <p className="text-slate-400 italic">No critical actions scheduled for this day.</p>
+             <p className="text-slate-400 italic py-4">No critical actions scheduled for this day.</p>
           ) : (
              <div className="space-y-3">
                {dayEvents.map(e => (
@@ -170,23 +170,23 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
     <Card className="p-4 xl:p-6 h-full flex flex-col">
        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
           <div className="flex items-center gap-2">
-             <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-             <h3 className="font-bold text-slate-800 dark:text-white text-lg">{t('calendar')}</h3>
-             <span className="text-sm font-medium text-slate-500 dark:text-slate-400 ml-2 hidden md:inline">
+             <CalendarIcon className="w-5 h-5 xl:w-6 xl:h-6 text-blue-600 dark:text-blue-400" />
+             <h3 className="font-bold text-slate-800 dark:text-white text-lg xl:text-xl">{t('calendar')}</h3>
+             <span className="text-sm xl:text-base font-medium text-slate-500 dark:text-slate-400 ml-2 hidden md:inline">
                 {format(currentDate, 'MMMM yyyy')}
              </span>
           </div>
           
           <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
-             <button onClick={() => setView('day')} className={`px-3 py-1 text-xs font-bold rounded ${view === 'day' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewDay')}</button>
-             <button onClick={() => setView('week')} className={`px-3 py-1 text-xs font-bold rounded ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewWeek')}</button>
-             <button onClick={() => setView('month')} className={`px-3 py-1 text-xs font-bold rounded ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
+             <button onClick={() => setView('day')} className={`px-3 py-1 text-xs xl:text-sm font-bold rounded ${view === 'day' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewDay')}</button>
+             <button onClick={() => setView('week')} className={`px-3 py-1 text-xs xl:text-sm font-bold rounded ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewWeek')}</button>
+             <button onClick={() => setView('month')} className={`px-3 py-1 text-xs xl:text-sm font-bold rounded ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
           </div>
 
           <div className="flex items-center gap-1">
-             <button onClick={handlePrev} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronLeft size={16}/></button>
-             <button onClick={handleToday} className="px-2 py-1 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 rounded">{t('today')}</button>
-             <button onClick={handleNext} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronRight size={16}/></button>
+             <button onClick={handlePrev} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronLeft size={20}/></button>
+             <button onClick={handleToday} className="px-2 py-1 text-xs xl:text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 rounded">{t('today')}</button>
+             <button onClick={handleNext} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronRight size={20}/></button>
           </div>
        </div>
        
@@ -208,13 +208,21 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
 const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const navigate = useNavigate();
   const { t, tagOptions } = useApp();
+  
+  // State for Priority Attention Filter: '1' (Tier 1 Only) or '1-2' (Tier 1 & 2)
+  const [priorityFilter, setPriorityFilter] = useState<'1' | '1-2'>('1');
 
   const criticalCustomers = customers.filter(c => {
-    if (c.rank > 2) return false;
+    // 1. Filter by Rank based on state
+    const rankCondition = priorityFilter === '1' ? c.rank === 1 : c.rank <= 2;
+    if (!rankCondition) return false;
+
+    // 2. Filter by Date urgency
     const now = new Date();
     const actionDate = c.nextActionDate ? parseISO(c.nextActionDate) : null;
     const isOverdue = actionDate && isBefore(actionDate, now);
-    const isUpcoming = actionDate && isBefore(actionDate, addDays(now, 7)) && !isOverdue;
+    const isUpcoming = actionDate && isBefore(actionDate, addDays(now, 7)) && !isOverdue; // 7 day lookahead
+    
     return isOverdue || isUpcoming;
   }).sort((a, b) => {
     // 1. Sort by Rank (Ascending: 1 before 2)
@@ -327,28 +335,46 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-10">
         
-        {/* Left Column: Priority Attention (Now Narrower - col-span-1) */}
-        <div className="lg:col-span-1 space-y-4 xl:space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg xl:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 xl:w-7 xl:h-7 text-amber-500" />
-              {t('priorityAttention')}
-            </h3>
-            <button 
-              onClick={() => navigate('/customers')}
-              className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium flex items-center gap-1"
-            >
-              {t('viewAll')} <ArrowRight className="w-3.5 h-3.5 xl:w-5 xl:h-5" />
-            </button>
+        {/* Left Column: Priority Attention */}
+        <div className="lg:col-span-1 space-y-4 xl:space-y-6 flex flex-col h-full">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg xl:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 xl:w-7 xl:h-7 text-amber-500" />
+                {t('priorityAttention')}
+              </h3>
+              <button 
+                onClick={() => navigate('/customers')}
+                className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium flex items-center gap-1"
+              >
+                {t('viewAll')} <ArrowRight className="w-3.5 h-3.5 xl:w-5 xl:h-5" />
+              </button>
+            </div>
+            
+            {/* Filter Toggle */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg self-start">
+               <button 
+                 onClick={() => setPriorityFilter('1')}
+                 className={`px-3 py-1 text-xs font-bold rounded ${priorityFilter === '1' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+               >
+                 {t('filterTier1Only')}
+               </button>
+               <button 
+                 onClick={() => setPriorityFilter('1-2')}
+                 className={`px-3 py-1 text-xs font-bold rounded ${priorityFilter === '1-2' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+               >
+                 {t('filterTier1And2')}
+               </button>
+            </div>
           </div>
           
-          <div className="space-y-3 xl:space-y-4">
+          <div className="space-y-3 xl:space-y-4 overflow-y-auto max-h-[800px] pr-2 scrollbar-thin">
             {criticalCustomers.length === 0 ? (
               <Card className="p-8 xl:p-12 text-center text-slate-500 dark:text-slate-400 text-lg xl:text-xl">
                 <p>{t('noCriticalActions')}</p>
               </Card>
             ) : (
-              criticalCustomers.slice(0, 5).map(c => { // Limited to 5 items to fit narrower column
+              criticalCustomers.map(c => { 
                 const urgency = getUrgencyLevel(c.nextActionDate);
                 let dateColor = "text-slate-500 dark:text-slate-400";
                 if (urgency === 'urgent') dateColor = "text-red-600 dark:text-red-500 font-bold";
@@ -386,15 +412,10 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 );
               })
             )}
-            {criticalCustomers.length > 5 && (
-               <div className="text-center text-sm text-slate-500 dark:text-slate-400">
-                  + {criticalCustomers.length - 5} more items
-               </div>
-            )}
           </div>
         </div>
 
-        {/* Right Column: Calendar & Charts (Now Wider - col-span-2) */}
+        {/* Right Column: Calendar & Charts */}
         <div className="lg:col-span-2 space-y-6 xl:space-y-10">
            
            {/* NEW CALENDAR COMPONENT */}

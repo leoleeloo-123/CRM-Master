@@ -42,6 +42,8 @@ export const translations = {
     viewDay: 'Day',
     viewWeek: 'Week',
     viewMonth: 'Month',
+    filterTier1Only: 'Tier 1 Only',
+    filterTier1And2: 'Tier 1 & 2',
 
     // Customer List
     customerDatabase: 'Customer Database',
@@ -225,7 +227,7 @@ export const translations = {
     activeSamples: '进行中样品',
     pendingFeedback: '待反馈',
     criticalActions: '紧急事项',
-    priorityAttention: '重点关注 (等级 1 & 2)',
+    priorityAttention: '重点关注',
     noCriticalActions: '暂无紧急事项，干得漂亮！',
     samplePipeline: '样品流程统计',
     customersByRegion: '客户地区分布',
@@ -233,6 +235,8 @@ export const translations = {
     viewDay: '日视图',
     viewWeek: '周视图',
     viewMonth: '月视图',
+    filterTier1Only: '仅显示 Tier 1',
+    filterTier1And2: '显示 Tier 1 & 2',
 
     // Customer List
     customerDatabase: '客户数据库',
