@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Sample, SampleStatus, GradingStatus } from '../types';
+import { Sample, SampleStatus, GradingStatus, TestStatus } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal } from '../components/Common';
 import { ArrowLeft, Box, Save, X, Edit, Plus, Trash2, CalendarDays, ExternalLink, Activity, Target } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
@@ -82,7 +82,7 @@ const SampleProfile: React.FC = () => {
     if (!sample || !editSample) return;
     const updatedSample = { 
       ...sample, 
-      isTestFinished: editSample.isTestFinished ?? sample.isTestFinished,
+      testStatus: editSample.testStatus || sample.testStatus,
       lastStatusDate: format(new Date(), 'yyyy-MM-dd')
     } as Sample;
     setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
@@ -131,6 +131,17 @@ const SampleProfile: React.FC = () => {
   if (!sample) return <div className="p-8">Sample not found.</div>;
 
   const renderOption = (val: string) => t(val as any);
+
+  const getTestBadge = (status: TestStatus) => {
+    switch (status) {
+      case 'Terminated':
+        return <Badge color="red">{t('projectTerminated')}</Badge>;
+      case 'Finished':
+        return <Badge color="green">{t('filterTestFinished')}</Badge>;
+      default:
+        return <Badge color="yellow">{t('filterTestOngoing')}</Badge>;
+    }
+  };
 
   return (
     <div className="space-y-6 xl:space-y-8 animate-in fade-in pb-10">
@@ -190,12 +201,17 @@ const SampleProfile: React.FC = () => {
              </div>
              <div className="flex justify-center">
               {isEditingTest ? (
-                <select className="w-full border rounded p-1 text-sm dark:bg-slate-800 dark:border-slate-600" value={editSample.isTestFinished ? 'yes' : 'no'} onChange={e => setEditSample({...editSample, isTestFinished: e.target.value === 'yes'})}>
-                    <option value="no">{t('filterTestOngoing')}</option>
-                    <option value="yes">{t('filterTestFinished')}</option>
+                <select 
+                  className="w-full border rounded p-1 text-sm dark:bg-slate-800 dark:border-slate-600" 
+                  value={editSample.testStatus || 'Ongoing'} 
+                  onChange={e => setEditSample({...editSample, testStatus: e.target.value as TestStatus})}
+                >
+                    <option value="Ongoing">{t('filterTestOngoing')}</option>
+                    <option value="Finished">{t('filterTestFinished')}</option>
+                    <option value="Terminated">{t('projectTerminated')}</option>
                 </select>
               ) : (
-                <Badge color={sample.isTestFinished ? "green" : "yellow"}>{sample.isTestFinished ? t('filterTestFinished') : t('filterTestOngoing')}</Badge>
+                getTestBadge(sample.testStatus || 'Ongoing')
               )}
              </div>
           </Card>

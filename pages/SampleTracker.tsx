@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus } from '../types';
+import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal } from '../components/Common';
 import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
@@ -16,30 +16,26 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
   
-  // Requirement 1: Default to 'list' view
   const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
-  // Drag and Drop State
   const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
   const [menuOpenColumn, setMenuOpenColumn] = useState<string | null>(null);
   
-  // Filter States
   const [filterCustomer, setFilterCustomer] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   
-  // Requirement 2: Default to 'ongoing' (samples with isTestFinished: false)
+  // 'ongoing' shows 'Ongoing', 'finished' shows 'Finished' & 'Terminated'
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
   const [filterCrystalType, setFilterCrystalType] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterForm, setFilterForm] = useState<string>('');
 
-  // Sample State for Form
   const [currentSample, setCurrentSample] = useState<Partial<Sample>>({
     customerId: '',
     status: 'Requested',
-    isTestFinished: false,
+    testStatus: 'Ongoing',
     quantity: '',
     lastStatusDate: format(new Date(), 'yyyy-MM-dd'),
     productCategory: [],
@@ -50,16 +46,19 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   });
 
   const filteredSamples = samples.filter(s => {
-    const matchesSearch = s.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (s.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.sampleName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.sampleSKU || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.originalSize || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.processedSize || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Requirement 2: Test Finished filtering logic
+    // UPDATED: Filtering logic to handle 'Terminated' as an archived state
     let matchesTest = true;
-    if (filterTestFinished === 'finished') matchesTest = s.isTestFinished === true;
-    else if (filterTestFinished === 'ongoing') matchesTest = s.isTestFinished === false;
+    if (filterTestFinished === 'finished') {
+       matchesTest = s.testStatus === 'Finished' || s.testStatus === 'Terminated';
+    } else if (filterTestFinished === 'ongoing') {
+       matchesTest = s.testStatus === 'Ongoing';
+    }
 
     const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
     const matchesStatus = filterStatus ? s.status === filterStatus : true;
@@ -70,7 +69,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     return matchesSearch && matchesTest && matchesCustomer && matchesStatus && matchesCrystal && matchesCategory && matchesForm;
   });
 
-  // Get Unique Customers for Filter
   const uniqueCustomerIds = Array.from(new Set(samples.map(s => s.customerId)));
   const customerFilterOptions = customers.filter(c => uniqueCustomerIds.includes(c.id));
 
@@ -97,7 +95,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
       customerId: '',
       customerName: '',
       status: tagOptions.sampleStatus[0] || 'Requested',
-      isTestFinished: false,
+      testStatus: 'Ongoing',
       quantity: '',
       lastStatusDate: format(new Date(), 'yyyy-MM-dd'),
       productCategory: [],
@@ -155,7 +153,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
          return prev.map(s => s.id === currentSample.id ? { ...s, ...currentSample } as Sample : s);
        } else {
          const newId = `s_${Date.now()}`;
-         return [...prev, { ...currentSample, id: newId } as Sample];
+         return [...prev, { ...currentSample, id: newId, testStatus: 'Ongoing' } as Sample];
        }
      });
      setIsAddModalOpen(false);
@@ -241,7 +239,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
           <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg">{t('monitorSamples')}</p>
         </div>
         <div className="flex gap-2">
-          {/* Requirement: List on the left, Board on the right. Default to List. */}
           <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-lg flex">
              <button 
                onClick={() => setViewMode('list')}
@@ -302,19 +299,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   onChange={(e) => setFilterTestFinished(e.target.value)}
                 >
                   <option value="all">{t('filterTestAll')}</option>
-                  <option value="finished">{t('filterTestFinished')}</option>
+                  <option value="finished">{t('filterTestFinished')} / {t('projectTerminated')}</option>
                   <option value="ongoing">{t('filterTestOngoing')}</option>
-                </select>
-
-                <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1 hidden md:block"></div>
-
-                <select 
-                   className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                   value={filterCrystalType}
-                   onChange={(e) => setFilterCrystalType(e.target.value)}
-                >
-                   <option value="">{t('crystal')}: All</option>
-                   {tagOptions.crystalType.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
                 </select>
 
                 {hasActiveFilters && (
@@ -386,8 +372,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                            {sample.statusDetails}
                          </div>
                          <div className="mt-2 xl:mt-3 flex justify-between items-center">
-                            <span className={`text-xs xl:text-sm px-2 py-0.5 rounded ${sample.isTestFinished ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-700'}`}>
-                               {sample.isTestFinished ? t('filterTestFinished') : t('filterTestOngoing')}
+                            <span className={`text-xs xl:text-sm px-2 py-0.5 rounded ${sample.testStatus === 'Ongoing' ? 'bg-amber-100 text-amber-700' : sample.testStatus === 'Terminated' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                               {sample.testStatus === 'Ongoing' ? t('filterTestOngoing') : sample.testStatus === 'Terminated' ? t('projectTerminated') : t('filterTestFinished')}
                             </span>
                             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
                                <CalendarDays size={12} className="text-slate-400"/>
@@ -456,14 +442,19 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                        <Badge color={['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status) ? 'blue' : ['Feedback Received', '已反馈'].includes(s.status) ? 'green' : 'yellow'}>
                          {renderOption(s.status)}
                        </Badge>
-                       {/* Requirement: Removed group-hover:line-clamp-none to disable auto-expand */}
                        <div className="text-xs xl:text-sm mt-1 text-slate-500 dark:text-slate-400 line-clamp-3 whitespace-pre-wrap transition-all">
                           {s.statusDetails}
                        </div>
                      </td>
                      <td className="p-4 xl:p-6 align-top text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
                      <td className="p-4 xl:p-6 align-top">
-                       {s.isTestFinished ? <Badge color="green">Yes</Badge> : <Badge color="gray">No</Badge>}
+                       {s.testStatus === 'Ongoing' ? (
+                          <Badge color="yellow">{t('filterTestOngoing')}</Badge>
+                       ) : s.testStatus === 'Terminated' ? (
+                          <Badge color="red">{t('projectTerminated')}</Badge>
+                       ) : (
+                          <Badge color="green">Yes</Badge>
+                       )}
                      </td>
                    </tr>
                  ))}

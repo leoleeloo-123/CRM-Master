@@ -1,10 +1,10 @@
+
 import React, { useState, useRef } from 'react';
-import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus } from '../types';
+import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus } from '../types';
 import { Card, Button, Badge, Modal, RankStars, StatusIcon } from '../components/Common';
 import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet, Eye, Database } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import * as XLSX from 'xlsx';
-// Add missing import for date formatting in filename
 import { format } from 'date-fns';
 import { getCanonicalTag } from '../utils/i18n';
 
@@ -42,11 +42,71 @@ const DataManagement: React.FC<DataManagementProps> = ({
     return 'No Action'; 
   };
 
+  const rowToSample = (cols: any[], tempIdPrefix: string, indexMap: Map<string, number>, lookupCustomers: Customer[]): Sample => {
+    const safeCol = (i: number) => cols[i] !== undefined && cols[i] !== null ? String(cols[i]).trim() : '';
+    const custName = safeCol(0) || 'Unknown';
+    const matchedCustomer = lookupCustomers.find(c => c.name.toLowerCase() === custName.toLowerCase());
+    
+    const lowerCustName = custName.toLowerCase();
+    let nextIndex = (indexMap.get(lowerCustName) || 0) + 1;
+    indexMap.set(lowerCustName, nextIndex);
+    
+    const status = getCanonicalTag(safeCol(1)) as SampleStatus || 'Requested';
+    
+    // UPDATED: Handle three-state test outcome during import
+    const rawTest = (safeCol(2) || '').toLowerCase();
+    let testStatus: TestStatus = 'Ongoing';
+    if (['yes', 'true', '是', 'finished', '完成'].includes(rawTest)) testStatus = 'Finished';
+    else if (['terminated', '终止', 'closed', '项目终止'].includes(rawTest)) testStatus = 'Terminated';
+
+    const crystal = getCanonicalTag(safeCol(3)) || '';
+    const form = getCanonicalTag(safeCol(5)) || 'Powder';
+    const categories = safeCol(4) ? safeCol(4).split(',').map(c => getCanonicalTag(c.trim()) as ProductCategory) : [];
+    const origSize = safeCol(6) || '';
+    const procSize = safeCol(7) ? ` > ${safeCol(7)}` : '';
+    const generatedName = `${crystal} ${categories.join(', ')} ${form} - ${origSize}${procSize}`.trim();
+
+    return {
+      id: `new_s_${tempIdPrefix}`,
+      customerId: matchedCustomer ? matchedCustomer.id : 'unknown',
+      customerName: custName,
+      sampleIndex: nextIndex,
+      status: status,
+      testStatus: testStatus,
+      crystalType: crystal as CrystalType,
+      productCategory: categories,
+      productForm: form as ProductForm,
+      originalSize: safeCol(6) || '',
+      processedSize: safeCol(7) || '',
+      isGraded: (safeCol(8) as GradingStatus) || 'Graded',
+      sampleSKU: safeCol(9) || '',
+      sampleDetails: safeCol(10) || '',
+      quantity: safeCol(11) || '',
+      application: safeCol(12) || '',
+      lastStatusDate: normalizeDate(safeCol(13)) || new Date().toISOString().split('T')[0],
+      statusDetails: safeCol(15) || '',
+      trackingNumber: safeCol(16) || '',
+      sampleName: generatedName,
+      productType: generatedName,
+      specs: safeCol(6) ? `${safeCol(6)} -> ${safeCol(7)}` : '',
+      requestDate: new Date().toISOString().split('T')[0],
+    } as Sample;
+  };
+
   const handleExportExcel = () => {
     const wb = XLSX.utils.book_new();
     const custHeaders = ["客户", "地区", "展会", "等级", "总结", "更新日期", "跟进状态"];
     const custRows = customers.map(c => [c.name, c.region.join(' | '), c.tags.join(', '), c.rank, c.productSummary, c.lastStatusUpdate, c.followUpStatus]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]), "Customers");
+    
+    // UPDATED: Sample export to include status text
+    const sampHeaders = ["Customer", "Status", "Test Progress", "Crystal", "Category", "Form", "Original Size", "Processed Size", "SKU", "Date", "Tracking"];
+    const sampRows = samples.map(s => [
+      s.customerName, s.status, s.testStatus, s.crystalType, s.productCategory?.join(', '),
+      s.productForm, s.originalSize, s.processedSize, s.sampleSKU, s.lastStatusDate, s.trackingNumber
+    ]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]), "Samples");
+
     XLSX.writeFile(wb, `MasterDB_${companyName}_${userName}_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
@@ -124,7 +184,15 @@ const DataManagement: React.FC<DataManagementProps> = ({
                             <td className="p-3">#{item.sampleIndex}</td>
                             <td className="p-3 font-bold text-blue-600">{item.sampleName}</td>
                             <td className="p-3"><Badge color="blue">{item.status}</Badge></td>
-                            <td className="p-3">{item.isTestFinished ? <Badge color="green">Done</Badge> : <Badge color="gray">Open</Badge>}</td>
+                            <td className="p-3">
+                               {item.testStatus === 'Ongoing' ? (
+                                  <Badge color="yellow">Open</Badge>
+                               ) : item.testStatus === 'Terminated' ? (
+                                  <Badge color="red">Terminated</Badge>
+                               ) : (
+                                  <Badge color="green">Done</Badge>
+                               )}
+                            </td>
                           </>
                         )}
                       </tr>
