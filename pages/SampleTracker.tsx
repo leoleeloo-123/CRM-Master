@@ -16,7 +16,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
   
-  // Requirement: Default to 'list' view
+  // Requirement 1: Default to 'list' view
   const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -29,7 +29,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const [filterCustomer, setFilterCustomer] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   
-  // Requirement: Default to 'ongoing' (archiving finished samples from default view)
+  // Requirement 2: Default to 'ongoing' (samples with isTestFinished: false)
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
   const [filterCrystalType, setFilterCrystalType] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
@@ -56,11 +56,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                           (s.originalSize || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.processedSize || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Test Finished filtering logic
+    // Requirement 2: Test Finished filtering logic
     let matchesTest = true;
     if (filterTestFinished === 'finished') matchesTest = s.isTestFinished === true;
     else if (filterTestFinished === 'ongoing') matchesTest = s.isTestFinished === false;
-    // 'all' matches both
 
     const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
     const matchesStatus = filterStatus ? s.status === filterStatus : true;
@@ -75,25 +74,18 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const uniqueCustomerIds = Array.from(new Set(samples.map(s => s.customerId)));
   const customerFilterOptions = customers.filter(c => uniqueCustomerIds.includes(c.id));
 
-  // Helper for dynamic colors
   const getStatusStyle = (status: string, index: number) => {
     const s = status.toLowerCase();
-    if (s.includes('request') || s.includes('申请') || s.includes('waiting') || s.includes('等待')) 
+    if (s.includes('request') || s.includes('申请')) 
        return { icon: <ClipboardList className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' };
-    if (s.includes('process') || s.includes('处理') || s.includes('production') || s.includes('制作')) 
+    if (s.includes('process') || s.includes('处理') || s.includes('production')) 
        return { icon: <FlaskConical className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400' };
-    if (s.includes('sent') || s.includes('寄出') || s.includes('transit') || s.includes('delivery') || s.includes('送达')) 
+    if (s.includes('sent') || s.includes('寄出') || s.includes('transit')) 
        return { icon: <Truck className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' };
-    if (s.includes('feedback') || s.includes('反馈') || s.includes('result') || s.includes('结果') || s.includes('done') || s.includes('finish')) 
+    if (s.includes('feedback') || s.includes('反馈') || s.includes('done')) 
        return { icon: <CheckCircle2 className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' };
     
-    const colors = [
-      'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400',
-      'bg-pink-100 text-pink-600 dark:bg-pink-900/50 dark:text-pink-400',
-      'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/50 dark:text-cyan-400',
-      'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400'
-    ];
-    return { icon: <ClipboardList className="w-4 h-4 xl:w-5 xl:h-5" />, color: colors[index % colors.length] };
+    return { icon: <ClipboardList className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400' };
   };
 
   const handleOpenEdit = (sample: Sample) => {
@@ -131,8 +123,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         originalSize: product.originalSize,
         processedSize: product.processedSize || ''
       }));
-    } else {
-       setCurrentSample(prev => ({ ...prev, sampleName: productName }));
     }
   };
 
@@ -157,13 +147,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   };
 
   const saveSample = () => {
-     if (!currentSample.customerId || !currentSample.sampleName) {
-       alert('Please fill required fields (Customer, Product)');
-       return;
-     }
-     
+     if (!currentSample.customerId || !currentSample.sampleName) return;
      syncSampleToCatalog(currentSample);
-
      setSamples(prev => {
        const exists = prev.find(s => s.id === currentSample.id);
        if (exists) {
@@ -173,19 +158,13 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
          return [...prev, { ...currentSample, id: newId } as Sample];
        }
      });
-     
      setIsAddModalOpen(false);
   };
 
   const renderDaysSinceUpdate = (dateStr: string) => {
     if (!dateStr || !isValid(parseISO(dateStr))) return <span className="text-slate-400">-</span>;
     const diff = differenceInDays(new Date(), parseISO(dateStr));
-    
-    let colorClass = "text-slate-600 dark:text-slate-300";
-    if (diff <= 7) colorClass = "text-emerald-600 font-bold";
-    else if (diff <= 30) colorClass = "text-amber-500 font-bold";
-    else colorClass = "text-red-500 font-bold";
-
+    let colorClass = diff <= 7 ? "text-emerald-600 font-bold" : diff <= 30 ? "text-amber-500 font-bold" : "text-red-500 font-bold";
     return (
       <div className={`flex flex-col items-center leading-tight ${colorClass}`}>
         <span className="text-lg">{diff}</span>
@@ -213,18 +192,14 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-  };
+  const handleDragOver = (e: React.DragEvent, index: number) => e.preventDefault();
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     if (draggedColumnIndex === null || draggedColumnIndex === dropIndex) return;
-
     const newStatuses = [...tagOptions.sampleStatus];
     const [movedItem] = newStatuses.splice(draggedColumnIndex, 1);
     newStatuses.splice(dropIndex, 0, movedItem);
-    
     setTagOptions(prev => ({ ...prev, sampleStatus: newStatuses }));
     setDraggedColumnIndex(null);
   };
@@ -232,23 +207,16 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const moveColumn = (index: number, direction: 'left' | 'right') => {
     if (direction === 'left' && index === 0) return;
     if (direction === 'right' && index === tagOptions.sampleStatus.length - 1) return;
-    
     const newStatuses = [...tagOptions.sampleStatus];
     const targetIndex = direction === 'left' ? index - 1 : index + 1;
-    const temp = newStatuses[index];
-    newStatuses[index] = newStatuses[targetIndex];
-    newStatuses[targetIndex] = temp;
-    
+    [newStatuses[index], newStatuses[targetIndex]] = [newStatuses[targetIndex], newStatuses[index]];
     setTagOptions(prev => ({ ...prev, sampleStatus: newStatuses }));
     setMenuOpenColumn(null);
   };
 
   const deleteColumn = (status: string) => {
     if (confirm(`Delete column "${status}"?`)) {
-      setTagOptions(prev => ({
-        ...prev,
-        sampleStatus: prev.sampleStatus.filter(s => s !== status)
-      }));
+      setTagOptions(prev => ({ ...prev, sampleStatus: prev.sampleStatus.filter(s => s !== status) }));
     }
     setMenuOpenColumn(null);
   };
@@ -349,24 +317,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                    {tagOptions.crystalType.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
                 </select>
 
-                <select 
-                   className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                   value={filterCategory}
-                   onChange={(e) => setFilterCategory(e.target.value)}
-                >
-                   <option value="">{t('category')}: All</option>
-                   {tagOptions.productCategory.map(c => <option key={c} value={c}>{renderOption(c)}</option>)}
-                </select>
-
-                <select 
-                   className="border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                   value={filterForm}
-                   onChange={(e) => setFilterForm(e.target.value)}
-                >
-                   <option value="">{t('form')}: All</option>
-                   {tagOptions.productForm.map(f => <option key={f} value={f}>{renderOption(f)}</option>)}
-                </select>
-
                 {hasActiveFilters && (
                    <button onClick={resetFilters} className="ml-auto text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
                        <X size={14} /> Clear All
@@ -401,10 +351,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                        <span className="ml-1 bg-white dark:bg-slate-800 bg-opacity-50 px-1.5 py-0.5 rounded-full text-xs xl:text-sm font-mono">{colSamples.length}</span>
                      </div>
                      <div className="relative">
-                       <button 
-                         onClick={() => setMenuOpenColumn(isMenuOpen ? null : status)}
-                         className="p-1 hover:bg-black/10 rounded"
-                       >
+                       <button onClick={() => setMenuOpenColumn(isMenuOpen ? null : status)} className="p-1 hover:bg-black/10 rounded">
                          <MoreHorizontal className="w-4 h-4" />
                        </button>
                        {isMenuOpen && (
@@ -435,14 +382,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                          </div>
                          <h4 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{sample.customerName}</h4>
                          <p className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 font-bold mt-1">{getDisplaySampleName(sample)}</p>
-                         <div className="flex flex-wrap gap-1 mt-2 xl:mt-3">
-                            <Badge color="blue">{renderOption(sample.productForm || '')}</Badge>
-                            <Badge color="purple">{renderOption(sample.crystalType || '')}</Badge>
-                         </div>
-                         <div className="mt-2 text-xs xl:text-sm space-y-1">
-                            {sample.originalSize && <div className="text-slate-600 dark:text-slate-400"><span className="text-slate-400 dark:text-slate-500 uppercase text-[10px] mr-1">{t('origLabel')}:</span>{sample.originalSize}</div>}
-                            {sample.processedSize && <div className="text-slate-600 dark:text-slate-400"><span className="text-slate-400 dark:text-slate-500 uppercase text-[10px] mr-1">{t('procLabel')}:</span>{sample.processedSize}</div>}
-                         </div>
                          <div className="mt-2 text-xs xl:text-base text-slate-600 dark:text-slate-300 line-clamp-2">
                            {sample.statusDetails}
                          </div>
@@ -510,33 +449,24 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                     <span className="font-medium">{s.processedSize}</span>
                                 </div>
                              )}
-                             {!s.originalSize && !s.processedSize && <span className="text-slate-400">-</span>}
                         </div>
                      </td>
-                     <td className="p-4 xl:p-6 align-top font-semibold text-slate-900 dark:text-white">
-                        {s.quantity}
-                     </td>
+                     <td className="p-4 xl:p-6 align-top font-semibold text-slate-900 dark:text-white">{s.quantity}</td>
                      <td className="p-4 xl:p-6 align-top max-w-xs">
                        <Badge color={['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status) ? 'blue' : ['Feedback Received', '已反馈'].includes(s.status) ? 'green' : 'yellow'}>
                          {renderOption(s.status)}
                        </Badge>
-                       <div className="text-xs xl:text-sm mt-1 text-slate-500 dark:text-slate-400 line-clamp-3 whitespace-pre-wrap group-hover:line-clamp-none transition-all">
+                       {/* Requirement: Removed group-hover:line-clamp-none to disable auto-expand */}
+                       <div className="text-xs xl:text-sm mt-1 text-slate-500 dark:text-slate-400 line-clamp-3 whitespace-pre-wrap transition-all">
                           {s.statusDetails}
                        </div>
                      </td>
-                     <td className="p-4 xl:p-6 align-top text-center">
-                       {renderDaysSinceUpdate(s.lastStatusDate)}
-                     </td>
+                     <td className="p-4 xl:p-6 align-top text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
                      <td className="p-4 xl:p-6 align-top">
                        {s.isTestFinished ? <Badge color="green">Yes</Badge> : <Badge color="gray">No</Badge>}
                      </td>
                    </tr>
                  ))}
-                 {filteredSamples.length === 0 && (
-                     <tr>
-                         <td colSpan={8} className="p-8 text-center text-slate-500">No samples found matching filters.</td>
-                     </tr>
-                 )}
                </tbody>
              </table>
           </div>
@@ -632,31 +562,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t('original')}</label>
-                  <input 
-                     className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
-                     value={currentSample.originalSize || ''}
-                     onChange={(e) => handleSpecChange('originalSize', e.target.value)}
-                  />
+                  <input className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" value={currentSample.originalSize || ''} onChange={(e) => handleSpecChange('originalSize', e.target.value)} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t('processed')}</label>
-                  <input 
-                     className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
-                     value={currentSample.processedSize || ''}
-                     onChange={(e) => handleSpecChange('processedSize', e.target.value)}
-                  />
+                  <input className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" value={currentSample.processedSize || ''} onChange={(e) => handleSpecChange('processedSize', e.target.value)} />
                 </div>
-             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{t('quantity')}</label>
-                <input className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600" value={currentSample.quantity || ''} onChange={e => setCurrentSample({...currentSample, quantity: e.target.value})} />
-             </div>
-             <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{t('application')}</label>
-                <input className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600" value={currentSample.application || ''} onChange={e => setCurrentSample({...currentSample, application: e.target.value})} />
              </div>
           </div>
 
