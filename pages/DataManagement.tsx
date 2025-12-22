@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
-import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet } from 'lucide-react';
+import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet, Eye, ClipboardList } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 // Use native Date instead of parseISO to avoid missing export error
 import { differenceInDays, isValid } from 'date-fns';
@@ -20,6 +20,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
 }) => {
   const { t, clearDatabase, customers, samples, syncSampleToCatalog, companyName, userName, refreshTagsFromSamples } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
+  const [viewMode, setViewMode] = useState<'import' | 'review'>('import');
   
   // Text Import State
   const [importData, setImportData] = useState('');
@@ -527,13 +528,115 @@ const DataManagement: React.FC<DataManagementProps> = ({
   // Switch preview data when tab changes if we have excel loaded
   const switchTab = (tab: 'customers' | 'samples') => {
     setActiveTab(tab);
-    setParsedPreview(null);
-    if (excelPreview) {
-      if (tab === 'customers') setParsedPreview(excelPreview.customers);
-      else setParsedPreview(excelPreview.samples);
-    } else {
-      setImportData(''); // Clear text data if switching modes without excel
+    if (viewMode === 'import') {
+      setParsedPreview(null);
+      if (excelPreview) {
+        if (tab === 'customers') setParsedPreview(excelPreview.customers);
+        else setParsedPreview(excelPreview.samples);
+      } else {
+        setImportData(''); // Clear text data if switching modes without excel
+      }
     }
+  };
+
+  const toggleReviewMode = () => {
+    if (viewMode === 'import') {
+      setViewMode('review');
+      setImportStatus(null);
+      setParsedPreview(null);
+      setExcelPreview(null);
+    } else {
+      setViewMode('import');
+    }
+  };
+
+  const renderCurrentDataTable = () => {
+    const data = activeTab === 'customers' ? customers : samples;
+    
+    return (
+      <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <div className="bg-slate-100 dark:bg-slate-800 p-3 text-xs font-black text-slate-500 uppercase border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+          <span>Live Database Review: {activeTab.toUpperCase()} ({data.length})</span>
+          <Button variant="ghost" size="sm" onClick={() => setViewMode('import')} className="text-[10px] h-6 py-0 px-2 bg-slate-200 dark:bg-slate-700">Back to Import</Button>
+        </div>
+        <div className="max-h-[600px] overflow-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 font-semibold sticky top-0 z-10">
+              <tr className="border-b border-slate-200 dark:border-slate-700">
+                {activeTab === 'customers' ? (
+                  <>
+                    <th className="p-3 whitespace-nowrap">Name</th>
+                    <th className="p-3 whitespace-nowrap">Rank</th>
+                    <th className="p-3 whitespace-nowrap">Region</th>
+                    <th className="p-3 whitespace-nowrap">Summary</th>
+                    <th className="p-3 whitespace-nowrap">Status</th>
+                    <th className="p-3 whitespace-nowrap">Next Step</th>
+                    <th className="p-3 whitespace-nowrap">Contacts</th>
+                    <th className="p-3 whitespace-nowrap">Last Update</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="p-3 whitespace-nowrap">Customer</th>
+                    <th className="p-3 whitespace-nowrap">Idx</th>
+                    <th className="p-3 whitespace-nowrap">Generated Name</th>
+                    <th className="p-3 whitespace-nowrap">Specs (Cry/Form/Size)</th>
+                    <th className="p-3 whitespace-nowrap">Qty</th>
+                    <th className="p-3 whitespace-nowrap">Status</th>
+                    <th className="p-3 whitespace-nowrap">Test Finished</th>
+                    <th className="p-3 whitespace-nowrap">Date</th>
+                    <th className="p-3 whitespace-nowrap">History</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.map((row: any, idx) => (
+                <tr key={row.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                  {activeTab === 'customers' ? (
+                    <>
+                      <td className="p-3 font-medium align-top">{row.name}</td>
+                      <td className="p-3 align-top"><RankStars rank={row.rank} /></td>
+                      <td className="p-3 align-top">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td>
+                      <td className="p-3 align-top truncate max-w-[200px]" title={row.productSummary}>{row.productSummary}</td>
+                      <td className="p-3 align-top"><Badge color="blue">{row.followUpStatus || row.status}</Badge></td>
+                      <td className="p-3 align-top truncate max-w-[150px]" title={row.upcomingPlan}>{row.upcomingPlan || '-'}</td>
+                      <td className="p-3 align-top truncate max-w-[150px]" title={row.contacts?.map((c:any) => c.name).join(', ')}>
+                        {row.contacts?.map((c:any) => c.name).join(', ')}
+                      </td>
+                      <td className="p-3 align-top">{row.lastStatusUpdate}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-3 font-medium align-top">{row.customerName}</td>
+                      <td className="p-3 align-top">{row.sampleIndex}</td>
+                      <td className="p-3 align-top font-bold text-blue-600 dark:text-blue-400 max-w-[200px] truncate" title={row.sampleName}>{row.sampleName}</td>
+                      <td className="p-3 align-top text-[10px] whitespace-nowrap">
+                        <div>{row.crystalType} / {row.productForm}</div>
+                        <div>{row.originalSize} -&gt; {row.processedSize}</div>
+                      </td>
+                      <td className="p-3 align-top">{row.quantity}</td>
+                      <td className="p-3 align-top"><Badge color="blue">{row.status}</Badge></td>
+                      <td className="p-3 align-top">
+                        <Badge color={row.testStatus === 'Finished' ? 'green' : row.testStatus === 'Terminated' ? 'red' : 'yellow'}>
+                          {row.testStatus}
+                        </Badge>
+                      </td>
+                      <td className="p-3 align-top">{row.lastStatusDate}</td>
+                      <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
+                    </>
+                  )}
+                </tr>
+              ))}
+              {data.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="p-10 text-center text-slate-400 italic font-bold">No data found in database.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -544,6 +647,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
           <p className="text-slate-500 dark:text-slate-400">{t('bulkImport')} / {t('export')}</p>
         </div>
         <div className="flex gap-2">
+           <Button variant="secondary" onClick={toggleReviewMode} className={`flex items-center gap-2 ${viewMode === 'review' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : ''}`}>
+              {viewMode === 'review' ? <ClipboardList size={16} /> : <Eye size={16} />}
+              {viewMode === 'review' ? 'Import Data' : 'Review Data'}
+           </Button>
+
            <input 
               type="file" 
               accept=".xlsx, .xls" 
@@ -551,7 +659,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
               onChange={handleFileUpload}
               className="hidden"
            />
-           <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+           <Button onClick={() => { setViewMode('import'); fileInputRef.current?.click(); }} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
               <Upload size={16} /> Upload Excel
            </Button>
 
@@ -564,7 +672,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
         </div>
       </div>
 
-      {/* IMPORT SECTION */}
+      {/* TABS & CONTENT SECTION */}
       <Card className="p-0 border-l-0 overflow-hidden">
         {/* Tabs */}
         <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
@@ -572,174 +680,182 @@ const DataManagement: React.FC<DataManagementProps> = ({
              onClick={() => switchTab('customers')}
              className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-colors ${activeTab === 'customers' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border-t-4 border-t-blue-600' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
            >
-             <Users size={20} /> Import Customers {excelPreview && `(${excelPreview.customers.length})`}
+             <Users size={20} /> 
+             {viewMode === 'review' ? 'Review Customers' : `Import Customers ${excelPreview ? `(${excelPreview.customers.length})` : ''}`}
            </button>
            <button 
              onClick={() => switchTab('samples')}
              className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-colors ${activeTab === 'samples' ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 border-t-4 border-t-amber-600' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
            >
-             <FlaskConical size={20} /> Import Samples {excelPreview && `(${excelPreview.samples.length})`}
+             <FlaskConical size={20} /> 
+             {viewMode === 'review' ? 'Review Samples' : `Import Samples ${excelPreview ? `(${excelPreview.samples.length})` : ''}`}
            </button>
         </div>
 
         <div className="p-6">
-          <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/50">
-             <div className="flex justify-between items-start">
-               <div>
-                  <h4 className="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-                    <AlertCircle size={16} className="text-blue-500" /> Instructions & Required Columns
-                  </h4>
-                  <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
-                    {activeTab === 'customers' 
-                      ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
-                      : "1.Customer | 2.Status | 3.Test Finished (Yes/No/Terminated) | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking"
-                    }
-                  </p>
-               </div>
-               
-               <div className="flex flex-col gap-3 items-end">
-                 {/* Import Mode Selection */}
-                 {!parsedPreview && !excelPreview && (
-                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                      <button 
-                        onClick={() => setImportMode('merge')}
-                        className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${importMode === 'merge' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                      >
-                        Merge / Append
-                      </button>
-                      <div className="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
-                      <button 
-                         onClick={() => setImportMode('replace')}
-                         className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${importMode === 'replace' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                      >
-                        Replace All
-                      </button>
+          {viewMode === 'review' ? (
+            renderCurrentDataTable()
+          ) : (
+            <>
+              <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                 <div className="flex justify-between items-start">
+                   <div>
+                      <h4 className="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                        <AlertCircle size={16} className="text-blue-500" /> Instructions & Required Columns
+                      </h4>
+                      <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
+                        {activeTab === 'customers' 
+                          ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
+                          : "1.Customer | 2.Status | 3.Test Finished (Yes/No/Terminated) | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking"
+                        }
+                      </p>
+                   </div>
+                   
+                   <div className="flex flex-col gap-3 items-end">
+                     {/* Import Mode Selection */}
+                     {!parsedPreview && !excelPreview && (
+                        <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <button 
+                            onClick={() => setImportMode('merge')}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${importMode === 'merge' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                          >
+                            Merge / Append
+                          </button>
+                          <div className="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
+                          <button 
+                             onClick={() => setImportMode('replace')}
+                             className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${importMode === 'replace' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                          >
+                            Replace All
+                          </button>
+                        </div>
+                     )}
+
+                     {!parsedPreview ? (
+                       <div className="flex gap-2">
+                         <Button onClick={parsePasteData} className={activeTab === 'customers' ? 'bg-blue-600' : 'bg-amber-600 hover:bg-amber-700'}>
+                           {t('parseImport')} (Text Paste)
+                         </Button>
+                       </div>
+                     ) : (
+                       <>
+                         {activeTab === 'samples' && (
+                           <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                             <RefreshCcw size={14} />
+                             {importMode === 'replace' ? 'Mode: Replace All' : 'Mode: Append New'}
+                           </div>
+                         )}
+                         <div className="flex gap-2">
+                            <Button onClick={clearPreview} variant="secondary">Cancel</Button>
+                            <Button onClick={confirmImport} className="bg-emerald-600 hover:bg-emerald-700 text-white flex gap-2">
+                               <CheckCircle2 size={16} /> Confirm Import 
+                               {excelPreview ? `(All)` : `(${parsedPreview.length})`}
+                            </Button>
+                         </div>
+                       </>
+                     )}
+                   </div>
+                 </div>
+                 
+                 {importStatus && (
+                    <div className={`mt-3 pt-3 border-t border-blue-200 dark:border-blue-800/50 flex items-center gap-2 text-sm font-medium ${
+                      importStatus.type === 'success' ? 'text-emerald-600' : importStatus.type === 'error' ? 'text-red-600' : 'text-blue-600'
+                    }`}>
+                       {importStatus.type === 'success' ? <CheckCircle2 size={16}/> : <AlertCircle size={16}/>}
+                       {importStatus.message}
                     </div>
                  )}
+              </div>
+              
+              {!parsedPreview && (
+                <textarea 
+                  className="w-full h-64 border border-slate-300 dark:border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  placeholder={`Optionally paste ${activeTab === 'customers' ? 'Customer' : 'Sample'} Excel data here...`}
+                  value={importData}
+                  onChange={(e) => setImportData(e.target.value)}
+                />
+              )}
 
-                 {!parsedPreview ? (
-                   <div className="flex gap-2">
-                     <Button onClick={parsePasteData} className={activeTab === 'customers' ? 'bg-blue-600' : 'bg-amber-600 hover:bg-amber-700'}>
-                       {t('parseImport')} (Text Paste)
-                     </Button>
+              {parsedPreview && (
+                <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                   <div className="bg-slate-100 dark:bg-slate-800 p-2 text-xs font-bold text-slate-500 uppercase border-b border-slate-200 dark:border-slate-700 flex justify-between">
+                     <span>Data Preview: {activeTab.toUpperCase()}</span>
+                     {excelPreview && <span className="text-emerald-600">Excel File Loaded</span>}
                    </div>
-                 ) : (
-                   <>
-                     {activeTab === 'samples' && (
-                       <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                         <RefreshCcw size={14} />
-                         {importMode === 'replace' ? 'Mode: Replace All' : 'Mode: Append New'}
-                       </div>
-                     )}
-                     <div className="flex gap-2">
-                        <Button onClick={clearPreview} variant="secondary">Cancel</Button>
-                        <Button onClick={confirmImport} className="bg-emerald-600 hover:bg-emerald-700 text-white flex gap-2">
-                           <CheckCircle2 size={16} /> Confirm Import 
-                           {excelPreview ? `(All)` : `(${parsedPreview.length})`}
-                        </Button>
-                     </div>
-                   </>
-                 )}
-               </div>
-             </div>
-             
-             {importStatus && (
-                <div className={`mt-3 pt-3 border-t border-blue-200 dark:border-blue-800/50 flex items-center gap-2 text-sm font-medium ${
-                  importStatus.type === 'success' ? 'text-emerald-600' : importStatus.type === 'error' ? 'text-red-600' : 'text-blue-600'
-                }`}>
-                   {importStatus.type === 'success' ? <CheckCircle2 size={16}/> : <AlertCircle size={16}/>}
-                   {importStatus.message}
+                   <div className="max-h-[500px] overflow-auto">
+                     <table className="w-full text-left text-xs">
+                       <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 font-semibold sticky top-0 z-10">
+                         <tr className="border-b border-slate-200 dark:border-slate-700">
+                           {activeTab === 'customers' ? (
+                             <>
+                               <th className="p-3 whitespace-nowrap">Name</th>
+                               <th className="p-3 whitespace-nowrap">Rank</th>
+                               <th className="p-3 whitespace-nowrap">Region</th>
+                               <th className="p-3 whitespace-nowrap">Summary</th>
+                               <th className="p-3 whitespace-nowrap">Status</th>
+                               <th className="p-3 whitespace-nowrap">Next Step</th>
+                               <th className="p-3 whitespace-nowrap">Contacts</th>
+                               <th className="p-3 whitespace-nowrap">Last Update</th>
+                             </>
+                           ) : (
+                             <>
+                               <th className="p-3 whitespace-nowrap">Customer</th>
+                               <th className="p-3 whitespace-nowrap">Idx</th>
+                               <th className="p-3 whitespace-nowrap">Generated Name</th>
+                               <th className="p-3 whitespace-nowrap">Specs (Cry/Form/Size)</th>
+                               <th className="p-3 whitespace-nowrap">Qty</th>
+                               <th className="p-3 whitespace-nowrap">Status</th>
+                               <th className="p-3 whitespace-nowrap">Test Finished</th>
+                               <th className="p-3 whitespace-nowrap">Date</th>
+                               <th className="p-3 whitespace-nowrap">History</th>
+                             </>
+                           )}
+                         </tr>
+                       </thead>
+                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                         {parsedPreview.map((row, idx) => (
+                           <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                             {activeTab === 'customers' ? (
+                               <>
+                                 <td className="p-3 font-medium align-top">{row.name}</td>
+                                 <td className="p-3 align-top"><RankStars rank={row.rank} /></td>
+                                 <td className="p-3 align-top">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td>
+                                 <td className="p-3 align-top truncate max-w-[200px]" title={row.productSummary}>{row.productSummary}</td>
+                                 <td className="p-3 align-top"><Badge color="blue">{row.followUpStatus}</Badge></td>
+                                 <td className="p-3 align-top truncate max-w-[150px]" title={row.upcomingPlan}>{row.upcomingPlan || '-'}</td>
+                                 <td className="p-3 align-top truncate max-w-[150px]" title={row.contacts?.map((c:any) => c.name).join(', ')}>
+                                   {row.contacts?.map((c:any) => c.name).join(', ')}
+                                 </td>
+                                 <td className="p-3 align-top">{row.lastStatusUpdate}</td>
+                               </>
+                             ) : (
+                               <>
+                                 <td className="p-3 font-medium align-top">{row.customerName}</td>
+                                 <td className="p-3 align-top">{row.sampleIndex}</td>
+                                 <td className="p-3 align-top font-bold text-blue-600 dark:text-blue-400 max-w-[200px] truncate" title={row.sampleName}>{row.sampleName}</td>
+                                 <td className="p-3 align-top text-[10px] whitespace-nowrap">
+                                   <div>{row.crystalType} / {row.productForm}</div>
+                                   <div>{row.originalSize} -&gt; {row.processedSize}</div>
+                                 </td>
+                                 <td className="p-3 align-top">{row.quantity}</td>
+                                 <td className="p-3 align-top"><Badge color="blue">{row.status}</Badge></td>
+                                 <td className="p-3 align-top">
+                                   <Badge color={row.testStatus === 'Finished' ? 'green' : row.testStatus === 'Terminated' ? 'red' : 'yellow'}>
+                                     {row.testStatus}
+                                   </Badge>
+                                 </td>
+                                 <td className="p-3 align-top">{row.lastStatusDate}</td>
+                                 <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
+                               </>
+                             )}
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                   </div>
                 </div>
-             )}
-          </div>
-          
-          {!parsedPreview && (
-            <textarea 
-              className="w-full h-64 border border-slate-300 dark:border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-              placeholder={`Optionally paste ${activeTab === 'customers' ? 'Customer' : 'Sample'} Excel data here...`}
-              value={importData}
-              onChange={(e) => setImportData(e.target.value)}
-            />
-          )}
-
-          {parsedPreview && (
-            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-               <div className="bg-slate-100 dark:bg-slate-800 p-2 text-xs font-bold text-slate-500 uppercase border-b border-slate-200 dark:border-slate-700 flex justify-between">
-                 <span>Data Preview: {activeTab.toUpperCase()}</span>
-                 {excelPreview && <span className="text-emerald-600">Excel File Loaded</span>}
-               </div>
-               <div className="max-h-[500px] overflow-auto">
-                 <table className="w-full text-left text-xs">
-                   <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 font-semibold sticky top-0 z-10">
-                     <tr className="border-b border-slate-200 dark:border-slate-700">
-                       {activeTab === 'customers' ? (
-                         <>
-                           <th className="p-3 whitespace-nowrap">Name</th>
-                           <th className="p-3 whitespace-nowrap">Rank</th>
-                           <th className="p-3 whitespace-nowrap">Region</th>
-                           <th className="p-3 whitespace-nowrap">Summary</th>
-                           <th className="p-3 whitespace-nowrap">Status</th>
-                           <th className="p-3 whitespace-nowrap">Next Step</th>
-                           <th className="p-3 whitespace-nowrap">Contacts</th>
-                           <th className="p-3 whitespace-nowrap">Last Update</th>
-                         </>
-                       ) : (
-                         <>
-                           <th className="p-3 whitespace-nowrap">Customer</th>
-                           <th className="p-3 whitespace-nowrap">Idx</th>
-                           <th className="p-3 whitespace-nowrap">Generated Name</th>
-                           <th className="p-3 whitespace-nowrap">Specs (Cry/Form/Size)</th>
-                           <th className="p-3 whitespace-nowrap">Qty</th>
-                           <th className="p-3 whitespace-nowrap">Status</th>
-                           <th className="p-3 whitespace-nowrap">Test Finished</th>
-                           <th className="p-3 whitespace-nowrap">Date</th>
-                           <th className="p-3 whitespace-nowrap">History</th>
-                         </>
-                       )}
-                     </tr>
-                   </thead>
-                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                     {parsedPreview.map((row, idx) => (
-                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                         {activeTab === 'customers' ? (
-                           <>
-                             <td className="p-3 font-medium align-top">{row.name}</td>
-                             <td className="p-3 align-top"><RankStars rank={row.rank} /></td>
-                             <td className="p-3 align-top">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td>
-                             <td className="p-3 align-top truncate max-w-[200px]" title={row.productSummary}>{row.productSummary}</td>
-                             <td className="p-3 align-top"><Badge color="blue">{row.followUpStatus}</Badge></td>
-                             <td className="p-3 align-top truncate max-w-[150px]" title={row.upcomingPlan}>{row.upcomingPlan || '-'}</td>
-                             <td className="p-3 align-top truncate max-w-[150px]" title={row.contacts?.map((c:any) => c.name).join(', ')}>
-                               {row.contacts?.map((c:any) => c.name).join(', ')}
-                             </td>
-                             <td className="p-3 align-top">{row.lastStatusUpdate}</td>
-                           </>
-                         ) : (
-                           <>
-                             <td className="p-3 font-medium align-top">{row.customerName}</td>
-                             <td className="p-3 align-top">{row.sampleIndex}</td>
-                             <td className="p-3 align-top font-bold text-blue-600 dark:text-blue-400 max-w-[200px] truncate" title={row.sampleName}>{row.sampleName}</td>
-                             <td className="p-3 align-top text-[10px] whitespace-nowrap">
-                               <div>{row.crystalType} / {row.productForm}</div>
-                               <div>{row.originalSize} -&gt; {row.processedSize}</div>
-                             </td>
-                             <td className="p-3 align-top">{row.quantity}</td>
-                             <td className="p-3 align-top"><Badge color="blue">{row.status}</Badge></td>
-                             <td className="p-3 align-top">
-                               <Badge color={row.testStatus === 'Finished' ? 'green' : row.testStatus === 'Terminated' ? 'red' : 'yellow'}>
-                                 {row.testStatus}
-                               </Badge>
-                             </td>
-                             <td className="p-3 align-top">{row.lastStatusDate}</td>
-                             <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
-                           </>
-                         )}
-                       </tr>
-                     ))}
-                   </tbody>
-                 </table>
-               </div>
-            </div>
+              )}
+            </>
           )}
         </div>
       </Card>
