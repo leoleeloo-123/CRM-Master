@@ -26,14 +26,24 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     contactEmail: ''
   });
 
-  const filteredCustomers = customers.filter(c => {
-    const regionString = Array.isArray(c.region) ? c.region.join(' ') : c.region;
-    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          regionString.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          c.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesRank = filterRank ? c.rank === filterRank : true;
-    return matchesSearch && matchesRank;
-  });
+  // Sorting and Filtering Logic
+  const filteredCustomers = customers
+    .filter(c => {
+      const regionString = Array.isArray(c.region) ? c.region.join(' ') : c.region;
+      const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            regionString.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            c.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesRank = filterRank ? c.rank === filterRank : true;
+      return matchesSearch && matchesRank;
+    })
+    .sort((a, b) => {
+      // 1. Primary sort: Rank (1 is highest priority/5 stars, 5 is lowest/1 star)
+      if (a.rank !== b.rank) {
+        return a.rank - b.rank;
+      }
+      // 2. Secondary sort: Name (Alphabetical A-Z)
+      return a.name.localeCompare(b.name);
+    });
 
   const getStatusLabel = (status: string | undefined) => {
     if (!status) return '';
@@ -42,6 +52,10 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     if (s === 'Waiting for Customer' || s === '等待对方') return t('statusWaiting');
     if (s === 'No Action' || s === '暂无') return t('statusNoAction');
     return s;
+  };
+
+  const handleRankUpdate = (id: string, newRank: Rank) => {
+    setCustomers(prev => prev.map(c => c.id === id ? { ...c, rank: newRank } : c));
   };
 
   const handleCreateCustomer = () => {
@@ -113,11 +127,11 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                onChange={(e) => setFilterRank(e.target.value ? Number(e.target.value) : null)}
              >
                <option value="">{t('filterRank')}</option>
-               <option value="1">Rank 1</option>
-               <option value="2">Rank 2</option>
-               <option value="3">Rank 3</option>
-               <option value="4">Rank 4</option>
-               <option value="5">Rank 5</option>
+               <option value="1">Rank 1 (5 Stars)</option>
+               <option value="2">Rank 2 (4 Stars)</option>
+               <option value="3">Rank 3 (3 Stars)</option>
+               <option value="4">Rank 4 (2 Stars)</option>
+               <option value="5">Rank 5 (1 Star)</option>
              </select>
           </div>
         </div>
@@ -154,7 +168,13 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                     </div>
                   </td>
                   <td className="p-4 xl:p-6 align-top">
-                    <RankStars rank={customer.rank} />
+                    <div onClick={(e) => e.stopPropagation()}>
+                       <RankStars 
+                         rank={customer.rank} 
+                         editable={true} 
+                         onRankChange={(newRank) => handleRankUpdate(customer.id, newRank)} 
+                       />
+                    </div>
                   </td>
                   <td className="p-4 xl:p-6 align-top">
                     <div className="flex items-center gap-2">
