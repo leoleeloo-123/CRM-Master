@@ -1,5 +1,4 @@
 
-
 export type Language = 'en' | 'zh';
 
 export const translations = {
@@ -99,6 +98,10 @@ export const translations = {
     filterTestAll: 'Test: All',
     filterTestFinished: 'Test Finished',
     filterTestOngoing: 'Test Ongoing',
+    filterTestTerminated: 'Project Terminated',
+    projectTerminated: 'Terminated',
+    projectOngoing: 'Ongoing',
+    projectFinished: 'Finished',
     idx: 'Idx',
     customer: 'Customer',
     sampleInfo: 'Sample Info',
@@ -133,6 +136,11 @@ export const translations = {
     '已反馈': 'Feedback Received',
     '已关闭': 'Closed',
 
+    // Test Status Keys
+    'Ongoing': 'Ongoing',
+    'Finished': 'Finished',
+    'Terminated': 'Terminated',
+
     // Sample Modal
     editSample: 'Edit Sample',
     createSample: 'Create New Sample',
@@ -164,6 +172,7 @@ export const translations = {
     processed: 'Processed',
     origLabel: 'Orig',
     procLabel: 'Proc',
+    noApplicationProvided: 'No application details provided.',
     
     // Data Management
     bulkImport: 'Bulk Import',
@@ -292,6 +301,10 @@ export const translations = {
     filterTestAll: '测试状态: 全部',
     filterTestFinished: '测试完成',
     filterTestOngoing: '测试进行中',
+    filterTestTerminated: '项目终止',
+    projectTerminated: '项目终止',
+    projectOngoing: '测试进行中',
+    projectFinished: '测试完成',
     idx: '序号',
     customer: '客户',
     sampleInfo: '样品信息',
@@ -326,6 +339,11 @@ export const translations = {
     '已反馈': '已反馈',
     '已关闭': '已关闭',
 
+    // Test Status Keys
+    'Ongoing': '测试进行中',
+    'Finished': '测试完成',
+    'Terminated': '项目终止',
+
     // Sample Modal
     editSample: '编辑样品',
     createSample: '新建样品',
@@ -357,6 +375,7 @@ export const translations = {
     processed: '加工粒度',
     origLabel: '原料',
     procLabel: '加工',
+    noApplicationProvided: '暂无应用详情。',
 
     // Data Management
     bulkImport: '批量导入',
@@ -419,7 +438,19 @@ const ALIASES: Record<string, string> = {
   'Delivered': '已送达',
   'Testing': '测试中',
   'Feedback Received': '已反馈',
-  'Closed': '已关闭'
+  'Closed': '已关闭',
+
+  // Test Status Logic
+  'No': 'Ongoing',
+  'Ongoing': 'Ongoing',
+  '否': 'Ongoing',
+  '测试进行中': 'Ongoing',
+  'Yes': 'Finished',
+  'Finished': 'Finished',
+  '是': 'Finished',
+  '测试完成': 'Finished',
+  'Terminated': 'Terminated',
+  '项目终止': 'Terminated'
 };
 
 /**

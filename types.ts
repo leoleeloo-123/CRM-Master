@@ -1,4 +1,3 @@
-
 export type Rank = 1 | 2 | 3 | 4 | 5; // 1 is Highest Importance, 5 is Lowest
 
 export type CustomerStatus = 'Active' | 'Pending' | 'Inactive' | 'Prospect' | string;
@@ -55,6 +54,7 @@ export type CrystalType = 'Single Crystal' | 'Polycrystalline' | string;
 export type ProductForm = 'Powder' | 'Suspension' | string;
 export type ProductCategory = 'Agglomerated Diamond' | 'Nano Diamond' | 'Spherical Diamond' | 'Diamond Ball' | 'Micron' | 'CVD' | string;
 export type GradingStatus = 'Graded' | 'Ungraded';
+export type TestStatus = 'Ongoing' | 'Finished' | 'Terminated';
 
 // New Master Product Catalog Interface
 export interface MasterProduct {
@@ -80,7 +80,7 @@ export interface Sample {
   lastStatusDate: string; // Date of status update
   statusDetails?: string; // "【Date】Details ||| 【Date】Details"
   
-  isTestFinished: boolean; // Test Finished vs Ongoing
+  testStatus: TestStatus; // 'Ongoing' | 'Finished' | 'Terminated'
   
   // Technical Specs
   crystalType?: CrystalType; // Single/Poly

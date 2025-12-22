@@ -1,10 +1,11 @@
 
 import React, { useState, useRef } from 'react';
-import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus } from '../types';
+import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
 import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { differenceInDays, parseISO, isValid } from 'date-fns';
+// Use native Date instead of parseISO to avoid missing export error
+import { differenceInDays, isValid } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { getCanonicalTag } from '../utils/i18n';
 
@@ -218,9 +219,18 @@ const DataManagement: React.FC<DataManagementProps> = ({
     
     const generatedName = `${crystal} ${categoryStr} ${form} - ${origSize}${procSize}`.trim();
     
-    // Check "Finished" column for Yes/True/是
-    const finishedVal = (safeCol(2) || '').toLowerCase();
-    const isTestFinished = ['yes', 'true', '是', 'y', '1'].includes(finishedVal);
+    // Unified Test Status Logic: Connects "No", "Yes", "Terminated" from Excel
+    const testFinishedColVal = (safeCol(2) || '').trim();
+    let testStatus: TestStatus = 'Ongoing';
+    const canonicalTestStatus = getCanonicalTag(testFinishedColVal);
+    
+    if (canonicalTestStatus === 'Finished') {
+      testStatus = 'Finished';
+    } else if (canonicalTestStatus === 'Terminated') {
+      testStatus = 'Terminated';
+    } else {
+      testStatus = 'Ongoing'; // Default for "No" or empty
+    }
 
     return {
       id: `new_s_${tempIdPrefix}`,
@@ -229,7 +239,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       sampleIndex: nextIndex,
       
       status: status,
-      isTestFinished: isTestFinished,
+      testStatus: testStatus,
       crystalType: crystal as CrystalType,
       productCategory: categories,
       productForm: form as ProductForm,
@@ -306,14 +316,20 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const sampRows = samples.map(s => {
        const safeDetails = (s.statusDetails || '').replace(/\n/g, ' ||| ');
        let daysSince = "";
-       if (s.lastStatusDate && isValid(parseISO(s.lastStatusDate))) {
-         daysSince = String(differenceInDays(new Date(), parseISO(s.lastStatusDate)));
+       // Use native Date instead of parseISO
+       if (s.lastStatusDate && isValid(new Date(s.lastStatusDate))) {
+         daysSince = String(differenceInDays(new Date(), new Date(s.lastStatusDate)));
        }
+       
+       // Export unified testStatus back to human readable/importable terms
+       let exportTestVal = "No";
+       if (s.testStatus === 'Finished') exportTestVal = "Yes";
+       else if (s.testStatus === 'Terminated') exportTestVal = "Terminated";
 
        return [
          s.customerName,
          s.status,
-         s.isTestFinished ? 'Yes' : 'No',
+         exportTestVal,
          s.crystalType,
          s.productCategory?.join(', '),
          s.productForm,
@@ -427,9 +443,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
         }
 
         // Determine Customer List to Link Samples Against
-        // If replacing, we should check against the NEW customer list primarily.
-        // If merging, we check against BOTH (new ones take precedence or merge logic?)
-        // Safer to just combine them for lookup: New ones + Existing ones
         const lookupCustomers = [...parsedCustomers, ...customers];
 
         // Parse Samples
@@ -589,7 +602,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
                     {activeTab === 'customers' 
                       ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
-                      : "1.Customer | 2.Status | 3.Finished(Yes/No) | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking"
+                      : "1.Customer | 2.Status | 3.Test Finished (Yes/No/Terminated) | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking"
                     }
                   </p>
                </div>
@@ -722,7 +735,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
                              </td>
                              <td className="p-3 align-top">{row.quantity}</td>
                              <td className="p-3 align-top"><Badge color="blue">{row.status}</Badge></td>
-                             <td className="p-3 align-top">{row.isTestFinished ? <CheckCircle2 size={14} className="text-green-500" /> : <span className="text-slate-400">-</span>}</td>
+                             <td className="p-3 align-top">
+                               <Badge color={row.testStatus === 'Finished' ? 'green' : row.testStatus === 'Terminated' ? 'red' : 'yellow'}>
+                                 {row.testStatus}
+                               </Badge>
+                             </td>
                              <td className="p-3 align-top">{row.lastStatusDate}</td>
                              <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
                            </>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal } from '../components/Common';
@@ -28,9 +27,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     
     let matchesTest = true;
     if (filterTestFinished === 'finished') {
-       matchesTest = s.testStatus === 'Finished' || s.testStatus === 'Terminated';
+       matchesTest = s.testStatus === 'Finished';
     } else if (filterTestFinished === 'ongoing') {
        matchesTest = s.testStatus === 'Ongoing';
+    } else if (filterTestFinished === 'terminated') {
+       matchesTest = s.testStatus === 'Terminated';
     }
 
     const matchesStatus = filterStatus ? s.status === filterStatus : true;
@@ -55,6 +56,14 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     return <span className={`font-bold ${colorClass}`}>{diff}d</span>;
   };
 
+  const getTestStatusBadge = (status: TestStatus) => {
+    switch (status) {
+      case 'Finished': return <Badge color="green">{t('projectFinished')}</Badge>;
+      case 'Terminated': return <Badge color="red">{t('projectTerminated')}</Badge>;
+      default: return <Badge color="yellow">{t('projectOngoing')}</Badge>;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex justify-between items-center">
@@ -67,7 +76,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              <Button variant={viewMode === 'list' ? 'primary' : 'ghost'} onClick={() => setViewMode('list')} className="py-1 px-4">{t('list')}</Button>
              <Button variant={viewMode === 'board' ? 'primary' : 'ghost'} onClick={() => setViewMode('board')} className="py-1 px-4">{t('board')}</Button>
           </div>
-          <Button className="flex items-center gap-2"><Plus size={18} /> {t('newSample')}</Button>
+          <Button className="flex items-center gap-2" onClick={() => navigate('/data-management')}><Plus size={18} /> {t('newSample')}</Button>
         </div>
       </div>
 
@@ -82,9 +91,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any)}</option>)}
             </select>
             <select className="border rounded-lg px-3 py-2 dark:bg-slate-900" value={filterTestFinished} onChange={e => setFilterTestFinished(e.target.value)}>
-               <option value="ongoing">Ongoing</option>
-               <option value="finished">Finished</option>
-               <option value="all">All</option>
+               <option value="all">{t('filterTestAll')}</option>
+               <option value="ongoing">{t('filterTestOngoing')}</option>
+               <option value="finished">{t('filterTestFinished')}</option>
+               <option value="terminated">{t('filterTestTerminated')}</option>
             </select>
          </div>
       </Card>
@@ -113,7 +123,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                       <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
                       <td className="p-4 text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
                       <td className="p-4">
-                         <Badge color={s.testStatus === 'Ongoing' ? 'yellow' : 'green'}>{s.testStatus}</Badge>
+                         {getTestStatusBadge(s.testStatus)}
                       </td>
                     </tr>
                   ))}
@@ -143,7 +153,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                              <p className="text-sm font-bold text-blue-600 truncate">{s.sampleName}</p>
                              <div className="flex items-center justify-between mt-3 pt-3 border-t">
                                 <span className="text-[10px] font-mono text-slate-500">{s.sampleSKU || 'N/A'}</span>
-                                <Badge color="gray">{s.quantity}</Badge>
+                                {getTestStatusBadge(s.testStatus)}
                              </div>
                           </Card>
                         ))}

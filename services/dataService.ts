@@ -1,4 +1,3 @@
-
 import { Customer, Sample, MasterProduct } from '../types';
 
 // Mock Data updated with generic demo data to avoid data leakage
@@ -180,7 +179,7 @@ export const MOCK_SAMPLES: Sample[] = [
     specs: '5um, Hydrophilic',
     quantity: '500g',
     status: '已反馈',
-    isTestFinished: true,
+    testStatus: 'Finished',
     crystalType: '多晶',
     productCategory: ['聚晶'],
     productForm: '微粉',
@@ -205,7 +204,7 @@ export const MOCK_SAMPLES: Sample[] = [
     specs: '20nm, pH 7',
     quantity: '1 L',
     status: '已寄出',
-    isTestFinished: false,
+    testStatus: 'Ongoing',
     crystalType: '单晶',
     productCategory: ['纳米金刚石'],
     productForm: '悬浮液',
@@ -229,7 +228,7 @@ export const MOCK_SAMPLES: Sample[] = [
     specs: '0.25 micron',
     quantity: '1000 ct',
     status: '处理中',
-    isTestFinished: false,
+    testStatus: 'Ongoing',
     crystalType: '单晶',
     productCategory: ['微米粉'],
     productForm: '微粉',
@@ -252,7 +251,7 @@ export const MOCK_SAMPLES: Sample[] = [
     specs: '80 micron cluster',
     quantity: '50g',
     status: '已申请',
-    isTestFinished: false,
+    testStatus: 'Ongoing',
     crystalType: '多晶',
     productCategory: ['金刚石球'],
     productForm: '微粉',
