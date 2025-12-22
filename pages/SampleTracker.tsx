@@ -65,6 +65,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     }
   };
 
+  const getGradingBadge = (status: GradingStatus | string | undefined) => {
+    if (status === 'Graded') return <Badge color="green">{t('graded')}</Badge>;
+    return <Badge color="gray">{t('ungraded')}</Badge>;
+  };
+
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex justify-between items-center">
@@ -108,6 +113,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   <tr>
                      <th className="p-4">Customer</th>
                      <th className="p-4">Generated Product Spec</th>
+                     <th className="p-4">{t('grading')}</th>
                      <th className="p-4">{t('qtyAbbr')}</th>
                      <th className="p-4">Status</th>
                      <th className="p-4 text-center">Aging</th>
@@ -121,6 +127,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                       <td className="p-4">
                          <div className="font-bold text-blue-600 dark:text-blue-400">{s.sampleName}</div>
                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
+                      </td>
+                      <td className="p-4">
+                        {getGradingBadge(s.isGraded)}
                       </td>
                       <td className="p-4 font-bold text-slate-700 dark:text-slate-300">{s.quantity}</td>
                       <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
@@ -154,9 +163,15 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                              </div>
                              <p className="font-bold text-slate-900 dark:text-white mb-0.5">{s.customerName}</p>
                              <p className="text-sm font-bold text-blue-600 truncate">{s.sampleName}</p>
+                             
+                             <div className="mt-2 flex gap-1.5 flex-wrap">
+                               {getGradingBadge(s.isGraded)}
+                               {getTestStatusBadge(s.testStatus)}
+                             </div>
+
                              <div className="flex items-center justify-between mt-3 pt-3 border-t">
                                 <span className="text-[10px] font-mono text-slate-500">{s.sampleSKU || 'N/A'}</span>
-                                {getTestStatusBadge(s.testStatus)}
+                                <span className="text-[10px] font-bold text-slate-700">{s.quantity}</span>
                              </div>
                           </Card>
                         ))}

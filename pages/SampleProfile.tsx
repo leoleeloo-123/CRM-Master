@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Edit, Plus, Trash2, CalendarDays, ExternalLink, Activity, Target, PencilLine, Ruler } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Edit, Plus, Trash2, CalendarDays, ExternalLink, Activity, Target, PencilLine, Ruler, Layers } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
 
@@ -162,6 +162,11 @@ const SampleProfile: React.FC = () => {
     }
   };
 
+  const getGradingBadge = (status: GradingStatus | string | undefined) => {
+    if (status === 'Graded') return <Badge color="green">{t('graded')}</Badge>;
+    return <Badge color="gray">{t('ungraded')}</Badge>;
+  };
+
   return (
     <div className="space-y-8 xl:space-y-12 animate-in fade-in duration-500 pb-20">
        <div className="flex items-center gap-6">
@@ -280,24 +285,31 @@ const SampleProfile: React.FC = () => {
                    {isEditingSpecs ? (
                      <div className="space-y-4">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Crystal</label>
+                          <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('crystal')}</label>
                           <select className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.crystalType} onChange={e => setEditSample({...editSample, crystalType: e.target.value as any})}>
                             {tagOptions.crystalType.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
                           </select>
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Form</label>
+                          <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('form')}</label>
                           <select className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.productForm} onChange={e => setEditSample({...editSample, productForm: e.target.value as any})}>
                             {tagOptions.productForm.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
                           </select>
                         </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('grading')}</label>
+                          <select className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.isGraded} onChange={e => setEditSample({...editSample, isGraded: e.target.value as any})}>
+                            <option value="Graded">{t('graded')}</option>
+                            <option value="Ungraded">{t('ungraded')}</option>
+                          </select>
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-1.5">
-                             <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Orig Size</label>
+                             <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('origLabel')}</label>
                              <input className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.originalSize} onChange={e => setEditSample({...editSample, originalSize: e.target.value})} />
                            </div>
                            <div className="space-y-1.5">
-                             <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Proc Size</label>
+                             <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('procLabel')}</label>
                              <input className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.processedSize} onChange={e => setEditSample({...editSample, processedSize: e.target.value})} />
                            </div>
                         </div>
@@ -311,6 +323,10 @@ const SampleProfile: React.FC = () => {
                         <div className="flex justify-between items-center py-1">
                           <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('form')}</span>
                           <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{renderOption(sample.productForm || '-')}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('grading')}</span>
+                          <span>{getGradingBadge(sample.isGraded)}</span>
                         </div>
                         <div className="flex justify-between items-center py-1">
                           <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('original')}</span>
