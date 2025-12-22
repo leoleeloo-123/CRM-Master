@@ -17,18 +17,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useApp();
-  
-  // Tab State
   const [activeTab, setActiveTab] = useState<'overview' | 'samples'>('overview');
-  
-  // Modals State
   const [isEditSummaryOpen, setIsEditSummaryOpen] = useState(false);
   const [isEditContactsOpen, setIsEditContactsOpen] = useState(false);
   const [isEditTagsOpen, setIsEditTagsOpen] = useState(false);
   const [isEditUpcomingPlanOpen, setIsEditUpcomingPlanOpen] = useState(false);
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
 
-  // Local Edit States
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState('');
   const [tempUpcomingPlan, setTempUpcomingPlan] = useState('');
@@ -37,10 +32,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const customerSamples = samples.filter(s => s.customerId === id);
 
   if (!customer) {
-    return <div className="p-8 text-center text-slate-500">Customer not found. <Button onClick={() => navigate('/customers')}>{t('back')}</Button></div>;
+    return <div className="p-8 text-center text-slate-500 font-bold">Customer not found. <Button onClick={() => navigate('/customers')}>{t('back')}</Button></div>;
   }
-
-  // --- Handlers ---
 
   const saveUpdate = (updatedFields: Partial<Customer>) => {
     onUpdateCustomer({ ...customer, ...updatedFields });
@@ -88,10 +81,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     const newInteractions = customer.interactions.some(i => i.id === updated.id)
       ? customer.interactions.map(i => i.id === updated.id ? updated : i)
       : [updated, ...customer.interactions];
-    
-    // Sort interactions by date descending
     newInteractions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
     saveUpdate({ 
       interactions: newInteractions,
       lastMyReplyDate: updated.date,
@@ -119,21 +109,20 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const urgencyClass = urgency === 'urgent' ? "bg-[#FFF1F2] border-red-200" : urgency === 'warning' ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200";
 
   return (
-    <div className="space-y-6 pb-12">
-       {/* Header */}
+    <div className="space-y-8 pb-16 animate-in fade-in duration-500">
        <div className="flex items-center gap-6">
-         <button onClick={() => navigate('/customers')} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors shadow-sm bg-white dark:bg-slate-900">
-           <ArrowLeft size={24} className="text-slate-600 dark:text-slate-400" />
+         <button onClick={() => navigate('/customers')} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 active:scale-90">
+           <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
          </button>
          <div className="flex-1">
-           <div className="flex items-center gap-5">
-             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{customer.name}</h1>
-             <RankStars rank={customer.rank} editable onRankChange={(r) => saveUpdate({ rank: r })} />
+           <div className="flex items-center gap-6">
+             <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{customer.name}</h1>
+             <div className="text-[1.2em]"><RankStars rank={customer.rank} editable onRankChange={(r) => saveUpdate({ rank: r })} /></div>
            </div>
-           <div className="flex items-center gap-3 mt-2 text-slate-500">
-             <MapPin size={16} /> 
+           <div className="flex items-center gap-3 mt-3 text-slate-400 font-black uppercase text-xs tracking-widest">
+             <MapPin className="w-4 h-4" /> 
              <input 
-               className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none font-medium px-1" 
+               className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none px-1 transition-colors" 
                value={customer.region.join(', ')} 
                onChange={(e) => saveUpdate({ region: e.target.value.split(',').map(r => r.trim()) })}
              />
@@ -141,22 +130,21 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          </div>
        </div>
 
-       {/* Interactive Metrics */}
-       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card className="p-4 border-l-4 border-l-blue-600 flex flex-col justify-between h-40">
-             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t('status')}</span>
-             <div className="flex items-center gap-2 mb-2">
+       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <Card className="p-5 border-l-4 border-l-blue-600 flex flex-col justify-between h-40 shadow-sm">
+             <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('status')}</span>
+             <div className="flex items-center gap-3 my-2">
                  <StatusIcon status={customer.followUpStatus} />
-                 <span className="font-black text-xl text-slate-800 dark:text-white truncate">
+                 <span className="font-black text-xl xl:text-2xl text-slate-900 dark:text-white truncate tracking-tight">
                    {getStatusLabel(customer.followUpStatus)}
                  </span>
              </div>
-             <div className="flex gap-1.5 mt-auto">
+             <div className="flex gap-2.5 mt-auto">
                {['My Turn', 'Waiting for Customer', 'No Action'].map(opt => (
                  <button 
                   key={opt} 
                   onClick={() => saveUpdate({ followUpStatus: opt as FollowUpStatus })} 
-                  className={`w-4 h-4 rounded-full border-2 transition-all ${customer.followUpStatus === opt ? 'bg-blue-600 border-blue-200 scale-110' : 'bg-slate-100 border-transparent hover:bg-slate-200'}`} 
+                  className={`w-4 h-4 xl:w-5 xl:h-5 rounded-full border-2 transition-all ${customer.followUpStatus === opt ? 'bg-blue-600 border-blue-200 scale-125' : 'bg-slate-100 border-transparent hover:bg-slate-200 dark:bg-slate-700'}`} 
                   title={opt} 
                  />
                ))}
@@ -169,140 +157,126 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
           <DaysCounter date={customer.lastMyReplyDate} label={t('unfollowedDays')} type="elapsed" onDateChange={(d) => saveUpdate({ lastMyReplyDate: d })} />
        </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         {/* Sidebar */}
-         <div className="space-y-6">
-           {/* Contacts Card */}
-           <Card className="p-6">
-             <div className="flex justify-between items-center mb-6 pb-2 border-b">
-               <h3 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-wide">
-                 <UserCheck size={20} className="text-blue-600" /> {t('keyContacts')}
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
+         <div className="space-y-8">
+           <Card className="p-6 xl:p-8 shadow-sm">
+             <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-100 dark:border-slate-700">
+               <h3 className="font-black text-base xl:text-lg text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider">
+                 <UserCheck className="w-5 h-5 xl:w-6 xl:h-6 text-blue-600" /> {t('keyContacts')}
                </h3>
-               <button onClick={() => setIsEditContactsOpen(true)} className="p-1.5 rounded-md bg-[#059669] text-white shadow-sm hover:bg-[#047857] transition-colors">
-                  <PencilLine size={16} />
+               <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
+                  <PencilLine className="w-4 h-4 xl:w-5 xl:h-5" />
                </button>
              </div>
-             <div className="space-y-4">
+             <div className="space-y-5">
                {customer.contacts.map((contact, idx) => (
-                 <div key={idx} className={`p-4 rounded-xl border-2 ${contact.isPrimary ? 'border-slate-200 bg-slate-50/50' : 'border-slate-100 bg-slate-50'}`}>
-                    <div className="flex items-center justify-between mb-1">
-                       <span className="font-bold text-slate-900 text-sm">{idx + 1}. {contact.name}</span>
-                       {contact.isPrimary && <Star size={14} className="fill-blue-500 text-blue-500" />}
+                 <div key={idx} className={`p-5 rounded-2xl border-2 transition-colors ${contact.isPrimary ? 'border-slate-200 bg-slate-50/50 dark:bg-slate-800/20' : 'border-slate-50 bg-slate-50/20 dark:bg-slate-800/10'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                       <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{idx + 1}. {contact.name}</span>
+                       {contact.isPrimary && <Star className="w-4 h-4 fill-blue-500 text-blue-500" />}
                     </div>
-                    <p className="text-xs font-bold text-blue-600 mb-2">{contact.title}</p>
-                    <div className="text-[10px] space-y-1 text-slate-400 font-medium">
-                       <div className="flex items-center gap-1.5"><Mail size={10}/> {contact.email || '-'}</div>
-                       <div className="flex items-center gap-1.5"><Phone size={10}/> {contact.phone || '-'}</div>
+                    <p className="text-xs xl:text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight mb-4">{contact.title}</p>
+                    <div className="text-[10px] xl:text-xs space-y-2 text-slate-500 font-bold uppercase tracking-wider">
+                       <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Mail className="w-3.5 h-3.5"/> {contact.email || '-'}</div>
+                       <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Phone className="w-3.5 h-3.5"/> {contact.phone || '-'}</div>
                     </div>
                  </div>
                ))}
-               <Button variant="ghost" className="w-full text-xs py-2 border-2 border-dashed border-slate-200" onClick={() => { setIsEditContactsOpen(true); addContact(); }}>
-                 <Plus size={14} /> Add Contact
-               </Button>
+               <button className="w-full text-[10px] xl:text-xs font-black uppercase tracking-widest py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-2" onClick={() => { setIsEditContactsOpen(true); addContact(); }}>
+                 <Plus className="w-4 h-4" /> Add Contact
+               </button>
              </div>
            </Card>
            
-           {/* Exhibitions Card */}
-           <Card className="p-6">
-             <div className="flex justify-between items-center mb-4">
-               <h3 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-wide">
-                 <List size={20} className="text-indigo-600" /> {t('exhibitions')}
+           <Card className="p-6 xl:p-8 shadow-sm">
+             <div className="flex justify-between items-center mb-6">
+               <h3 className="font-black text-base xl:text-lg text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider">
+                 <List className="w-5 h-5 xl:w-6 xl:h-6 text-indigo-600" /> {t('exhibitions')}
                </h3>
-               <button onClick={() => { setTempTags(customer.tags.join(', ')); setIsEditTagsOpen(true); }} className="p-1.5 rounded-md bg-[#059669] text-white shadow-sm hover:bg-[#047857] transition-colors">
-                 <PencilLine size={16} />
+               <button onClick={() => { setTempTags(customer.tags.join(', ')); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
+                 <PencilLine className="w-4 h-4 xl:w-5 xl:h-5" />
                </button>
              </div>
-             <div className="flex flex-wrap gap-2">
+             <div className="flex flex-wrap gap-2.5">
                {customer.tags.length > 0 ? customer.tags.map((tag, i) => (
                  <Badge key={i} color="gray">{tag}</Badge>
-               )) : <span className="text-xs text-slate-400 italic">No tags added.</span>}
+               )) : <span className="text-xs xl:text-sm text-slate-400 italic font-medium">No tags added.</span>}
              </div>
            </Card>
          </div>
 
-         {/* Main Content */}
-         <div className="lg:col-span-2 space-y-6">
-            {/* Summary Card */}
-            <Card className="overflow-hidden border border-slate-200 shadow-sm">
-               <div className="px-6 py-4 bg-[#059669] flex justify-between items-center">
-                  <h3 className="font-black text-lg text-white flex items-center gap-2 uppercase tracking-wide"><Box size={20}/> {t('productSummary')}</h3>
-                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-1.5 rounded-md bg-white/20 text-white shadow-sm hover:bg-white/30 transition-colors">
-                    <PencilLine size={18}/>
+         <div className="lg:col-span-2 space-y-8">
+            <Card className="overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+               <div className="px-6 xl:px-8 py-5 bg-emerald-600 flex justify-between items-center">
+                  <h3 className="font-black text-base xl:text-lg text-white flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 xl:w-6 xl:h-6"/> {t('productSummary')}</h3>
+                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-white/20 text-white shadow-sm hover:bg-white/30 transition-all active:scale-95">
+                    <PencilLine className="w-5 h-5 xl:w-6 xl:h-6"/>
                   </button>
                </div>
-               <div className="p-8">
-                  <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed font-medium text-base">{customer.productSummary || "No summary provided."}</p>
-                  <div className="mt-6 pt-4 border-t flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+               <div className="p-8 xl:p-10">
+                  <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed font-bold text-base xl:text-lg tracking-tight">{customer.productSummary || "No summary provided."}</p>
+                  <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] xl:text-xs text-slate-400 font-black uppercase tracking-widest">
                      <span>{t('lastUpdated')}: {customer.lastStatusUpdate}</span>
                      <Badge color="green">{customer.status}</Badge>
                   </div>
                </div>
             </Card>
 
-            {/* Tabs Navigation */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-              <button onClick={() => setActiveTab('overview')} className={`px-6 py-2 rounded-lg font-black text-xs transition-all ${activeTab === 'overview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('overview')}</button>
-              <button onClick={() => setActiveTab('samples')} className={`px-6 py-2 rounded-lg font-black text-xs transition-all ${activeTab === 'samples' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('samples')} ({customerSamples.length})</button>
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl w-fit shadow-inner">
+              <button onClick={() => setActiveTab('overview')} className={`px-8 py-2.5 rounded-lg font-black text-xs xl:text-sm uppercase tracking-wider transition-all ${activeTab === 'overview' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('overview')}</button>
+              <button onClick={() => setActiveTab('samples')} className={`px-8 py-2.5 rounded-lg font-black text-xs xl:text-sm uppercase tracking-wider transition-all ${activeTab === 'samples' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('samples')} ({customerSamples.length})</button>
             </div>
 
             {activeTab === 'overview' && (
-              <div className="space-y-8 animate-in fade-in duration-300">
-                {/* Independent Upcoming Plan Section - Refined for Screenshot */}
-                <div className={`p-6 rounded-2xl border-2 shadow-sm group relative ${urgencyClass}`}>
-                  <button 
-                    onClick={() => {
-                      setTempUpcomingPlan(customer.upcomingPlan || '');
-                      setIsEditUpcomingPlanOpen(true);
-                    }}
-                    className="absolute top-4 right-4 p-1.5 rounded-md bg-[#059669] text-white shadow-sm hover:bg-[#047857] transition-colors"
-                  >
-                    <PencilLine size={16} />
+              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className={`p-8 xl:p-10 rounded-[2rem] border-2 shadow-sm group relative overflow-hidden transition-all ${urgencyClass}`}>
+                  <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="absolute top-6 right-6 p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 z-10">
+                    <PencilLine className="w-5 h-5 xl:w-6 xl:h-6" />
                   </button>
-                  <div className="flex items-center gap-4 mb-4">
-                     <div className="p-2 bg-white rounded-xl shadow-sm border">
-                        <Clock size={24} className="text-slate-900" />
+                  <div className="flex items-center gap-5 mb-6">
+                     <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <Clock className="w-7 h-7 xl:w-9 xl:h-9 text-slate-900 dark:text-white" />
                      </div>
                      <div>
-                        <h4 className="font-black text-[10px] text-slate-500 tracking-widest uppercase mb-0.5">UPCOMING PLAN</h4>
-                        <div className="flex items-center gap-2">
-                           <span className="text-sm font-black text-slate-900">DDL: {customer.nextActionDate || 'TBD'}</span>
+                        <h4 className="font-black text-[10px] xl:text-xs text-slate-400 tracking-[0.2em] uppercase mb-1">UPCOMING PLAN</h4>
+                        <div className="flex items-center gap-3">
+                           <span className="text-base xl:text-lg font-black text-slate-900 dark:text-white tracking-tight">DDL: {customer.nextActionDate || 'TBD'}</span>
                            {urgency === 'urgent' && <Badge color="red">Urgent</Badge>}
                         </div>
                      </div>
                   </div>
-                  <p className="text-lg font-black text-slate-900 leading-snug">
-                     {customer.upcomingPlan || <span className="text-slate-400 italic font-medium text-base">No upcoming plan logged.</span>}
+                  <p className="text-xl xl:text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
+                     {customer.upcomingPlan || <span className="text-slate-400 italic font-bold text-lg xl:text-xl">No upcoming plan logged.</span>}
                   </p>
                 </div>
 
-                {/* History Section */}
-                <div className="space-y-6">
+                <div className="space-y-8">
                    <div className="flex justify-between items-center">
-                     <h3 className="font-black text-xl text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-wide">
-                        <Calendar size={20} className="text-blue-600"/> {t('interactionHistory')}
+                     <h3 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider">
+                        <Calendar className="w-6 h-6 text-blue-600"/> {t('interactionHistory')}
                      </h3>
-                     <Button className="text-xs py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 font-bold" onClick={() => setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' })}>
-                       <Plus size={14} className="mr-1" /> Log Progress
+                     <Button className="text-[10px] xl:text-xs py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 font-black uppercase tracking-widest shadow-md" onClick={() => setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' })}>
+                       <Plus className="w-4 h-4" /> Log Progress
                      </Button>
                    </div>
                    
-                   <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 pl-8 py-2 space-y-8">
+                   <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 pl-10 py-4 space-y-10">
                      {customer.interactions.length > 0 ? customer.interactions.map((int, i) => (
                        <div key={int.id} className="relative group">
-                          <div className="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-[10px]">{customer.interactions.length - i}</div>
-                          <div className="flex items-center justify-between mb-2">
-                             <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
+                          <div className="absolute -left-[54px] top-0 w-8 h-8 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-xs">{customer.interactions.length - i}</div>
+                          <div className="flex items-center justify-between mb-4">
+                             <span className="font-black text-sm xl:text-base text-slate-900 dark:text-white tracking-tight">{int.date}</span>
                              <div className="flex gap-2">
-                                <button onClick={() => setEditingInteraction(int)} className="p-1.5 rounded bg-[#059669] text-white shadow-sm hover:bg-[#047857] transition-colors"><PencilLine size={12}/></button>
-                                <button onClick={() => deleteInteraction(int.id)} className="p-1.5 rounded bg-red-600 text-white shadow-sm hover:bg-red-700 transition-colors"><Trash size={12}/></button>
+                                <button onClick={() => setEditingInteraction(int)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine className="w-4 h-4 xl:w-5 xl:h-5"/></button>
+                                <button onClick={() => deleteInteraction(int.id)} className="p-2 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-95"><Trash className="w-4 h-4 xl:w-5 xl:h-5"/></button>
                              </div>
                           </div>
-                          <Card className="p-5 border border-slate-100 dark:border-slate-800 shadow-sm">
-                             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">{int.summary}</p>
+                          <Card className="p-6 xl:p-8 border border-slate-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/40">
+                             <p className="text-sm xl:text-lg text-slate-700 dark:text-slate-300 leading-relaxed font-bold tracking-tight">{int.summary}</p>
                           </Card>
                        </div>
                      )) : (
-                       <div className="text-slate-400 text-sm italic">No interactions logged yet.</div>
+                       <div className="text-slate-400 text-sm xl:text-base italic font-bold">No interactions logged yet.</div>
                      )}
                    </div>
                 </div>
@@ -310,24 +284,24 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             )}
 
             {activeTab === 'samples' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right-4 duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4 duration-500">
                  {customerSamples.map(sample => (
-                   <Card key={sample.id} className="p-5 hover:shadow-xl transition-all cursor-pointer border-2 hover:border-blue-500 group" onClick={() => navigate(`/samples/${sample.id}`)}>
-                      <div className="flex justify-between items-start mb-3">
-                         <div className="p-2 bg-blue-50 dark:bg-blue-900/40 rounded-lg"><Box className="text-blue-600" size={18}/></div>
+                   <Card key={sample.id} className="p-6 xl:p-8 hover:shadow-2xl transition-all cursor-pointer border-2 hover:border-blue-500 group bg-white dark:bg-slate-900/40" onClick={() => navigate(`/samples/${sample.id}`)}>
+                      <div className="flex justify-between items-start mb-6">
+                         <div className="p-3 bg-blue-50 dark:bg-blue-900/40 rounded-xl shadow-sm"><Box className="text-blue-600 w-6 h-6 xl:w-8 xl:h-8" /></div>
                          <Badge color="blue">{sample.status}</Badge>
                       </div>
-                      <h4 className="font-bold text-lg text-slate-900 dark:text-white mb-1 group-hover:text-blue-600">{sample.sampleName}</h4>
-                      <div className="text-[10px] font-bold text-slate-400 flex items-center gap-3 uppercase tracking-tighter">
+                      <h4 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 tracking-tight leading-tight">{sample.sampleName}</h4>
+                      <div className="text-[10px] xl:text-xs font-black text-slate-400 flex items-center gap-4 uppercase tracking-widest mt-4">
                          <span>SKU: {sample.sampleSKU || '-'}</span>
                          <span>QTY: {sample.quantity}</span>
                       </div>
                    </Card>
                  ))}
                  {customerSamples.length === 0 && (
-                   <div className="col-span-2 py-16 text-center border-2 border-dashed rounded-2xl text-slate-400">
-                      <Box size={48} className="mx-auto mb-3 opacity-10" />
-                      <p className="text-sm font-bold">No Samples Tracked</p>
+                   <div className="col-span-2 py-20 text-center border-4 border-dashed rounded-[2.5rem] text-slate-200 dark:border-slate-800">
+                      <Box className="w-16 h-16 xl:w-24 xl:h-24 mx-auto mb-6 opacity-10" />
+                      <p className="text-sm xl:text-lg font-black uppercase tracking-[0.2em] text-slate-300">No Samples Tracked</p>
                    </div>
                  )}
               </div>
@@ -336,139 +310,102 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
        </div>
 
        {/* --- Modals --- */}
-
-       {/* Edit Summary Modal */}
        <Modal isOpen={isEditSummaryOpen} onClose={() => setIsEditSummaryOpen(false)} title={t('productSummary')}>
-          <div className="space-y-4">
-             <textarea 
-               className="w-full h-64 p-4 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
-               value={tempSummary}
-               onChange={(e) => setTempSummary(e.target.value)}
-             />
-             <div className="flex justify-end gap-3">
+          <div className="space-y-6">
+             <textarea className="w-full h-80 p-5 border-2 rounded-2xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-slate-800 dark:text-white text-base xl:text-lg transition-all" value={tempSummary} onChange={(e) => setTempSummary(e.target.value)} />
+             <div className="flex justify-end gap-3 pt-2">
                 <Button variant="secondary" onClick={() => setIsEditSummaryOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateSummary}><Save size={18} /> Save Summary</Button>
+                <Button onClick={handleUpdateSummary} className="px-8"><Save className="w-5 h-5" /> Save Summary</Button>
              </div>
           </div>
        </Modal>
 
-       {/* Edit Upcoming Plan Modal - Maps to "下一步" and "关键日期" */}
        <Modal isOpen={isEditUpcomingPlanOpen} onClose={() => setIsEditUpcomingPlanOpen(false)} title="Update Upcoming Plan">
-          <div className="space-y-4">
-             <div className="space-y-1">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Plan Details (下一步)</label>
-                <textarea 
-                  className="w-full h-32 p-4 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
-                  value={tempUpcomingPlan}
-                  onChange={(e) => setTempUpcomingPlan(e.target.value)}
-                  placeholder="What is the next objective for this client?"
-                />
+          <div className="space-y-6">
+             <div className="space-y-2">
+                <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Plan Details (下一步)</label>
+                <textarea className="w-full h-40 p-5 border-2 rounded-2xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-slate-800 dark:text-white text-base xl:text-lg transition-all" value={tempUpcomingPlan} onChange={(e) => setTempUpcomingPlan(e.target.value)} placeholder="What is the next objective for this client?" />
              </div>
-             <div className="space-y-1">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Date (关键日期 / DDL)</label>
-                <input 
-                  type="date"
-                  className="w-full p-3 border rounded-lg font-bold"
-                  value={customer.nextActionDate || ''}
-                  onChange={(e) => saveUpdate({ nextActionDate: e.target.value })}
-                />
+             <div className="space-y-2">
+                <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Target Date (关键日期 / DDL)</label>
+                <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-base xl:text-lg bg-slate-50 dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-blue-500 transition-all dark:text-white" value={customer.nextActionDate || ''} onChange={(e) => saveUpdate({ nextActionDate: e.target.value })} />
              </div>
-             <div className="flex justify-end gap-3 pt-4">
+             <div className="flex justify-end gap-3 pt-6">
                 <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateUpcomingPlan}><Save size={18} /> Save Plan</Button>
+                <Button onClick={handleUpdateUpcomingPlan} className="px-8"><Save className="w-5 h-5" /> Save Plan</Button>
              </div>
           </div>
        </Modal>
 
-       {/* Edit Contacts Modal */}
        <Modal isOpen={isEditContactsOpen} onClose={() => setIsEditContactsOpen(false)} title={t('keyContacts')}>
-          <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="space-y-8 max-h-[65vh] overflow-y-auto pr-4 scrollbar-hide">
              {customer.contacts.map((contact, idx) => (
-               <div key={idx} className="p-5 border-2 rounded-xl space-y-4 relative bg-slate-50">
+               <div key={idx} className="p-6 xl:p-8 border-2 rounded-2xl space-y-6 relative bg-slate-50 dark:bg-slate-800/40 dark:border-slate-700">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Contact #{idx + 1}</span>
-                    <div className="flex gap-2">
-                       <button 
-                         onClick={() => togglePrimaryContact(idx)}
-                         className={`p-1.5 rounded-md ${contact.isPrimary ? 'text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400'}`}
-                         title="Set as Primary"
-                       >
-                         <Star size={18} fill={contact.isPrimary ? 'currentColor' : 'none'} />
+                    <span className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest">Contact #{idx + 1}</span>
+                    <div className="flex gap-3">
+                       <button onClick={() => togglePrimaryContact(idx)} className={`p-2 rounded-xl transition-all ${contact.isPrimary ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/30' : 'text-slate-300 hover:text-amber-400'}`} title="Set as Primary">
+                         <Star className="w-6 h-6" fill={contact.isPrimary ? 'currentColor' : 'none'} />
                        </button>
-                       <button onClick={() => deleteContact(idx)} className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"><Trash size={18}/></button>
+                       <button onClick={() => deleteContact(idx)} className="p-2 text-slate-300 hover:text-red-500 transition-colors active:scale-90"><Trash className="w-6 h-6"/></button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <input 
-                      placeholder="Name" 
-                      className="p-2 border rounded-lg text-sm font-bold" 
-                      value={contact.name} 
-                      onChange={(e) => updateContact(idx, { name: e.target.value })} 
-                    />
-                    <input 
-                      placeholder="Title" 
-                      className="p-2 border rounded-lg text-sm" 
-                      value={contact.title} 
-                      onChange={(e) => updateContact(idx, { title: e.target.value })} 
-                    />
-                    <input 
-                      placeholder="Email" 
-                      className="p-2 border rounded-lg text-sm" 
-                      value={contact.email} 
-                      onChange={(e) => updateContact(idx, { email: e.target.value })} 
-                    />
-                    <input 
-                      placeholder="Phone" 
-                      className="p-2 border rounded-lg text-sm" 
-                      value={contact.phone} 
-                      onChange={(e) => updateContact(idx, { phone: e.target.value })} 
-                    />
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Name</label>
+                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-black dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={contact.name} onChange={(e) => updateContact(idx, { name: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Title</label>
+                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={contact.title} onChange={(e) => updateContact(idx, { title: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={contact.email} onChange={(e) => updateContact(idx, { email: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone</label>
+                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={contact.phone} onChange={(e) => updateContact(idx, { phone: e.target.value })} />
+                    </div>
                   </div>
                </div>
              ))}
-             <Button variant="secondary" className="w-full py-4 border-dashed border-2" onClick={addContact}>
-               <Plus size={18} /> Add Another Contact
-             </Button>
+             <button className="w-full py-6 border-4 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl text-slate-300 hover:text-blue-600 hover:border-blue-200 transition-all font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3" onClick={addContact}>
+               <Plus className="w-6 h-6" /> Add Another Contact
+             </button>
           </div>
-          <div className="mt-8 flex justify-end">
-             <Button onClick={() => setIsEditContactsOpen(false)}>Done</Button>
+          <div className="mt-10 flex justify-end">
+             <Button onClick={() => setIsEditContactsOpen(false)} className="px-10">Done</Button>
           </div>
        </Modal>
 
-       {/* Edit Tags Modal */}
        <Modal isOpen={isEditTagsOpen} onClose={() => setIsEditTagsOpen(false)} title={t('exhibitions')}>
-          <div className="space-y-4">
-             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Separate tags with commas</label>
-             <input 
-               className="w-full p-4 border rounded-xl font-bold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none"
-               value={tempTags}
-               onChange={(e) => setTempTags(e.target.value)}
-               placeholder="e.g. CES 2024, Industry Fair"
-             />
-             <div className="flex justify-end gap-3">
+          <div className="space-y-6">
+             <div className="space-y-2">
+                <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Separate tags with commas</label>
+                <input className="w-full p-5 border-2 rounded-2xl font-black text-blue-600 dark:text-blue-400 dark:bg-slate-800 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-base xl:text-lg transition-all" value={tempTags} onChange={(e) => setTempTags(e.target.value)} placeholder="e.g. CES 2024, Industry Fair" />
+             </div>
+             <div className="flex justify-end gap-3 pt-4">
                 <Button variant="secondary" onClick={() => setIsEditTagsOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateTags}>Save Tags</Button>
+                <Button onClick={handleUpdateTags} className="px-8">Save Tags</Button>
              </div>
           </div>
        </Modal>
 
-       {/* Interaction Modal */}
        {editingInteraction && (
          <Modal isOpen={!!editingInteraction} onClose={() => setEditingInteraction(null)} title="Update Progress Log">
-            <div className="space-y-5">
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-black text-slate-400">DATE</label>
-                    <input type="date" className="w-full p-2 border rounded-lg font-bold" value={editingInteraction.date} onChange={(e) => setEditingInteraction({...editingInteraction, date: e.target.value})} />
-                  </div>
+            <div className="space-y-6">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">DATE</label>
+                 <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-base xl:text-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all" value={editingInteraction.date} onChange={(e) => setEditingInteraction({...editingInteraction, date: e.target.value})} />
                </div>
-               <div className="space-y-1">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">SUMMARY OF PROGRESS</label>
-                  <textarea className="w-full h-32 p-3 border rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none" placeholder="What happened in this interaction?" value={editingInteraction.summary} onChange={(e) => setEditingInteraction({...editingInteraction, summary: e.target.value})} />
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SUMMARY OF PROGRESS</label>
+                  <textarea className="w-full h-48 p-5 border-2 rounded-2xl font-bold text-base xl:text-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all" placeholder="What happened in this interaction?" value={editingInteraction.summary} onChange={(e) => setEditingInteraction({...editingInteraction, summary: e.target.value})} />
                </div>
-               <div className="flex justify-end gap-3 pt-4">
+               <div className="flex justify-end gap-3 pt-6">
                   <Button variant="secondary" onClick={() => setEditingInteraction(null)}>Cancel</Button>
-                  <Button onClick={() => saveInteraction(editingInteraction)} className="bg-blue-600 hover:bg-blue-700 text-white"><Save size={18} className="mr-1" /> Update History</Button>
+                  <Button onClick={() => saveInteraction(editingInteraction)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 font-black uppercase tracking-widest"><Save className="w-5 h-5 mr-1" /> Update History</Button>
                </div>
             </div>
          </Modal>

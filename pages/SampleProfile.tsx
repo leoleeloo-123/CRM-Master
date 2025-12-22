@@ -15,7 +15,6 @@ const SampleProfile: React.FC = () => {
   const sample = samples.find(s => s.id === id);
   const customer = customers.find(c => c.id === sample?.customerId);
 
-  // Editable States
   const [isEditingSpecs, setIsEditingSpecs] = useState(false);
   const [editSample, setEditSample] = useState<Partial<Sample>>({});
   const [isEditingStatus, setIsEditingStatus] = useState(false);
@@ -28,7 +27,6 @@ const SampleProfile: React.FC = () => {
   const [editTrackingText, setEditTrackingText] = useState('');
   const [editQuantityText, setEditQuantityText] = useState('');
 
-  // Status History State
   const [historyItems, setHistoryItems] = useState<{id: string, date: string, text: string}[]>([]);
   const [isAddingHistory, setIsAddingHistory] = useState(false);
   const [newHistoryDate, setNewHistoryDate] = useState('');
@@ -149,7 +147,7 @@ const SampleProfile: React.FC = () => {
     }
   };
 
-  if (!sample) return <div className="p-8">Sample not found.</div>;
+  if (!sample) return <div className="p-8 text-center font-black uppercase text-slate-400">Sample not found.</div>;
 
   const renderOption = (val: string) => t(val as any);
 
@@ -165,66 +163,65 @@ const SampleProfile: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 xl:space-y-8 animate-in fade-in pb-10">
-       <div className="flex items-center gap-4">
-         <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+    <div className="space-y-8 xl:space-y-12 animate-in fade-in duration-500 pb-20">
+       <div className="flex items-center gap-6">
+         <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-90">
            <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
          </button>
          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl xl:text-4xl font-bold text-slate-900 dark:text-white">{sample.sampleName}</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{sample.sampleName}</h1>
               <Badge color="blue">{sample.sampleSKU || 'No SKU'}</Badge>
             </div>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">
-               Customer: <span className="font-bold text-blue-600 cursor-pointer hover:underline" onClick={() => navigate(`/customers/${sample.customerId}`)}>{sample.customerName}</span>
+            <p className="text-slate-400 font-black uppercase text-[10px] xl:text-xs tracking-widest mt-3">
+               Customer: <span className="text-blue-600 cursor-pointer hover:underline transition-all" onClick={() => navigate(`/customers/${sample.customerId}`)}>{sample.customerName}</span>
             </p>
          </div>
        </div>
 
-       {/* Top Metrics Row */}
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xl:gap-8">
-          <Card className={`p-4 border-l-4 border-l-blue-600 flex flex-col justify-center relative ${isEditingStatus ? 'ring-2 ring-blue-500' : ''}`}>
-             <div className="flex justify-between items-center mb-1">
-               <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t('currentStatus')}</span>
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 xl:gap-8">
+          <Card className={`p-5 xl:p-8 border-l-4 border-l-blue-600 flex flex-col justify-center relative shadow-sm transition-all ${isEditingStatus ? 'ring-4 ring-blue-500/20 border-blue-200' : ''}`}>
+             <div className="flex justify-between items-center mb-3">
+               <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest leading-none">{t('currentStatus')}</span>
                {!isEditingStatus ? (
-                 <button onClick={() => setIsEditingStatus(true)} className="p-1 rounded bg-[#059669] text-white hover:bg-[#047857] transition-colors"><PencilLine size={12} /></button>
+                 <button onClick={() => setIsEditingStatus(true)} className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm active:scale-90"><PencilLine className="w-3 h-3 xl:w-4 xl:h-4" /></button>
                ) : (
-                 <div className="flex gap-2">
-                    <button onClick={handleSaveStatus} className="text-emerald-600"><Save size={14} /></button>
-                    <button onClick={() => setIsEditingStatus(false)} className="text-red-500"><X size={14} /></button>
+                 <div className="flex gap-2.5">
+                    <button onClick={handleSaveStatus} className="text-emerald-600 hover:scale-110 transition-transform"><Save className="w-4 h-4 xl:w-5 xl:h-5" /></button>
+                    <button onClick={() => setIsEditingStatus(false)} className="text-red-500 hover:scale-110 transition-transform"><X className="w-4 h-4 xl:w-5 xl:h-5" /></button>
                  </div>
                )}
              </div>
              {isEditingStatus ? (
-                <select className="w-full border rounded p-1 text-sm dark:bg-slate-800 dark:border-slate-600" value={editSample.status} onChange={e => setEditSample({...editSample, status: e.target.value as SampleStatus})}>
+                <select className="w-full border-2 border-slate-200 rounded-xl p-2 text-sm xl:text-base font-bold dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.status} onChange={e => setEditSample({...editSample, status: e.target.value as SampleStatus})}>
                    {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{renderOption(s)}</option>)}
                 </select>
              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-slate-400" />
-                  <span className="text-xl font-bold text-slate-900 dark:text-white">{renderOption(sample.status)}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="text-xl xl:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{renderOption(sample.status)}</span>
                 </div>
              )}
           </Card>
 
           <DaysCounter date={sample.lastStatusDate} label={t('daysSinceUpdate')} type="elapsed" />
 
-          <Card className={`p-4 flex flex-col justify-center relative ${isEditingTest ? 'ring-2 ring-blue-500' : ''}`}>
-             <div className="flex justify-between items-center mb-1">
-               <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t('testFinished')}</span>
+          <Card className={`p-5 xl:p-8 flex flex-col justify-center relative shadow-sm transition-all ${isEditingTest ? 'ring-4 ring-blue-500/20 border-blue-200' : ''}`}>
+             <div className="flex justify-between items-center mb-3">
+               <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest leading-none">{t('testFinished')}</span>
                {!isEditingTest ? (
-                 <button onClick={() => setIsEditingTest(true)} className="p-1 rounded bg-[#059669] text-white hover:bg-[#047857] transition-colors"><PencilLine size={12} /></button>
+                 <button onClick={() => setIsEditingTest(true)} className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm active:scale-90"><PencilLine className="w-3 h-3 xl:w-4 xl:h-4" /></button>
                ) : (
-                 <div className="flex gap-2">
-                    <button onClick={handleSaveTest} className="text-emerald-600"><Save size={14} /></button>
-                    <button onClick={() => setIsEditingTest(false)} className="text-red-500"><X size={14} /></button>
+                 <div className="flex gap-2.5">
+                    <button onClick={handleSaveTest} className="text-emerald-600 hover:scale-110 transition-transform"><Save className="w-4 h-4 xl:w-5 xl:h-5" /></button>
+                    <button onClick={() => setIsEditingTest(false)} className="text-red-500 hover:scale-110 transition-transform"><X className="w-4 h-4 xl:w-5 xl:h-5" /></button>
                  </div>
                )}
              </div>
-             <div className="flex">
+             <div className="flex h-10 items-center">
               {isEditingTest ? (
                 <select 
-                  className="w-full border rounded p-1 text-sm dark:bg-slate-800 dark:border-slate-600" 
+                  className="w-full border-2 border-slate-200 rounded-xl p-2 text-sm xl:text-base font-bold dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" 
                   value={editSample.testStatus || 'Ongoing'} 
                   onChange={e => setEditSample({...editSample, testStatus: e.target.value as TestStatus})}
                 >
@@ -233,208 +230,202 @@ const SampleProfile: React.FC = () => {
                     <option value="Terminated">{t('projectTerminated')}</option>
                 </select>
               ) : (
-                getTestBadge(sample.testStatus || 'Ongoing')
+                <div className="text-[1.1em]">{getTestBadge(sample.testStatus || 'Ongoing')}</div>
               )}
              </div>
           </Card>
 
-          <Card className={`p-4 flex flex-col justify-center relative ${isEditingTracking ? 'ring-2 ring-blue-500' : ''}`}>
-             <div className="flex justify-between items-center mb-1">
-               <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t('tracking')}</span>
+          <Card className={`p-5 xl:p-8 flex flex-col justify-center relative shadow-sm transition-all ${isEditingTracking ? 'ring-4 ring-blue-500/20 border-blue-200' : ''}`}>
+             <div className="flex justify-between items-center mb-3">
+               <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest leading-none">{t('tracking')}</span>
                {!isEditingTracking ? (
-                 <button onClick={() => setIsEditingTracking(true)} className="p-1 rounded bg-[#059669] text-white hover:bg-[#047857] transition-colors"><PencilLine size={12} /></button>
+                 <button onClick={() => setIsEditingTracking(true)} className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm active:scale-90"><PencilLine className="w-3 h-3 xl:w-4 xl:h-4" /></button>
                ) : (
-                 <div className="flex gap-2">
-                    <button onClick={handleSaveTracking} className="text-emerald-600"><Save size={14} /></button>
-                    <button onClick={() => setIsEditingTracking(false)} className="text-red-500"><X size={14} /></button>
+                 <div className="flex gap-2.5">
+                    <button onClick={handleSaveTracking} className="text-emerald-600 hover:scale-110 transition-transform"><Save className="w-4 h-4 xl:w-5 xl:h-5" /></button>
+                    <button onClick={() => setIsEditingTracking(false)} className="text-red-500 hover:scale-110 transition-transform"><X className="w-4 h-4 xl:w-5 xl:h-5" /></button>
                  </div>
                )}
              </div>
              {isEditingTracking ? (
                <input 
-                 className="w-full border rounded p-1 text-sm dark:bg-slate-800 dark:border-slate-600 font-mono" 
+                 className="w-full border-2 border-slate-200 rounded-xl p-2 text-sm xl:text-base font-mono font-bold dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-blue-500 transition-all dark:text-white" 
                  value={editTrackingText} 
                  onChange={e => setEditTrackingText(e.target.value)}
                  autoFocus
                />
              ) : (
-               <div className="flex items-center gap-2 text-blue-600 font-mono text-lg truncate">
-                  <ExternalLink size={16} /> <span>{sample.trackingNumber || '-'}</span>
+               <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400 font-mono text-lg xl:text-xl font-black truncate leading-none">
+                  <ExternalLink className="w-4 h-4 xl:w-5 xl:h-5" /> <span>{sample.trackingNumber || '-'}</span>
                </div>
              )}
           </Card>
        </div>
 
-       {/* Content Grid */}
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="space-y-6">
-             {/* Specs Card - Quantity Split Out */}
-             <Card className="p-6">
-                <div className="flex justify-between items-center mb-6 pb-2 border-b border-slate-100 dark:border-slate-700">
-                   <h3 className="font-bold text-lg flex items-center gap-2 uppercase tracking-wide"><Box size={20} className="text-blue-500" /> {t('specs')}</h3>
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
+          <div className="space-y-8">
+             <Card className="p-6 xl:p-10 shadow-sm">
+                <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-100 dark:border-slate-700">
+                   <h3 className="font-black text-base xl:text-lg flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 xl:w-6 xl:h-6 text-blue-600" /> {t('specs')}</h3>
                    {!isEditingSpecs ? (
-                     <button onClick={() => setIsEditingSpecs(true)} className="p-1 rounded bg-[#059669] text-white hover:bg-[#047857] transition-colors"><PencilLine size={16} /></button>
+                     <button onClick={() => setIsEditingSpecs(true)} className="p-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm active:scale-90"><PencilLine className="w-4 h-4 xl:w-5 xl:h-5" /></button>
                    ) : (
-                     <div className="flex gap-2">
-                       <button onClick={handleSaveSpecs} className="text-emerald-600"><Save size={20} /></button>
-                       <button onClick={() => setIsEditingSpecs(false)} className="text-red-500"><X size={20} /></button>
+                     <div className="flex gap-3">
+                       <button onClick={handleSaveSpecs} className="text-emerald-600 hover:scale-110 transition-transform"><Save className="w-5 h-5 xl:w-6 xl:h-6" /></button>
+                       <button onClick={() => setIsEditingSpecs(false)} className="text-red-500 hover:scale-110 transition-transform"><X className="w-5 h-5 xl:w-6 xl:h-6" /></button>
                      </div>
                    )}
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-6">
                    {isEditingSpecs ? (
-                     <div className="space-y-3">
-                        <div>
-                          <label className="text-xs font-bold text-slate-500">Crystal</label>
-                          <select className="w-full border rounded p-1.5 text-sm dark:bg-slate-900" value={editSample.crystalType} onChange={e => setEditSample({...editSample, crystalType: e.target.value as any})}>
+                     <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Crystal</label>
+                          <select className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.crystalType} onChange={e => setEditSample({...editSample, crystalType: e.target.value as any})}>
                             {tagOptions.crystalType.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
                           </select>
                         </div>
-                        <div>
-                          <label className="text-xs font-bold text-slate-500">Form</label>
-                          <select className="w-full border rounded p-1.5 text-sm dark:bg-slate-900" value={editSample.productForm} onChange={e => setEditSample({...editSample, productForm: e.target.value as any})}>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Form</label>
+                          <select className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.productForm} onChange={e => setEditSample({...editSample, productForm: e.target.value as any})}>
                             {tagOptions.productForm.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
                           </select>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                           <div>
-                             <label className="text-xs font-bold text-slate-500">Orig Size</label>
-                             <input className="w-full border rounded p-1.5 text-sm dark:bg-slate-900" value={editSample.originalSize} onChange={e => setEditSample({...editSample, originalSize: e.target.value})} />
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-1.5">
+                             <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Orig Size</label>
+                             <input className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.originalSize} onChange={e => setEditSample({...editSample, originalSize: e.target.value})} />
                            </div>
-                           <div>
-                             <label className="text-xs font-bold text-slate-500">Proc Size</label>
-                             <input className="w-full border rounded p-1.5 text-sm dark:bg-slate-900" value={editSample.processedSize} onChange={e => setEditSample({...editSample, processedSize: e.target.value})} />
+                           <div className="space-y-1.5">
+                             <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Proc Size</label>
+                             <input className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.processedSize} onChange={e => setEditSample({...editSample, processedSize: e.target.value})} />
                            </div>
                         </div>
                      </div>
                    ) : (
-                     <>
+                     <div className="space-y-5">
                         <div className="flex justify-between items-center py-1">
-                          <span className="text-slate-500 text-sm">{t('crystal')}</span>
-                          <span className="font-bold text-slate-900 dark:text-white">{renderOption(sample.crystalType || '-')}</span>
+                          <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('crystal')}</span>
+                          <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{renderOption(sample.crystalType || '-')}</span>
                         </div>
                         <div className="flex justify-between items-center py-1">
-                          <span className="text-slate-500 text-sm">{t('form')}</span>
-                          <span className="font-bold text-slate-900 dark:text-white">{renderOption(sample.productForm || '-')}</span>
+                          <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('form')}</span>
+                          <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{renderOption(sample.productForm || '-')}</span>
                         </div>
                         <div className="flex justify-between items-center py-1">
-                          <span className="text-slate-500 text-sm">{t('original')}</span>
-                          <span className="font-bold text-slate-900 dark:text-white">{sample.originalSize || '-'}</span>
+                          <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('original')}</span>
+                          <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{sample.originalSize || '-'}</span>
                         </div>
                         <div className="flex justify-between items-center py-1">
-                          <span className="text-slate-500 text-sm">{t('processed')}</span>
-                          <span className="font-bold text-slate-900 dark:text-white">{sample.processedSize || '-'}</span>
+                          <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('processed')}</span>
+                          <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{sample.processedSize || '-'}</span>
                         </div>
-                     </>
+                     </div>
                    )}
                 </div>
              </Card>
 
-             {/* Quantity Card - Independent */}
-             <Card className={`p-6 relative ${isEditingQuantity ? 'ring-2 ring-blue-500' : ''}`}>
-                <div className="flex justify-between items-center mb-4">
-                   <h3 className="font-bold text-lg flex items-center gap-2 uppercase tracking-wide"><Ruler size={20} className="text-indigo-500" /> {t('quantity')}</h3>
+             <Card className={`p-6 xl:p-10 relative shadow-sm transition-all ${isEditingQuantity ? 'ring-4 ring-indigo-500/20 border-indigo-200' : ''}`}>
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="font-black text-base xl:text-lg flex items-center gap-3 uppercase tracking-wider"><Ruler className="w-5 h-5 xl:w-6 xl:h-6 text-indigo-500" /> {t('quantity')}</h3>
                    {!isEditingQuantity ? (
-                      <button onClick={() => setIsEditingQuantity(true)} className="p-1 rounded bg-[#059669] text-white hover:bg-[#047857] transition-colors"><PencilLine size={16} /></button>
+                      <button onClick={() => setIsEditingQuantity(true)} className="p-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm active:scale-90"><PencilLine className="w-4 h-4 xl:w-5 xl:h-5" /></button>
                    ) : (
-                      <div className="flex gap-2">
-                        <button onClick={handleSaveQuantity} className="text-emerald-600"><Save size={18} /></button>
-                        <button onClick={() => setIsEditingQuantity(false)} className="text-red-500"><X size={18} /></button>
+                      <div className="flex gap-3">
+                        <button onClick={handleSaveQuantity} className="text-emerald-600 hover:scale-110 transition-transform"><Save className="w-5 h-5 xl:w-6 xl:h-6" /></button>
+                        <button onClick={() => setIsEditingQuantity(false)} className="text-red-500 hover:scale-110 transition-transform"><X className="w-5 h-5 xl:w-6 xl:h-6" /></button>
                       </div>
                    )}
                 </div>
                 {isEditingQuantity ? (
                    <input 
-                     className="w-full border rounded p-2 text-sm dark:bg-slate-900 font-bold" 
+                     className="w-full border-2 border-slate-200 rounded-xl p-3 text-base xl:text-lg font-black dark:bg-slate-900 dark:border-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all" 
                      value={editQuantityText} 
                      onChange={e => setEditQuantityText(e.target.value)} 
                      autoFocus
                    />
                 ) : (
-                   <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border text-center">
-                      <span className="text-2xl font-black text-slate-900 dark:text-white">{sample.quantity || '未定'}</span>
+                   <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-center shadow-inner">
+                      <span className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{sample.quantity || '未定'}</span>
                    </div>
                 )}
              </Card>
 
-             {/* Application Card */}
-             <Card className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                   <h3 className="font-bold text-lg flex items-center gap-2 uppercase tracking-wide"><Target size={20} className="text-emerald-500" /> {t('application')}</h3>
+             <Card className="p-6 xl:p-10 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="font-black text-base xl:text-lg flex items-center gap-3 uppercase tracking-wider"><Target className="w-5 h-5 xl:w-6 xl:h-6 text-emerald-500" /> {t('application')}</h3>
                    {!isEditingApp ? (
-                      <button onClick={() => setIsEditingApp(true)} className="p-1 rounded bg-[#059669] text-white hover:bg-[#047857] transition-colors"><PencilLine size={16} /></button>
+                      <button onClick={() => setIsEditingApp(true)} className="p-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm active:scale-90"><PencilLine className="w-4 h-4 xl:w-5 xl:h-5" /></button>
                    ) : (
-                      <div className="flex gap-2">
-                        <button onClick={handleSaveApplication} className="text-emerald-600"><Save size={18} /></button>
-                        <button onClick={() => setIsEditingApp(false)} className="text-red-500"><X size={18} /></button>
+                      <div className="flex gap-3">
+                        <button onClick={handleSaveApplication} className="text-emerald-600 hover:scale-110 transition-transform"><Save className="w-5 h-5 xl:w-6 xl:h-6" /></button>
+                        <button onClick={() => setIsEditingApp(false)} className="text-red-500 hover:scale-110 transition-transform"><X className="w-5 h-5 xl:w-6 xl:h-6" /></button>
                       </div>
                    )}
                 </div>
                 {isEditingApp ? (
-                   <textarea className="w-full border rounded p-3 text-sm dark:bg-slate-900 min-h-[100px]" value={editAppText} onChange={e => setEditAppText(e.target.value)} />
+                   <textarea className="w-full border-2 border-slate-200 rounded-2xl p-4 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none min-h-[120px] transition-all" value={editAppText} onChange={e => setEditAppText(e.target.value)} />
                 ) : (
-                   <p className="text-slate-700 dark:text-slate-200 text-sm italic bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border leading-relaxed">{sample.application || t('noApplicationProvided')}</p>
+                   <p className="text-slate-800 dark:text-slate-200 text-sm xl:text-base font-bold italic bg-slate-50/50 dark:bg-slate-900/50 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-800 leading-relaxed tracking-tight shadow-inner">{sample.application || t('noApplicationProvided')}</p>
                 )}
              </Card>
           </div>
 
-          {/* History Column */}
           <div className="lg:col-span-2">
-             <Card className="p-6 h-full border border-slate-200 shadow-sm">
-                <div className="flex justify-between items-center mb-6 pb-2 border-b">
-                   <h3 className="font-black text-lg flex items-center gap-2 uppercase tracking-wide"><Activity size={20} className="text-amber-500" /> {t('statusHistory')}</h3>
-                   <Button onClick={() => { setIsAddingHistory(true); setNewHistoryDate(format(new Date(), 'yyyy-MM-dd')); }} className="text-xs py-2 bg-white text-slate-700 border hover:bg-slate-50 rounded-lg px-4 font-bold flex items-center gap-1 shadow-sm"><Plus size={16} /> Add Update</Button>
+             <Card className="p-6 xl:p-10 h-full border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-900/40">
+                <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-100 dark:border-slate-700">
+                   <h3 className="font-black text-base xl:text-lg flex items-center gap-3 uppercase tracking-wider"><Activity className="w-5 h-5 xl:w-6 xl:h-6 text-amber-500" /> {t('statusHistory')}</h3>
+                   <button onClick={() => { setIsAddingHistory(true); setNewHistoryDate(format(new Date(), 'yyyy-MM-dd')); }} className="text-[10px] xl:text-xs font-black uppercase tracking-widest py-2.5 px-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all shadow-sm flex items-center gap-2 active:scale-95"><Plus className="w-4 h-4" /> Add Update</button>
                 </div>
-                <div className="relative border-l-2 ml-4 space-y-8 pl-8 py-2">
+                <div className="relative border-l-2 border-slate-100 dark:border-slate-800 ml-6 space-y-10 pl-10 py-4">
                    {historyItems.map((item) => (
                      <div key={item.id} className="relative group">
-                        <div className="absolute -left-[39px] top-1.5 w-4 h-4 rounded-full bg-white dark:bg-slate-900 border-2 border-slate-400 group-hover:border-blue-500 transition-colors"></div>
-                        <div className="flex items-center gap-3 mb-1">
-                           <span className="font-mono text-sm font-bold text-slate-400">{item.date}</span>
-                           <div className="opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
+                        <div className="absolute -left-[51px] top-1.5 w-5 h-5 rounded-full bg-white dark:bg-slate-900 border-4 border-slate-200 dark:border-slate-700 group-hover:border-blue-500 group-hover:scale-125 transition-all"></div>
+                        <div className="flex items-center gap-4 mb-3">
+                           <span className="font-black text-xs xl:text-sm text-slate-400 uppercase tracking-widest">{item.date}</span>
+                           <div className="opacity-0 group-hover:opacity-100 flex gap-2 transition-all">
                               <button onClick={() => {
                                 setEditingHistoryId(item.id);
                                 setNewHistoryText(item.text);
                                 setNewHistoryDate(item.date);
-                              }} className="p-1 rounded bg-[#059669] text-white shadow-sm hover:bg-[#047857]"><PencilLine size={10} /></button>
-                              <button onClick={() => handleDeleteHistory(item.id)} className="p-1 rounded bg-red-600 text-white shadow-sm hover:bg-red-700"><Trash2 size={10} /></button>
+                              }} className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:scale-90"><PencilLine className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDeleteHistory(item.id)} className="p-1.5 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 active:scale-90"><Trash2 className="w-3.5 h-3.5" /></button>
                            </div>
                         </div>
-                        <p className="text-slate-800 dark:text-white font-medium text-sm leading-relaxed">{item.text}</p>
+                        <p className="text-slate-800 dark:text-slate-200 font-bold text-base xl:text-lg leading-relaxed tracking-tight">{item.text}</p>
                      </div>
                    ))}
                    {historyItems.length === 0 && (
-                     <div className="text-slate-400 italic text-sm py-4">No history records found.</div>
+                     <div className="text-slate-400 italic font-bold text-sm xl:text-base py-4">No history records found.</div>
                    )}
                 </div>
              </Card>
           </div>
        </div>
 
-       {/* History Modal */}
        {(isAddingHistory || editingHistoryId) && (
          <Modal isOpen={true} onClose={() => { setIsAddingHistory(false); setEditingHistoryId(null); setNewHistoryText(''); }} title={editingHistoryId ? "Update Record" : "Add Status Update"}>
-            <div className="space-y-4">
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-black text-slate-400">DATE</label>
-                    <input type="date" className="w-full p-2 border rounded-lg font-bold" value={newHistoryDate} onChange={(e) => setNewHistoryDate(e.target.value)} />
+            <div className="space-y-6">
+               <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">DATE</label>
+                    <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-base xl:text-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all" value={newHistoryDate} onChange={(e) => setNewHistoryDate(e.target.value)} />
                   </div>
                </div>
-               <div className="space-y-1">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Update Details</label>
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Update Details</label>
                   <textarea 
-                    className="w-full h-32 p-3 border rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full h-48 p-5 border-2 rounded-2xl font-bold text-base xl:text-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all" 
                     placeholder="Describe the status change or event..." 
                     value={newHistoryText} 
                     onChange={(e) => setNewHistoryText(e.target.value)} 
                     autoFocus
                   />
                </div>
-               <div className="flex justify-end gap-3 pt-4">
+               <div className="flex justify-end gap-3 pt-6">
                   <Button variant="secondary" onClick={() => { setIsAddingHistory(false); setEditingHistoryId(null); setNewHistoryText(''); }}>Cancel</Button>
-                  <Button onClick={editingHistoryId ? () => handleSaveHistoryItem({id: editingHistoryId, date: newHistoryDate, text: newHistoryText}) : handleAddHistory} className="bg-blue-600 hover:bg-blue-700 text-white">
-                    <Save size={18} className="mr-1" /> {editingHistoryId ? 'Update Record' : 'Save Record'}
+                  <Button onClick={editingHistoryId ? () => handleSaveHistoryItem({id: editingHistoryId, date: newHistoryDate, text: newHistoryText}) : handleAddHistory} className="bg-blue-600 hover:bg-blue-700 text-white px-8 font-black uppercase tracking-widest">
+                    <Save className="w-5 h-5 mr-1" /> {editingHistoryId ? 'Update Record' : 'Save Record'}
                   </Button>
                </div>
             </div>

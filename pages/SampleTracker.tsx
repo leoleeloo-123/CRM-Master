@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal } from '../components/Common';
@@ -107,6 +108,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   <tr>
                      <th className="p-4">Customer</th>
                      <th className="p-4">Generated Product Spec</th>
+                     <th className="p-4">{t('qtyAbbr')}</th>
                      <th className="p-4">Status</th>
                      <th className="p-4 text-center">Aging</th>
                      <th className="p-4">Test</th>
@@ -118,8 +120,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                       <td className="p-4 font-bold text-slate-900 dark:text-white">{s.customerName}</td>
                       <td className="p-4">
                          <div className="font-bold text-blue-600 dark:text-blue-400">{s.sampleName}</div>
-                         <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'} · {s.quantity}</div>
+                         <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
                       </td>
+                      <td className="p-4 font-bold text-slate-700 dark:text-slate-300">{s.quantity}</td>
                       <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
                       <td className="p-4 text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
                       <td className="p-4">
