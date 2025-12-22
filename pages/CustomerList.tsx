@@ -26,6 +26,9 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     contactEmail: ''
   });
 
+  // Helper to detect Chinese characters
+  const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str);
+
   // Sorting and Filtering Logic
   const filteredCustomers = customers
     .filter(c => {
@@ -37,12 +40,26 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
       return matchesSearch && matchesRank;
     })
     .sort((a, b) => {
-      // 1. Primary sort: Rank (1 is highest priority/5 stars, 5 is lowest/1 star)
+      // 1. Primary sort: Rank (1 is highest priority, 5 is lowest)
       if (a.rank !== b.rank) {
         return a.rank - b.rank;
       }
-      // 2. Secondary sort: Name (Alphabetical A-Z)
-      return a.name.localeCompare(b.name);
+
+      // 2. Secondary sort: Next Action Date (Soonest first)
+      const dateA = a.nextActionDate || '9999-12-31';
+      const dateB = b.nextActionDate || '9999-12-31';
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB);
+      }
+
+      // 3. Tertiary sort: Alphabetical (Pure English first, then Chinese)
+      const aIsZh = hasChinese(a.name);
+      const bIsZh = hasChinese(b.name);
+
+      if (!aIsZh && bIsZh) return -1; // a is English, b has Chinese -> a first
+      if (aIsZh && !bIsZh) return 1;  // a has Chinese, b is English -> b first
+      
+      return a.name.localeCompare(b.name, 'zh-Hans-CN', { sensitivity: 'accent' });
     });
 
   const getStatusLabel = (status: string | undefined) => {
@@ -139,8 +156,8 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                 <th className="p-4 xl:p-6 font-semibold w-1/4">Customer</th>
                 <th className="p-4 xl:p-6 font-semibold w-1/12">{t('rank')}</th>
                 <th className="p-4 xl:p-6 font-semibold w-1/12">{t('status')}</th>
-                <th className="p-4 xl:p-6 font-semibold w-1/3">{t('productSummary')}</th>
                 <th className="p-4 xl:p-6 font-semibold w-1/6">Next Action</th>
+                <th className="p-4 xl:p-6 font-semibold w-1/3">Upcoming Plan</th>
                 <th className="p-4 xl:p-6 font-semibold"></th>
               </tr>
             </thead>
@@ -160,11 +177,9 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                       {customer.tags.slice(0, 3).map(t => (
                         <span key={t} className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-xs xl:text-sm">{t}</span>
                       ))}
-                      {customer.tags.length > 3 && <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-xs xl:text-sm">+{customer.tags.length - 3}</span>}
                     </div>
                   </td>
                   <td className="p-4 xl:p-6 align-top">
-                    {/* Disallow direct editing in list to prevent misclicks */}
                     <RankStars 
                       rank={customer.rank} 
                       editable={false} 
@@ -178,23 +193,13 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                       </span>
                     </div>
                   </td>
-                  <td className="p-4 xl:p-6 align-top">
-                    <div className="text-slate-600 dark:text-slate-300 line-clamp-3 text-sm xl:text-lg leading-relaxed">
-                      {customer.productSummary || "No summary available."}
-                    </div>
-                    {customer.lastStatusUpdate && (
-                      <div className="text-xs xl:text-sm text-slate-400 mt-2">
-                        Updated: {customer.lastStatusUpdate}
-                      </div>
-                    )}
-                  </td>
                   <td className="p-4 xl:p-6 align-top font-medium">
                      <div className="text-slate-800 dark:text-white text-sm xl:text-lg">{customer.nextActionDate || "-"}</div>
-                     {customer.interactions[0]?.nextSteps && (
-                       <div className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                         Next: {customer.interactions[0].nextSteps}
-                       </div>
-                     )}
+                  </td>
+                  <td className="p-4 xl:p-6 align-top">
+                    <div className="text-slate-600 dark:text-slate-300 line-clamp-3 text-sm xl:text-lg leading-relaxed">
+                      {customer.upcomingPlan || <span className="text-slate-400 italic font-medium">No upcoming plan logged.</span>}
+                    </div>
                   </td>
                   <td className="p-4 xl:p-6 align-top text-right">
                     <ChevronRight className="w-5 h-5 xl:w-7 xl:h-7 text-slate-300 group-hover:text-blue-500" />
