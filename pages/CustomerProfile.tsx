@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal } from '../components/Common';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, Edit3, Trash, PencilLine } from 'lucide-react';
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, Edit3, Trash, PencilLine, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -23,6 +23,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isEditTagsOpen, setIsEditTagsOpen] = useState(false);
   const [isEditUpcomingPlanOpen, setIsEditUpcomingPlanOpen] = useState(false);
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
+  
+  // Interaction folding state
+  const [showAllInteractions, setShowAllInteractions] = useState(false);
 
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState('');
@@ -108,6 +111,15 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const urgency = getUrgencyLevel(customer.nextActionDate);
   const urgencyClass = urgency === 'urgent' ? "bg-[#FFF1F2] border-red-200" : urgency === 'warning' ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200";
 
+  const visibleInteractions = showAllInteractions 
+    ? customer.interactions 
+    : customer.interactions.slice(0, 3);
+
+  // Standardizing consistent font classes
+  const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
+  const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
+  const secondaryTextClass = "text-sm xl:text-base text-slate-500 dark:text-slate-400 font-bold tracking-tight";
+
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
        <div className="flex items-center gap-6">
@@ -159,9 +171,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
          <div className="space-y-8">
+           {/* Key Contacts Section */}
            <Card className="p-6 xl:p-8 shadow-sm">
              <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-100 dark:border-slate-700">
-               <h3 className="font-black text-base xl:text-lg text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider">
+               <h3 className={titleClass}>
                  <UserCheck className="w-5 h-5 xl:w-6 xl:h-6 text-blue-600" /> {t('keyContacts')}
                </h3>
                <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
@@ -172,25 +185,26 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                {customer.contacts.map((contact, idx) => (
                  <div key={idx} className={`p-5 rounded-2xl border-2 transition-colors ${contact.isPrimary ? 'border-slate-200 bg-slate-50/50 dark:bg-slate-800/20' : 'border-slate-50 bg-slate-50/20 dark:bg-slate-800/10'}`}>
                     <div className="flex items-center justify-between mb-2">
-                       <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{idx + 1}. {contact.name}</span>
+                       <span className="font-black text-slate-900 dark:text-white text-base xl:text-lg">{idx + 1}. {contact.name}</span>
                        {contact.isPrimary && <Star className="w-4 h-4 fill-blue-500 text-blue-500" />}
                     </div>
-                    <p className="text-xs xl:text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight mb-4">{contact.title}</p>
-                    <div className="text-[10px] xl:text-xs space-y-2 text-slate-500 font-bold uppercase tracking-wider">
-                       <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Mail className="w-3.5 h-3.5"/> {contact.email || '-'}</div>
-                       <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Phone className="w-3.5 h-3.5"/> {contact.phone || '-'}</div>
+                    <p className="text-sm xl:text-base font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight mb-4">{contact.title}</p>
+                    <div className="text-sm xl:text-base space-y-2 text-slate-500 font-bold tracking-tight">
+                       <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Mail className="w-4 h-4"/> {contact.email || '-'}</div>
+                       <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Phone className="w-4 h-4"/> {contact.phone || '-'}</div>
                     </div>
                  </div>
                ))}
-               <button className="w-full text-[10px] xl:text-xs font-black uppercase tracking-widest py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-2" onClick={() => { setIsEditContactsOpen(true); addContact(); }}>
+               <button className="w-full text-xs xl:text-sm font-black uppercase tracking-widest py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center gap-2" onClick={() => { setIsEditContactsOpen(true); addContact(); }}>
                  <Plus className="w-4 h-4" /> Add Contact
                </button>
              </div>
            </Card>
            
+           {/* Exhibitions Section */}
            <Card className="p-6 xl:p-8 shadow-sm">
              <div className="flex justify-between items-center mb-6">
-               <h3 className="font-black text-base xl:text-lg text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider">
+               <h3 className={titleClass}>
                  <List className="w-5 h-5 xl:w-6 xl:h-6 text-indigo-600" /> {t('exhibitions')}
                </h3>
                <button onClick={() => { setTempTags(customer.tags.join(', ')); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
@@ -200,12 +214,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              <div className="flex flex-wrap gap-2.5">
                {customer.tags.length > 0 ? customer.tags.map((tag, i) => (
                  <Badge key={i} color="gray">{tag}</Badge>
-               )) : <span className="text-xs xl:text-sm text-slate-400 italic font-medium">No tags added.</span>}
+               )) : <span className={secondaryTextClass + " italic"}>No tags added.</span>}
              </div>
            </Card>
          </div>
 
          <div className="lg:col-span-2 space-y-8">
+            {/* Status & Product Summary Section */}
             <Card className="overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
                <div className="px-6 xl:px-8 py-5 bg-emerald-600 flex justify-between items-center">
                   <h3 className="font-black text-base xl:text-lg text-white flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 xl:w-6 xl:h-6"/> {t('productSummary')}</h3>
@@ -214,7 +229,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                   </button>
                </div>
                <div className="p-8 xl:p-10">
-                  <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed font-bold text-base xl:text-lg tracking-tight">{customer.productSummary || "No summary provided."}</p>
+                  <p className={contentTextClass}>{customer.productSummary || "No summary provided."}</p>
                   <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] xl:text-xs text-slate-400 font-black uppercase tracking-widest">
                      <span>{t('lastUpdated')}: {customer.lastStatusUpdate}</span>
                      <Badge color="green">{customer.status}</Badge>
@@ -229,6 +244,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
             {activeTab === 'overview' && (
               <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                {/* Upcoming Plan Section */}
                 <div className={`p-8 xl:p-10 rounded-[2rem] border-2 shadow-sm group relative overflow-hidden transition-all ${urgencyClass}`}>
                   <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="absolute top-6 right-6 p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 z-10">
                     <PencilLine className="w-5 h-5 xl:w-6 xl:h-6" />
@@ -245,14 +261,14 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                         </div>
                      </div>
                   </div>
-                  <p className="text-xl xl:text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
-                     {customer.upcomingPlan || <span className="text-slate-400 italic font-bold text-lg xl:text-xl">No upcoming plan logged.</span>}
+                  <p className={contentTextClass}>
+                     {customer.upcomingPlan || <span className="text-slate-400 italic font-bold">No upcoming plan logged.</span>}
                   </p>
                 </div>
 
                 <div className="space-y-8">
                    <div className="flex justify-between items-center">
-                     <h3 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider">
+                     <h3 className={titleClass}>
                         <Calendar className="w-6 h-6 text-blue-600"/> {t('interactionHistory')}
                      </h3>
                      <Button className="text-[10px] xl:text-xs py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 font-black uppercase tracking-widest shadow-md" onClick={() => setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' })}>
@@ -261,22 +277,41 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                    </div>
                    
                    <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 pl-10 py-4 space-y-10">
-                     {customer.interactions.length > 0 ? customer.interactions.map((int, i) => (
-                       <div key={int.id} className="relative group">
-                          <div className="absolute -left-[54px] top-0 w-8 h-8 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-xs">{customer.interactions.length - i}</div>
-                          <div className="flex items-center justify-between mb-4">
-                             <span className="font-black text-sm xl:text-base text-slate-900 dark:text-white tracking-tight">{int.date}</span>
-                             <div className="flex gap-2">
-                                <button onClick={() => setEditingInteraction(int)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine className="w-4 h-4 xl:w-5 xl:h-5"/></button>
-                                <button onClick={() => deleteInteraction(int.id)} className="p-2 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-95"><Trash className="w-4 h-4 xl:w-5 xl:h-5"/></button>
-                             </div>
-                          </div>
-                          <Card className="p-6 xl:p-8 border border-slate-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/40">
-                             <p className="text-sm xl:text-lg text-slate-700 dark:text-slate-300 leading-relaxed font-bold tracking-tight">{int.summary}</p>
-                          </Card>
-                       </div>
-                     )) : (
-                       <div className="text-slate-400 text-sm xl:text-base italic font-bold">No interactions logged yet.</div>
+                     {customer.interactions.length > 0 ? (
+                       <>
+                         {visibleInteractions.map((int, i) => (
+                           <div key={int.id} className="relative group">
+                              <div className="absolute -left-[54px] top-0 w-8 h-8 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-xs">{customer.interactions.length - i}</div>
+                              <div className="flex items-center justify-between mb-4">
+                                 <span className="font-black text-sm xl:text-base text-slate-900 dark:text-white tracking-tight">{int.date}</span>
+                                 <div className="flex gap-2">
+                                    <button onClick={() => setEditingInteraction(int)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine className="w-4 h-4 xl:w-5 xl:h-5"/></button>
+                                    <button onClick={() => deleteInteraction(int.id)} className="p-2 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-95"><Trash className="w-4 h-4 xl:w-5 xl:h-5"/></button>
+                                 </div>
+                              </div>
+                              <Card className="p-6 xl:p-8 border border-slate-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/40">
+                                 <p className={contentTextClass}>{int.summary}</p>
+                              </Card>
+                           </div>
+                         ))}
+                         
+                         {customer.interactions.length > 3 && (
+                           <div className="flex justify-center pt-4">
+                             <button 
+                               onClick={() => setShowAllInteractions(!showAllInteractions)}
+                               className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-black uppercase text-xs tracking-widest hover:text-blue-800 dark:hover:text-blue-300 transition-all group"
+                             >
+                               {showAllInteractions ? (
+                                 <><ChevronUp className="w-4 h-4 group-hover:-translate-y-1 transition-transform" /> View Less</>
+                               ) : (
+                                 <><ChevronDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" /> View More ({customer.interactions.length - 3} Hidden)</>
+                               )}
+                             </button>
+                           </div>
+                         )}
+                       </>
+                     ) : (
+                       <div className={secondaryTextClass + " italic"}>No interactions logged yet.</div>
                      )}
                    </div>
                 </div>
