@@ -20,6 +20,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
+  
+  // New Filters
+  const [filterCrystal, setFilterCrystal] = useState<string>('');
+  const [filterForm, setFilterForm] = useState<string>('');
+  const [filterCustomer, setFilterCustomer] = useState<string>('');
+  const [filterGrading, setFilterGrading] = useState<string>('');
 
   const filteredSamples = samples.filter(s => {
     const matchesSearch = (s.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,8 +42,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     }
 
     const matchesStatus = filterStatus ? s.status === filterStatus : true;
+    const matchesCrystal = filterCrystal ? s.crystalType === filterCrystal : true;
+    const matchesForm = filterForm ? s.productForm === filterForm : true;
+    const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
+    const matchesGrading = filterGrading ? s.isGraded === filterGrading : true;
 
-    return matchesSearch && matchesTest && matchesStatus;
+    return matchesSearch && matchesTest && matchesStatus && matchesCrystal && matchesForm && matchesCustomer && matchesGrading;
   });
 
   const getUrgencyColor = (dateStr: string) => {
@@ -70,6 +80,16 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     return <Badge color="gray">{t('ungraded')}</Badge>;
   };
 
+  const resetFilters = () => {
+    setSearchTerm('');
+    setFilterStatus('');
+    setFilterTestFinished('all');
+    setFilterCrystal('');
+    setFilterForm('');
+    setFilterCustomer('');
+    setFilterGrading('');
+  };
+
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex justify-between items-center">
@@ -86,21 +106,48 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         </div>
       </div>
 
-      <Card className="p-4 flex flex-col md:flex-row gap-4 bg-slate-50 dark:bg-slate-800/50">
-         <div className="flex-1 relative">
-           <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-           <input className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-900" placeholder={t('searchSample')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+      <Card className="p-4 flex flex-col gap-4 bg-slate-50 dark:bg-slate-800/50">
+         <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+              <input className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-900" placeholder={t('searchSample')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
+            <div className="flex gap-2">
+               <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900" value={filterCustomer} onChange={e => setFilterCustomer(e.target.value)}>
+                  <option value="">{t('customer')}: All</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+               </select>
+               <Button variant="ghost" className="text-xs text-slate-500" onClick={resetFilters}>Reset</Button>
+            </div>
          </div>
-         <div className="flex gap-2">
-            <select className="border rounded-lg px-3 py-2 dark:bg-slate-900" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-               <option value="">All Statuses</option>
+         
+         <div className="flex flex-wrap gap-2">
+            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+               <option value="">Status: All</option>
                {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any)}</option>)}
             </select>
-            <select className="border rounded-lg px-3 py-2 dark:bg-slate-900" value={filterTestFinished} onChange={e => setFilterTestFinished(e.target.value)}>
-               <option value="all">{t('filterTestAll')}</option>
+            
+            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterTestFinished} onChange={e => setFilterTestFinished(e.target.value)}>
+               <option value="all">{t('test')}: All</option>
                <option value="ongoing">{t('filterTestOngoing')}</option>
                <option value="finished">{t('filterTestFinished')}</option>
                <option value="terminated">{t('filterTestTerminated')}</option>
+            </select>
+
+            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterCrystal} onChange={e => setFilterCrystal(e.target.value)}>
+               <option value="">{t('crystal')}: All</option>
+               {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any)}</option>)}
+            </select>
+
+            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterForm} onChange={e => setFilterForm(e.target.value)}>
+               <option value="">{t('form')}: All</option>
+               {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any)}</option>)}
+            </select>
+
+            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterGrading} onChange={e => setFilterGrading(e.target.value)}>
+               <option value="">{t('grading')}: All</option>
+               <option value="Graded">{t('graded')}</option>
+               <option value="Ungraded">{t('ungraded')}</option>
             </select>
          </div>
       </Card>
@@ -139,6 +186,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                       </td>
                     </tr>
                   ))}
+                  {filteredSamples.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
+                    </tr>
+                  )}
                 </tbody>
              </table>
           </Card>
