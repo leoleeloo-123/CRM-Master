@@ -1,4 +1,5 @@
 
+
 export type Language = 'en' | 'zh';
 
 export const translations = {
@@ -68,8 +69,6 @@ export const translations = {
     logInteraction: 'Log Interaction',
     newRequest: 'New Request',
     noSamples: 'No samples recorded for this customer.',
-    // Added missing translation key
-    noApplicationProvided: 'No application details provided.',
     confirmDeleteInteraction: 'Are you sure you want to delete this interaction?',
     
     // Contacts Edit
@@ -100,7 +99,6 @@ export const translations = {
     filterTestAll: 'Test: All',
     filterTestFinished: 'Test Finished',
     filterTestOngoing: 'Test Ongoing',
-    projectTerminated: 'Project Terminated',
     idx: 'Idx',
     customer: 'Customer',
     sampleInfo: 'Sample Info',
@@ -114,7 +112,7 @@ export const translations = {
     colSent: 'Sent / Testing',
     colFeedback: 'Feedback',
 
-    // DATA KEYS
+    // DATA KEYS: Map Chinese System Keys -> English Display
     '单晶': 'Single Crystal',
     '多晶': 'Polycrystalline',
     '微粉': 'Powder',
@@ -264,8 +262,6 @@ export const translations = {
     logInteraction: '记录互动',
     newRequest: '新建样品申请',
     noSamples: '该客户暂无样品记录。',
-    // Added missing translation key
-    noApplicationProvided: '暂无应用详情。',
     confirmDeleteInteraction: '您确定要删除此互动记录吗？',
     
     // Contacts Edit
@@ -296,7 +292,6 @@ export const translations = {
     filterTestAll: '测试状态: 全部',
     filterTestFinished: '测试完成',
     filterTestOngoing: '测试进行中',
-    projectTerminated: '项目终止',
     idx: '序号',
     customer: '客户',
     sampleInfo: '样品信息',
@@ -310,7 +305,7 @@ export const translations = {
     colSent: '已寄出 / 测试中',
     colFeedback: '已反馈',
 
-    // DATA KEYS
+    // DATA KEYS: Map Chinese System Keys -> Chinese Display
     '单晶': '单晶',
     '多晶': '多晶',
     '微粉': '微粉',
@@ -396,13 +391,18 @@ export const translations = {
   }
 };
 
-// Aliases
+// Aliases: Map Non-Standard/English terms to CANONICAL CHINESE KEYS
 const ALIASES: Record<string, string> = {
+  // Crystal Types
   'Single Crystal': '单晶',
   'Polycrystalline': '多晶',
+  
+  // Forms
   'Powder': '微粉',
   '粉末': '微粉',
   'Suspension': '悬浮液',
+  
+  // Categories
   'Agglomerated Diamond': '聚晶',
   'Agglomerated': '聚晶',
   '团聚': '聚晶',
@@ -411,6 +411,8 @@ const ALIASES: Record<string, string> = {
   'Spherical Diamond': '球形金刚石',
   'Diamond Ball': '金刚石球',
   'Micron': '微米粉',
+
+  // Statuses
   'Requested': '已申请',
   'Processing': '处理中',
   'Sent': '已寄出',
@@ -420,12 +422,31 @@ const ALIASES: Record<string, string> = {
   'Closed': '已关闭'
 };
 
+/**
+ * Normalizes a term (tag) to its canonical CHINESE key.
+ * 1. Checks if it is already a valid System Key (present in translations.en keys).
+ * 2. Checks ALIASES to convert English/Variant -> Chinese Key.
+ * 3. Checks if it is a Translation Value in current language? (Less strict, prioritize aliases).
+ */
 export const getCanonicalTag = (term: string): string => {
   if (!term) return '';
   const trimmed = term.trim();
-  if (translations.en[trimmed as keyof typeof translations.en]) return trimmed;
-  if (ALIASES[trimmed]) return ALIASES[trimmed];
+  
+  // 1. Is it already a System Key? (We check translations.en keys, which now contains Chinese keys)
+  // We use 'en' here just as a reference to the Master Key List.
+  if (translations.en[trimmed as keyof typeof translations.en]) {
+      return trimmed;
+  }
+
+  // 2. Check Aliases (English -> Chinese)
+  if (ALIASES[trimmed]) {
+      return ALIASES[trimmed];
+  }
+
+  // 3. Check if it matches a known value (reverse lookup from EN translation?)
+  // If user passes 'Single Crystal', finding it in EN values returns '单晶' key.
   const enEntry = Object.entries(translations.en).find(([key, val]) => val === trimmed);
   if (enEntry) return enEntry[0];
+
   return trimmed;
 };

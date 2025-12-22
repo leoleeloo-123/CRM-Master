@@ -1,102 +1,409 @@
 
 import React, { useState, useRef } from 'react';
-import { Customer, Sample, Rank, SampleStatus, ProductCategory, Interaction, CrystalType, ProductForm, TestStatus } from '../types';
+import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
-import { Upload, FileSpreadsheet, Search, Database, CheckCircle2, AlertTriangle, Info, Trash2, Users, FlaskConical, FileText, ArrowRight, Check } from 'lucide-react';
+import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { differenceInDays, parseISO, isValid } from 'date-fns';
 import * as XLSX from 'xlsx';
-import { format } from 'date-fns';
+import { getCanonicalTag } from '../utils/i18n';
 
 interface DataManagementProps {
   onImportCustomers: (newCustomers: Customer[], override?: boolean) => void;
   onImportSamples: (newSamples: Sample[], override?: boolean) => void;
 }
 
-interface PendingData {
-  customers: Customer[];
-  samples: Partial<Sample>[];
-  sourceFile?: string;
-}
-
 const DataManagement: React.FC<DataManagementProps> = ({ 
   onImportCustomers, 
   onImportSamples
 }) => {
-  const { t, customers, samples, clearDatabase } = useApp();
+  const { t, clearDatabase, customers, samples, syncSampleToCatalog, companyName, userName, refreshTagsFromSamples } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
-  const [panelMode, setPanelMode] = useState<'import' | 'review' | 'preview'>('import');
   
-  const [importDataText, setImportDataText] = useState('');
-  const [reviewSearch, setReviewSearch] = useState('');
-  const [pendingData, setPendingData] = useState<PendingData>({ customers: [], samples: [] });
-  const [importOption, setImportOption] = useState<'merge' | 'replace'>('merge');
+  // Text Import State
+  const [importData, setImportData] = useState('');
   
+  // Excel Import State
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [excelPreview, setExcelPreview] = useState<{ customers: Customer[], samples: Sample[] } | null>(null);
+
+  // Common Preview State (Points to either text result or excel result)
+  const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
+  const [importStatus, setImportStatus] = useState<{type: 'success' | 'error' | 'info', message: string} | null>(null);
+  
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [importMode, setImportMode] = useState<'merge' | 'replace'>('replace');
 
-  // Robust parsing for a single row of data based on headers
-  const mapRowToCustomer = (row: any[], headers: string[], idx: number): Customer => {
-    const getVal = (possibleHeaders: string[]) => {
-      const foundIdx = headers.findIndex(h => possibleHeaders.some(ph => h.includes(ph.toLowerCase())));
-      return foundIdx !== -1 ? String(row[foundIdx] || '').trim() : '';
-    };
+  // --- HELPERS ---
 
-    const rawRank = getVal(['rank', '等级', 'importance', 'priority']);
-    let rank: Rank = 3;
-    if (rawRank.includes('1') || rawRank.toLowerCase().includes('high')) rank = 1;
-    else if (rawRank.includes('2')) rank = 2;
-    else if (rawRank.includes('4')) rank = 4;
-    else if (rawRank.includes('5')) rank = 5;
+  const splitByDelimiter = (str: string | undefined): string[] => {
+    if (!str) return [];
+    return String(str).split('|||').map(s => s.trim()).filter(s => s.length > 0);
+  };
 
-    const regionStr = getVal(['region', '地区', 'location', 'area']);
-    const region = regionStr ? regionStr.split(/[|,&]/).map(s => s.trim()) : ['Global'];
+  const normalizeDate = (dateStr: string | undefined): string => {
+    if (!dateStr) return '';
+    const trimmed = String(dateStr).trim();
+    if (!trimmed) return '';
+    
+    // Try to extract date from 【YYYY-MM-DD】 format
+    const bracketMatch = trimmed.match(/【(.*?)】/);
+    if (bracketMatch) {
+       return normalizeDate(bracketMatch[1]);
+    }
+
+    // Excel dates are sometimes numbers
+    if (!isNaN(Number(trimmed)) && Number(trimmed) > 20000) {
+        // Simple Excel serial date conversion
+        const date = new Date(Math.round((Number(trimmed) - 25569) * 86400 * 1000));
+        return date.toISOString().split('T')[0];
+    }
+
+    const yearFirstMatch = trimmed.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
+    if (yearFirstMatch) return `${yearFirstMatch[1]}-${yearFirstMatch[2].padStart(2, '0')}-${yearFirstMatch[3].padStart(2, '0')}`;
+    
+    const yearLastMatch = trimmed.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/);
+    if (yearLastMatch) return `${yearLastMatch[3]}-${yearLastMatch[1].padStart(2, '0')}-${yearLastMatch[2].padStart(2, '0')}`;
+    
+    const yearFirstSlash = trimmed.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    if (yearFirstSlash) return `${yearFirstSlash[1]}-${yearFirstSlash[2].padStart(2, '0')}-${yearFirstSlash[3].padStart(2, '0')}`;
+
+    const dateObj = new Date(trimmed);
+    if (!isNaN(dateObj.getTime())) {
+      const y = dateObj.getFullYear();
+      const m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const d = dateObj.getDate().toString().padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    return trimmed;
+  };
+
+  const mapStatusFromImport = (status: string): FollowUpStatus => {
+    const s = status ? String(status).trim() : '';
+    if (s === '我方跟进' || s === 'My Turn') return 'My Turn';
+    if (s === '等待对方' || s === 'Waiting for Customer') return 'Waiting for Customer';
+    if (s === '暂无' || s === 'No Action') return 'No Action';
+    return 'No Action'; 
+  };
+
+  const mapStatusToExport = (status: string | undefined): string => {
+    return status || 'No Action';
+  };
+
+  // --- PARSING LOGIC ---
+
+  const rowToCustomer = (cols: any[], tempIdPrefix: string): Customer => {
+    const safeCol = (i: number) => cols[i] !== undefined && cols[i] !== null ? String(cols[i]).trim() : '';
+    
+    const name = safeCol(0) || 'Unknown';
+    const regions = splitByDelimiter(safeCol(1));
+    const finalRegions = regions.length > 0 ? regions : ['Unknown'];
+    const rawTags = splitByDelimiter(safeCol(2));
+    const cleanTags = rawTags.map(t => t.replace(/^\d+[\.\、\s]*\s*/, ''));
+    const rank = (parseInt(safeCol(4)) || 3) as Rank;
+    const productSummary = (safeCol(5) || '').replace(/\|\|\|/g, '\n');
+    const lastStatusUpdate = normalizeDate(safeCol(6));
+    const followUpStatus = mapStatusFromImport(safeCol(9));
+    const nextSteps = safeCol(10) || '';
+    const nextActionDate = normalizeDate(safeCol(11));
+    const lastCustomerReplyDate = normalizeDate(safeCol(14));
+    const lastMyReplyDate = normalizeDate(safeCol(16));
+    const docLinks = splitByDelimiter(safeCol(18));
+    const contactNames = splitByDelimiter(safeCol(8));
+    const contactInfos = splitByDelimiter(safeCol(19));
+    
+    const contacts = contactNames.map((cName, i) => {
+       const info = contactInfos[i] || '';
+       const isEmail = info.includes('@');
+       let cleanName = cName.replace(/^\d+[\.\s]*\s*/, '');
+       let isPrimary = false;
+       if (cleanName.includes('【主要联系人】')) {
+           isPrimary = true;
+           cleanName = cleanName.replace('【主要联系人】', '');
+       }
+       let title = '';
+       const titleMatch = cleanName.match(/\((.*?)\)/);
+       if (titleMatch) {
+           title = titleMatch[1].trim();
+           cleanName = cleanName.replace(titleMatch[0], '');
+       }
+       return {
+         name: cleanName.trim(),
+         title: title,
+         isPrimary: isPrimary,
+         email: isEmail ? info : '',
+         phone: !isEmail ? info : ''
+       };
+    });
+
+    if (contacts.length === 0 && contactNames.length === 0 && contactInfos.length > 0) {
+       contacts.push({ name: 'Primary Contact', title: '', isPrimary: false, email: contactInfos[0].includes('@') ? contactInfos[0] : '', phone: ''});
+    }
+
+    const rawInteractions = splitByDelimiter(safeCol(13));
+    const interactions: Interaction[] = rawInteractions.map((raw, i) => {
+       const dateMatch = raw.match(/【(.*?)】/);
+       let date = lastMyReplyDate || new Date().toISOString().split('T')[0];
+       let summary = raw;
+       if (dateMatch) {
+         date = normalizeDate(dateMatch[1]);
+         summary = raw.replace(/^[\s\-\.\*]*【.*?】/, '').trim();
+       } else {
+         summary = raw.replace(/^[\s\-\.\*]+/, '').trim();
+       }
+       return {
+         id: `int_${tempIdPrefix}_${i}`,
+         date: date,
+         summary: summary,
+         tags: []
+       };
+    }).reverse();
+    
+     if (interactions.length === 0 && nextSteps) {
+       interactions.push({
+         id: `int_${tempIdPrefix}_next`,
+         date: new Date().toISOString().split('T')[0],
+         summary: 'Pending Next Step',
+         nextSteps: nextSteps
+       });
+    } else if (interactions.length > 0 && nextSteps) {
+       interactions[0].nextSteps = nextSteps;
+    }
 
     return {
-      id: `imp_c_${idx}_${Date.now()}`,
-      name: getVal(['name', 'customer', '客户', 'company', '企业']),
-      region,
-      rank,
-      status: 'Active',
-      productSummary: getVal(['summary', '总结', 'product', 'detail', '摘要']),
-      lastStatusUpdate: getVal(['update', '更新', 'date']) || format(new Date(), 'yyyy-MM-dd'),
-      followUpStatus: getVal(['status', '跟进', 'state', '进度']) || 'No Action',
-      contacts: [],
-      lastContactDate: format(new Date(), 'yyyy-MM-dd'),
-      tags: getVal(['exhibition', '展会', 'tag', '标签']).split(/[;,]/).map(s => s.trim()).filter(s => s),
-      interactions: []
+      id: `new_c_${tempIdPrefix}`,
+      name: name,
+      region: finalRegions,
+      tags: cleanTags,
+      rank: rank,
+      productSummary: productSummary,
+      lastStatusUpdate: lastStatusUpdate,
+      followUpStatus: followUpStatus,
+      nextActionDate: nextActionDate,
+      lastCustomerReplyDate: lastCustomerReplyDate,
+      lastMyReplyDate: lastMyReplyDate,
+      lastContactDate: lastMyReplyDate,
+      contacts: contacts,
+      docLinks: docLinks,
+      status: 'Active' as CustomerStatus,
+      interactions: interactions
     } as Customer;
   };
 
-  const mapRowToSample = (row: any[], headers: string[], idx: number): Partial<Sample> => {
-    const getVal = (possibleHeaders: string[]) => {
-      const foundIdx = headers.findIndex(h => possibleHeaders.some(ph => h.includes(ph.toLowerCase())));
-      return foundIdx !== -1 ? String(row[foundIdx] || '').trim() : '';
-    };
+  const rowToSample = (cols: any[], tempIdPrefix: string, indexMap: Map<string, number>, lookupCustomers: Customer[]): Sample => {
+    const safeCol = (i: number) => cols[i] !== undefined && cols[i] !== null ? String(cols[i]).trim() : '';
 
-    const testVal = getVal(['test', '测试', 'progress', '进度']).toLowerCase();
-    const testStatus: TestStatus = testVal.includes('finish') || testVal.includes('完成') || testVal.includes('done') 
-      ? 'Finished' 
-      : testVal.includes('term') || testVal.includes('终止') 
-        ? 'Terminated' 
-        : 'Ongoing';
+    const custName = safeCol(0) || 'Unknown';
+    // Link to customer: Prefer the one in lookupCustomers (which might include newly parsed ones)
+    const matchedCustomer = lookupCustomers.find(c => c.name.toLowerCase() === custName.toLowerCase());
+    
+    // Auto-generate Index
+    const lowerCustName = custName.toLowerCase();
+    let nextIndex = (indexMap.get(lowerCustName) || 0) + 1;
+    indexMap.set(lowerCustName, nextIndex);
+    
+    const statusDetails = safeCol(15) || '';
+
+    // Normalize Tags using getCanonicalTag
+    const status = getCanonicalTag(safeCol(1)) as SampleStatus || 'Requested';
+    const crystal = getCanonicalTag(safeCol(3)) || '';
+    const form = getCanonicalTag(safeCol(5)) || 'Powder';
+    const categories = safeCol(4) ? safeCol(4).split(',').map(c => getCanonicalTag(c.trim()) as ProductCategory) : [];
+    
+    const categoryStr = categories.join(', ');
+
+    // Auto-generate sampleName logic: [Crystal] [Category] [Form] - [Orig] > [Proc]
+    const origSize = safeCol(6) || '';
+    const procSize = safeCol(7) ? ` > ${safeCol(7)}` : '';
+    
+    const generatedName = `${crystal} ${categoryStr} ${form} - ${origSize}${procSize}`.trim();
+    
+    // Check "Finished" column for Yes/True/是
+    const finishedVal = (safeCol(2) || '').toLowerCase();
+    const isTestFinished = ['yes', 'true', '是', 'y', '1'].includes(finishedVal);
 
     return {
-      id: `imp_s_${idx}_${Date.now()}`,
-      customerName: getVal(['customer', '客户', 'client', 'company']),
-      sampleIndex: parseInt(getVal(['idx', '序号', 'index', 'number'])) || idx + 1,
-      sampleName: getVal(['product', '产品', 'name', 'item', '名称']),
-      sampleSKU: getVal(['sku', '编号', 'code']),
-      status: getVal(['status', '状态', 'stage', '当前状态']) || 'Requested',
-      testStatus,
-      crystalType: getVal(['crystal', '晶体', 'type']) as CrystalType,
-      productForm: getVal(['form', '形态', 'shape']) as ProductForm,
-      originalSize: getVal(['original', '原料', 'size', '粒度']),
-      processedSize: getVal(['processed', '加工', 'after']),
-      quantity: getVal(['qty', 'quantity', '数量', 'amount']),
-      lastStatusDate: getVal(['date', '日期', 'update', '更新时间']) || format(new Date(), 'yyyy-MM-dd'),
-      requestDate: getVal(['request', '申请日期', 'start']) || format(new Date(), 'yyyy-MM-dd'),
-      statusDetails: getVal(['details', '详情', 'history', '日志'])
-    };
+      id: `new_s_${tempIdPrefix}`,
+      customerId: matchedCustomer ? matchedCustomer.id : 'unknown',
+      customerName: custName,
+      sampleIndex: nextIndex,
+      
+      status: status,
+      isTestFinished: isTestFinished,
+      crystalType: crystal as CrystalType,
+      productCategory: categories,
+      productForm: form as ProductForm,
+      originalSize: safeCol(6) || '',
+      processedSize: safeCol(7) || '',
+      isGraded: (safeCol(8) as GradingStatus) || 'Graded',
+      sampleSKU: safeCol(9) || '',
+      sampleDetails: safeCol(10) || '',
+      
+      quantity: safeCol(11) || '',
+      application: safeCol(12) || '',
+      lastStatusDate: normalizeDate(safeCol(13)) || new Date().toISOString().split('T')[0],
+      // Col 14 is Days Since (Ignored)
+      statusDetails: statusDetails,
+      trackingNumber: safeCol(16) || '',
+      
+      sampleName: generatedName,
+      
+      // Legacy/Mapping
+      productType: generatedName,
+      specs: safeCol(6) ? `${safeCol(6)} -> ${safeCol(7)}` : '',
+      requestDate: new Date().toISOString().split('T')[0],
+    } as Sample;
+  };
+
+  // --- EXPORT ---
+
+  const handleExportExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // 1. Customer Sheet
+    const custHeaders = [
+      "客户", "地区", "展会", "展会官网", "等级", "状态与产品总结", "状态更新", "未更新", 
+      "对接人员", "状态", "下一步", "关键日期", "DDL", "对接流程总结", "对方回复", 
+      "未回复", "我方跟进", "未跟进", "文档超链接", "联系方式"
+    ];
+    
+    const custRows = customers.map(c => {
+      const tags = c.tags.map((tag, i) => `${i + 1}. ${tag}`).join(' ||| ');
+      const regions = Array.isArray(c.region) ? c.region.join(' ||| ') : c.region;
+      
+      const contactNames = c.contacts.map((contact, i) => {
+        let str = `${i + 1}. ${contact.name}`;
+        if (contact.title) str += ` (${contact.title})`;
+        if (contact.isPrimary) str += ` 【主要联系人】`;
+        return str;
+      }).join(' ||| ');
+
+      const contactInfos = c.contacts.map(contact => contact.email || contact.phone || '').join(' ||| ');
+      const interactionText = [...c.interactions].reverse().map(i => `【${i.date}】 ${i.summary}`).join(' ||| ');
+      const nextStep = c.interactions.length > 0 ? (c.interactions[0].nextSteps || '') : '';
+      const docLinks = c.docLinks ? c.docLinks.join(' ||| ') : '';
+      const productSummaryExport = (c.productSummary || '').replace(/\n/g, ' ||| ');
+      const statusExport = mapStatusToExport(c.followUpStatus);
+
+      return [
+        c.name, regions, tags, "", c.rank, productSummaryExport, c.lastStatusUpdate, "", contactNames,
+        statusExport, nextStep, c.nextActionDate, "", interactionText, c.lastCustomerReplyDate, "",
+        c.lastMyReplyDate, "", docLinks, contactInfos
+      ];
+    });
+
+    const custSheet = XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]);
+    XLSX.utils.book_append_sheet(wb, custSheet, "Customers");
+
+    // 2. Sample Sheet
+    const sampHeaders = [
+      "1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", 
+      "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", 
+      "11.Details", "12.Quantity", "13.Customer Application", "14.Status Date", 
+      "15.Days Since Update", "16.Status Details", "17.Tracking #"
+    ];
+
+    const sampRows = samples.map(s => {
+       const safeDetails = (s.statusDetails || '').replace(/\n/g, ' ||| ');
+       let daysSince = "";
+       if (s.lastStatusDate && isValid(parseISO(s.lastStatusDate))) {
+         daysSince = String(differenceInDays(new Date(), parseISO(s.lastStatusDate)));
+       }
+
+       return [
+         s.customerName,
+         s.status,
+         s.isTestFinished ? 'Yes' : 'No',
+         s.crystalType,
+         s.productCategory?.join(', '),
+         s.productForm,
+         s.originalSize,
+         s.processedSize,
+         s.isGraded,
+         s.sampleSKU,
+         s.sampleDetails,
+         s.quantity,
+         s.application,
+         s.lastStatusDate,
+         daysSince,
+         safeDetails,
+         s.trackingNumber
+       ];
+    });
+
+    const sampSheet = XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]);
+    XLSX.utils.book_append_sheet(wb, sampSheet, "Samples");
+
+    // Filename Logic: Master TB_[Organization]_[User]_[Timestamp].xlsx
+    // Timestamp: Eastern Time
+    const now = new Date();
+    // Get ET Date object by string conversion
+    const etDate = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    
+    // Manual formatting for sortable filename: YYYYMMDD_HHmm
+    const year = etDate.getFullYear();
+    const month = String(etDate.getMonth() + 1).padStart(2, '0');
+    const day = String(etDate.getDate()).padStart(2, '0');
+    const hour = String(etDate.getHours()).padStart(2, '0');
+    const minute = String(etDate.getMinutes()).padStart(2, '0');
+
+    const timestamp = `${year}${month}${day}_${hour}${minute}`;
+    // Sanitize names to be filename safe
+    const safeOrg = companyName.replace(/[^a-z0-9]/gi, '_');
+    const safeUser = userName.replace(/[^a-z0-9]/gi, '_');
+    
+    const fileName = `Master TB_${safeOrg}_${safeUser}_${timestamp}.xlsx`;
+
+    XLSX.writeFile(wb, fileName);
+  };
+
+
+  // --- IMPORT ---
+
+  const clearPreview = () => {
+    setParsedPreview(null);
+    setExcelPreview(null);
+    setImportStatus(null);
+    setImportData('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const parsePasteData = () => {
+    if (!importData.trim()) {
+      setImportStatus({ type: 'error', message: 'Please paste data into the text area.' });
+      return;
+    }
+
+    try {
+      const rows = importData.trim().split('\n').filter(r => r.trim() !== '');
+      const parsed = rows.map((row, i) => {
+        const cols = row.split('\t').map(c => c.trim());
+        const tempId = Math.random().toString(36).substr(2, 9);
+
+        if (activeTab === 'customers') {
+          return rowToCustomer(cols, tempId);
+        } else {
+          // For paste text, we calculate fresh map for this batch
+          const indexMap = new Map<string, number>(); 
+          if (importMode === 'merge') {
+             // Populate if appending
+              samples.forEach(s => {
+                 const lowerName = s.customerName.toLowerCase();
+                 const currentMax = indexMap.get(lowerName) || 0;
+                 if (s.sampleIndex > currentMax) indexMap.set(lowerName, s.sampleIndex);
+              });
+          }
+          return rowToSample(cols, tempId, indexMap, customers);
+        }
+      });
+
+      setParsedPreview(parsed);
+      setImportStatus({ type: 'info', message: `Previewing ${parsed.length} rows.` });
+
+    } catch (e) {
+      console.error(e);
+      setImportStatus({ type: 'error', message: 'Failed to parse text data.' });
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,339 +412,344 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const bstr = evt.target?.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      
-      const allDetectedCustomers: Customer[] = [];
-      const allDetectedSamples: Partial<Sample>[] = [];
-
-      wb.SheetNames.forEach(sheetName => {
-        const ws = wb.Sheets[sheetName];
-        const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        if (data.length < 2) return;
-
-        const headers = data[0].map(h => String(h || '').toLowerCase());
-        const dataRows = data.slice(1);
-
-        // Advanced sheet detection
-        const customerScore = headers.filter(h => ['客户', 'customer', 'rank', '等级', '地区', '总结'].some(k => h.includes(k))).length;
-        const sampleScore = headers.filter(h => ['idx', '序号', 'sample', '样品', '测试', '规格'].some(k => h.includes(k))).length;
-
-        if (customerScore > sampleScore && customerScore >= 2) {
-          const sheetCustomers = dataRows.filter(r => r[0]).map((row, idx) => mapRowToCustomer(row, headers, idx));
-          allDetectedCustomers.push(...sheetCustomers);
-        } else if (sampleScore >= 2) {
-          const sheetSamples = dataRows.filter(r => r[0]).map((row, idx) => mapRowToSample(row, headers, idx));
-          allDetectedSamples.push(...sheetSamples);
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        
+        // Parse Customers First
+        let parsedCustomers: Customer[] = [];
+        if (wb.Sheets['Customers']) {
+           const rawRows = XLSX.utils.sheet_to_json(wb.Sheets['Customers'], { header: 1 });
+           // Skip header row
+           parsedCustomers = rawRows.slice(1).filter((r: any) => r.length > 0).map((row: any) => 
+             rowToCustomer(row, Math.random().toString(36).substr(2, 9))
+           );
         }
-      });
 
-      if (allDetectedCustomers.length === 0 && allDetectedSamples.length === 0) {
-        alert("Could not identify valid data in this file. Please ensure headers match English or Chinese keywords.");
-        return;
+        // Determine Customer List to Link Samples Against
+        // If replacing, we should check against the NEW customer list primarily.
+        // If merging, we check against BOTH (new ones take precedence or merge logic?)
+        // Safer to just combine them for lookup: New ones + Existing ones
+        const lookupCustomers = [...parsedCustomers, ...customers];
+
+        // Parse Samples
+        let parsedSamples: Sample[] = [];
+        if (wb.Sheets['Samples']) {
+           const rawRows = XLSX.utils.sheet_to_json(wb.Sheets['Samples'], { header: 1 });
+           const indexMap = new Map<string, number>();
+           
+           if (importMode === 'merge') {
+              samples.forEach(s => {
+                 const lowerName = s.customerName.toLowerCase();
+                 const currentMax = indexMap.get(lowerName) || 0;
+                 if (s.sampleIndex > currentMax) indexMap.set(lowerName, s.sampleIndex);
+              });
+           }
+
+           parsedSamples = rawRows.slice(1).filter((r: any) => r.length > 0).map((row: any) => 
+             rowToSample(row, Math.random().toString(36).substr(2, 9), indexMap, lookupCustomers)
+           );
+        }
+
+        if (parsedCustomers.length === 0 && parsedSamples.length === 0) {
+           setImportStatus({ type: 'error', message: 'No valid data found in "Customers" or "Samples" sheets.' });
+           return;
+        }
+
+        setExcelPreview({ customers: parsedCustomers, samples: parsedSamples });
+        
+        // Default the preview table to whatever tab is active, or switch
+        if (activeTab === 'customers' && parsedCustomers.length > 0) {
+            setParsedPreview(parsedCustomers);
+        } else if (parsedSamples.length > 0) {
+            setActiveTab('samples');
+            setParsedPreview(parsedSamples);
+        } else {
+            setParsedPreview(parsedCustomers);
+        }
+
+        setImportStatus({ 
+          type: 'info', 
+          message: `File Loaded. Found: ${parsedCustomers.length} Customers, ${parsedSamples.length} Samples.` 
+        });
+
+      } catch (err) {
+        console.error(err);
+        setImportStatus({ type: 'error', message: 'Failed to read Excel file.' });
       }
-
-      setPendingData({
-        customers: allDetectedCustomers,
-        samples: allDetectedSamples,
-        sourceFile: file.name
-      });
-      setPanelMode('preview');
     };
     reader.readAsBinaryString(file);
   };
 
-  const handleParseTextImport = () => {
-    if (!importDataText.trim()) return;
-    const rows = importDataText.split('\n').map(row => row.split('\t').map(cell => cell.trim()));
-    if (rows.length < 2) return;
+  const confirmImport = () => {
+    const override = importMode === 'replace';
+    let importedSamples: Sample[] = [];
 
-    const headers = rows[0].map(h => h.toLowerCase());
-    const dataRows = rows.slice(1);
-
-    if (activeTab === 'customers') {
-      const parsed = dataRows.filter(r => r.length > 1 && r[0]).map((row, idx) => mapRowToCustomer(row, headers, idx));
-      setPendingData({ customers: parsed, samples: [] });
-    } else {
-      const parsed = dataRows.filter(r => r.length > 1 && r[0]).map((row, idx) => mapRowToSample(row, headers, idx));
-      setPendingData({ customers: [], samples: parsed });
-    }
-    setPanelMode('preview');
-  };
-
-  const executeImport = () => {
-    // 1. Handle Customers
-    if (pendingData.customers.length > 0) {
-      onImportCustomers(pendingData.customers, importOption === 'replace');
+    if (excelPreview) {
+       // Import Both
+       if (excelPreview.customers.length > 0) {
+         onImportCustomers(excelPreview.customers, override);
+       }
+       if (excelPreview.samples.length > 0) {
+         importedSamples = excelPreview.samples;
+         // Auto-sync samples to catalog
+         importedSamples.forEach(s => syncSampleToCatalog(s));
+         onImportSamples(importedSamples, override);
+       }
+       setImportStatus({ type: 'success', message: `Imported ${excelPreview.customers.length} Customers and ${excelPreview.samples.length} Samples.` });
+    } else if (parsedPreview) {
+       // Text Import (Single Type)
+       if (activeTab === 'customers') {
+         onImportCustomers(parsedPreview as Customer[], override);
+       } else {
+         importedSamples = parsedPreview as Sample[];
+         importedSamples.forEach(x => syncSampleToCatalog(x));
+         onImportSamples(importedSamples, override);
+       }
+       setImportStatus({ type: 'success', message: `Imported ${parsedPreview.length} records.` });
     }
     
-    // 2. Handle Samples (Wait for ID mapping if needed)
-    if (pendingData.samples.length > 0) {
-      // If we are replacing, we might not have the customers state updated yet. 
-      // We rely on the name-based mapping in the child/parent logic.
-      const mappedSamples = pendingData.samples.map(s => {
-        // Try to find in current list or in the pending list
-        const foundInExisting = customers.find(c => c.name.toLowerCase() === s.customerName?.toLowerCase());
-        const foundInPending = pendingData.customers.find(c => c.name.toLowerCase() === s.customerName?.toLowerCase());
-        
-        return { 
-          ...s, 
-          customerId: foundInPending ? foundInPending.id : (foundInExisting ? foundInExisting.id : 'unknown') 
-        } as Sample;
-      });
-      onImportSamples(mappedSamples, importOption === 'replace');
+    // New Step: Refresh Tags from the imported samples to add any new unique statuses/types
+    if (importedSamples.length > 0) {
+        // Pass override flag to replace tags if in Replace mode
+        refreshTagsFromSamples(importedSamples, override);
     }
-
-    setPanelMode('review');
-    setPendingData({ customers: [], samples: [] });
-    setImportDataText('');
+    
+    setParsedPreview(null);
+    setExcelPreview(null);
+    setImportData('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleExportExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const custHeaders = ["客户", "地区", "展会", "等级", "总结", "更新日期", "跟进状态"];
-    const custRows = customers.map(c => [c.name, c.region.join(' | '), c.tags.join(', '), c.rank, c.productSummary, c.lastStatusUpdate, c.followUpStatus]);
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]), "Customers");
-    
-    const sampHeaders = ["Customer", "Idx", "Product Name", "Status", "Test Progress", "Quantity", "Date"];
-    const sampRows = samples.map(s => [
-      s.customerName, s.sampleIndex, s.sampleName, s.status, s.testStatus, s.quantity, s.lastStatusDate
-    ]);
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]), "Samples");
-
-    XLSX.writeFile(wb, `Navi_MasterDB_${format(new Date(), 'yyyyMMdd')}.xlsx`);
-  };
-
-  const filteredReviewData = () => {
-    const data = activeTab === 'customers' ? customers : samples;
-    if (!reviewSearch) return data;
-    const term = reviewSearch.toLowerCase();
-    return data.filter((item: any) => 
-      (item.name || item.customerName || '').toLowerCase().includes(term) ||
-      (item.sampleName || '').toLowerCase().includes(term)
-    );
+  // Switch preview data when tab changes if we have excel loaded
+  const switchTab = (tab: 'customers' | 'samples') => {
+    setActiveTab(tab);
+    setParsedPreview(null);
+    if (excelPreview) {
+      if (tab === 'customers') setParsedPreview(excelPreview.customers);
+      else setParsedPreview(excelPreview.samples);
+    } else {
+      setImportData(''); // Clear text data if switching modes without excel
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl xl:text-4xl font-bold text-slate-800 dark:text-white">{t('dataManagement')}</h2>
-          <p className="text-slate-500 dark:text-slate-400">Master Excel Import & Database Control</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('dataManagement')}</h2>
+          <p className="text-slate-500 dark:text-slate-400">{t('bulkImport')} / {t('export')}</p>
         </div>
-        <div className="flex gap-3">
-           <Button variant="secondary" onClick={handleExportExcel} className="flex items-center gap-2"><FileSpreadsheet size={18} /> Export Excel</Button>
-           <Button variant="danger" onClick={() => setIsClearModalOpen(true)} className="flex items-center gap-2"><Trash2 size={18} /> Clear DB</Button>
+        <div className="flex gap-2">
+           <input 
+              type="file" 
+              accept=".xlsx, .xls" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload}
+              className="hidden"
+           />
+           <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+              <Upload size={16} /> Upload Excel
+           </Button>
+
+           <Button variant="secondary" onClick={handleExportExcel} className="flex items-center gap-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+              <FileSpreadsheet size={16} /> Export Excel
+           </Button>
+           <Button variant="danger" className="flex items-center gap-2" onClick={() => setIsClearModalOpen(true)}>
+             <Trash2 size={16} /> Clear DB
+           </Button>
         </div>
       </div>
 
-      <Card className="p-0 border-l-0 overflow-hidden min-h-[650px] flex flex-col shadow-lg">
-        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 m-4 rounded-xl w-fit shadow-inner">
+      {/* IMPORT SECTION */}
+      <Card className="p-0 border-l-0 overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
            <button 
-             onClick={() => { setPanelMode('import'); setPendingData({customers:[], samples:[]}); }} 
-             className={`px-8 py-2.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${panelMode === 'import' || panelMode === 'preview' ? 'bg-white shadow-md text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+             onClick={() => switchTab('customers')}
+             className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-colors ${activeTab === 'customers' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border-t-4 border-t-blue-600' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
            >
-             <Upload size={18} /> Import Wizard
+             <Users size={20} /> Import Customers {excelPreview && `(${excelPreview.customers.length})`}
            </button>
            <button 
-             onClick={() => setPanelMode('review')} 
-             className={`px-8 py-2.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${panelMode === 'review' ? 'bg-white shadow-md text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+             onClick={() => switchTab('samples')}
+             className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-colors ${activeTab === 'samples' ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 border-t-4 border-t-amber-600' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
            >
-             <Database size={18} /> Database View
+             <FlaskConical size={20} /> Import Samples {excelPreview && `(${excelPreview.samples.length})`}
            </button>
         </div>
 
-        {panelMode !== 'preview' && (
-          <div className="flex border-b bg-slate-50 dark:bg-slate-900">
-             <button onClick={() => setActiveTab('customers')} className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-all border-b-4 ${activeTab === 'customers' ? 'bg-white text-blue-600 border-blue-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>
-               <Users size={20} /> Customers ({customers.length})
-             </button>
-             <button onClick={() => setActiveTab('samples')} className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-all border-b-4 ${activeTab === 'samples' ? 'bg-white text-blue-600 border-blue-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>
-               <FlaskConical size={20} /> Samples ({samples.length})
-             </button>
+        <div className="p-6">
+          <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/50">
+             <div className="flex justify-between items-start">
+               <div>
+                  <h4 className="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                    <AlertCircle size={16} className="text-blue-500" /> Instructions & Required Columns
+                  </h4>
+                  <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
+                    {activeTab === 'customers' 
+                      ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
+                      : "1.Customer | 2.Status | 3.Finished(Yes/No) | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking"
+                    }
+                  </p>
+               </div>
+               
+               <div className="flex flex-col gap-3 items-end">
+                 {/* Import Mode Selection */}
+                 {!parsedPreview && !excelPreview && (
+                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <button 
+                        onClick={() => setImportMode('merge')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${importMode === 'merge' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                      >
+                        Merge / Append
+                      </button>
+                      <div className="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
+                      <button 
+                         onClick={() => setImportMode('replace')}
+                         className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${importMode === 'replace' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                      >
+                        Replace All
+                      </button>
+                    </div>
+                 )}
+
+                 {!parsedPreview ? (
+                   <div className="flex gap-2">
+                     <Button onClick={parsePasteData} className={activeTab === 'customers' ? 'bg-blue-600' : 'bg-amber-600 hover:bg-amber-700'}>
+                       {t('parseImport')} (Text Paste)
+                     </Button>
+                   </div>
+                 ) : (
+                   <>
+                     {activeTab === 'samples' && (
+                       <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                         <RefreshCcw size={14} />
+                         {importMode === 'replace' ? 'Mode: Replace All' : 'Mode: Append New'}
+                       </div>
+                     )}
+                     <div className="flex gap-2">
+                        <Button onClick={clearPreview} variant="secondary">Cancel</Button>
+                        <Button onClick={confirmImport} className="bg-emerald-600 hover:bg-emerald-700 text-white flex gap-2">
+                           <CheckCircle2 size={16} /> Confirm Import 
+                           {excelPreview ? `(All)` : `(${parsedPreview.length})`}
+                        </Button>
+                     </div>
+                   </>
+                 )}
+               </div>
+             </div>
+             
+             {importStatus && (
+                <div className={`mt-3 pt-3 border-t border-blue-200 dark:border-blue-800/50 flex items-center gap-2 text-sm font-medium ${
+                  importStatus.type === 'success' ? 'text-emerald-600' : importStatus.type === 'error' ? 'text-red-600' : 'text-blue-600'
+                }`}>
+                   {importStatus.type === 'success' ? <CheckCircle2 size={16}/> : <AlertCircle size={16}/>}
+                   {importStatus.message}
+                </div>
+             )}
           </div>
-        )}
-
-        <div className="p-8 flex-1 flex flex-col">
-          {panelMode === 'import' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div 
-                  className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-10 flex flex-col items-center justify-center gap-4 hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-full text-blue-600 group-hover:scale-110 transition-transform">
-                    <FileSpreadsheet size={48} />
-                  </div>
-                  <div className="text-center">
-                    <h4 className="font-bold text-lg text-slate-800 dark:text-white">Upload Excel File</h4>
-                    <p className="text-sm text-slate-500">Auto-scans and identifies all tabs</p>
-                  </div>
-                  <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} />
-                  <Button variant="secondary" className="mt-2">Choose File</Button>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-end">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Paste Data Rows</label>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Target: {activeTab}</span>
-                  </div>
-                  <textarea 
-                    className="flex-1 min-h-[200px] border rounded-xl p-4 font-mono text-xs dark:bg-slate-900 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" 
-                    placeholder={`Paste rows from your Excel tab here...`} 
-                    value={importDataText} 
-                    onChange={e => setImportDataText(e.target.value)} 
-                  />
-                  <Button className="py-3" onClick={handleParseTextImport} disabled={!importDataText.trim()}>Parse Text Data</Button>
-                </div>
-              </div>
-            </div>
+          
+          {!parsedPreview && (
+            <textarea 
+              className="w-full h-64 border border-slate-300 dark:border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+              placeholder={`Optionally paste ${activeTab === 'customers' ? 'Customer' : 'Sample'} Excel data here...`}
+              value={importData}
+              onChange={(e) => setImportData(e.target.value)}
+            />
           )}
 
-          {panelMode === 'preview' && (
-            <div className="space-y-6 animate-in fade-in zoom-in-95 flex-1 flex flex-col">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-blue-50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800">
-                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-600 text-white rounded-xl shadow-lg"><CheckCircle2 size={28} /></div>
-                    <div>
-                       <h3 className="font-extrabold text-blue-900 dark:text-blue-200 text-xl">Import Ready</h3>
-                       <p className="text-sm text-blue-700 dark:text-blue-400">File: <span className="font-bold">{pendingData.sourceFile || 'Pasted Content'}</span></p>
-                    </div>
-                 </div>
-                 <div className="flex gap-4">
-                    <div className="text-center bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm border">
-                       <div className="text-xl font-black text-blue-600">{pendingData.customers.length}</div>
-                       <div className="text-[10px] font-bold uppercase text-slate-400">Found Customers</div>
-                    </div>
-                    <div className="text-center bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm border">
-                       <div className="text-xl font-black text-blue-600">{pendingData.samples.length}</div>
-                       <div className="text-[10px] font-bold uppercase text-slate-400">Found Samples</div>
-                    </div>
-                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center gap-3 ${importOption === 'merge' ? 'border-blue-600 bg-blue-50/30' : 'border-slate-200'}`} onClick={() => setImportOption('merge')}>
-                    <Check size={20} className={importOption === 'merge' ? 'text-blue-600' : 'text-slate-300'} />
-                    <div><div className="font-bold">Smart Merge</div><p className="text-[10px] text-slate-500">Update existing and add new records.</p></div>
-                 </div>
-                 <div className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center gap-3 ${importOption === 'replace' ? 'border-red-600 bg-red-50/30' : 'border-slate-200'}`} onClick={() => setImportOption('replace')}>
-                    <AlertTriangle size={20} className={importOption === 'replace' ? 'text-red-600' : 'text-slate-300'} />
-                    <div><div className="font-bold">Full Replace</div><p className="text-[10px] text-slate-500">Clear database and start with this file.</p></div>
-                 </div>
-              </div>
-
-              <div className="flex-1 overflow-hidden border rounded-xl flex flex-col bg-white dark:bg-slate-900">
-                 <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-xs uppercase text-slate-500 border-b">
-                   Data Preview (Reviewing records from file)
-                 </div>
-                 <div className="overflow-auto flex-1">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-slate-50 dark:bg-slate-800 sticky top-0 font-bold border-b z-10">
-                        <tr>
-                          <th className="p-3 border-r">Type</th>
-                          <th className="p-3 border-r">Company/Name</th>
-                          <th className="p-3 border-r">Specs/Rank</th>
-                          <th className="p-3">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pendingData.customers.slice(0, 5).map((c, idx) => (
-                          <tr key={`c-${idx}`} className="border-b bg-green-50/30 dark:bg-emerald-900/10">
-                            <td className="p-3 font-bold text-emerald-600 border-r">CUSTOMER</td>
-                            <td className="p-3 font-bold border-r">{c.name}</td>
-                            <td className="p-3 border-r">Rank {c.rank}</td>
-                            <td className="p-3"><Badge color="green">{c.followUpStatus}</Badge></td>
-                          </tr>
-                        ))}
-                        {pendingData.samples.slice(0, 10).map((s, idx) => (
-                          <tr key={`s-${idx}`} className="border-b hover:bg-slate-50 dark:hover:bg-slate-800">
-                            <td className="p-3 font-bold text-blue-600 border-r">SAMPLE</td>
-                            <td className="p-3 border-r">
-                               <div className="font-bold">{s.customerName}</div>
-                               <div className="text-[10px] text-slate-500">{s.sampleName}</div>
-                            </td>
-                            <td className="p-3 border-r">
-                               {s.crystalType} | {s.originalSize}
-                            </td>
-                            <td className="p-3">
-                               <Badge color="blue">{s.status}</Badge>
-                            </td>
-                          </tr>
-                        ))}
-                        {(pendingData.customers.length === 0 && pendingData.samples.length === 0) && (
-                          <tr><td colSpan={4} className="p-10 text-center text-slate-400 italic">No valid data rows found in preview.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                 </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <Button variant="secondary" className="flex-1 py-4" onClick={() => setPanelMode('import')}>Cancel</Button>
-                <Button className="flex-[2] py-4 text-lg" onClick={executeImport}>Finalize Import</Button>
-              </div>
-            </div>
-          )}
-
-          {panelMode === 'review' && (
-            <div className="space-y-4 flex-1 flex flex-col animate-in fade-in">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 text-slate-400 w-5 h-5" />
-                <input className="w-full pl-10 pr-4 py-3 border rounded-xl dark:bg-slate-900 dark:border-slate-700" placeholder={`Search ${activeTab}...`} value={reviewSearch} onChange={e => setReviewSearch(e.target.value)} />
-              </div>
-              <div className="overflow-auto flex-1 border rounded-xl">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 dark:bg-slate-900 sticky top-0">
-                    <tr className="border-b">
-                      {activeTab === 'customers' ? (
-                        <><th className="p-4">Company</th><th className="p-4">Rank</th><th className="p-4">Summary</th><th className="p-4 text-right">Status</th></>
-                      ) : (
-                        <><th className="p-4">Customer</th><th className="p-4">Idx</th><th className="p-4">Sample Name</th><th className="p-4">Status</th><th className="p-4 text-right">Test</th></>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredReviewData().map((item: any, i: number) => (
-                      <tr key={i} className="border-t hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {activeTab === 'customers' ? (
-                          <>
-                            <td className="p-4 font-bold">{item.name}</td>
-                            <td className="p-4"><RankStars rank={item.rank} /></td>
-                            <td className="p-4 text-xs truncate max-w-xs">{item.productSummary}</td>
-                            <td className="p-4 text-right"><Badge color="blue">{item.followUpStatus}</Badge></td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="p-4 font-bold">{item.customerName}</td>
-                            <td className="p-4">#{item.sampleIndex}</td>
-                            <td className="p-4 font-bold text-blue-600 dark:text-blue-400">{item.sampleName}</td>
-                            <td className="p-4"><Badge color="blue">{item.status}</Badge></td>
-                            <td className="p-4 text-right">
-                               {item.testStatus === 'Ongoing' ? <Badge color="yellow">Ongoing</Badge> : item.testStatus === 'Terminated' ? <Badge color="red">Terminated</Badge> : <Badge color="green">Finished</Badge>}
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {parsedPreview && (
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+               <div className="bg-slate-100 dark:bg-slate-800 p-2 text-xs font-bold text-slate-500 uppercase border-b border-slate-200 dark:border-slate-700 flex justify-between">
+                 <span>Data Preview: {activeTab.toUpperCase()}</span>
+                 {excelPreview && <span className="text-emerald-600">Excel File Loaded</span>}
+               </div>
+               <div className="max-h-[500px] overflow-auto">
+                 <table className="w-full text-left text-xs">
+                   <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 font-semibold sticky top-0 z-10">
+                     <tr className="border-b border-slate-200 dark:border-slate-700">
+                       {activeTab === 'customers' ? (
+                         <>
+                           <th className="p-3 whitespace-nowrap">Name</th>
+                           <th className="p-3 whitespace-nowrap">Rank</th>
+                           <th className="p-3 whitespace-nowrap">Region</th>
+                           <th className="p-3 whitespace-nowrap">Summary</th>
+                           <th className="p-3 whitespace-nowrap">Status</th>
+                           <th className="p-3 whitespace-nowrap">Next Step</th>
+                           <th className="p-3 whitespace-nowrap">Contacts</th>
+                           <th className="p-3 whitespace-nowrap">Last Update</th>
+                         </>
+                       ) : (
+                         <>
+                           <th className="p-3 whitespace-nowrap">Customer</th>
+                           <th className="p-3 whitespace-nowrap">Idx</th>
+                           <th className="p-3 whitespace-nowrap">Generated Name</th>
+                           <th className="p-3 whitespace-nowrap">Specs (Cry/Form/Size)</th>
+                           <th className="p-3 whitespace-nowrap">Qty</th>
+                           <th className="p-3 whitespace-nowrap">Status</th>
+                           <th className="p-3 whitespace-nowrap">Test Finished</th>
+                           <th className="p-3 whitespace-nowrap">Date</th>
+                           <th className="p-3 whitespace-nowrap">History</th>
+                         </>
+                       )}
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                     {parsedPreview.map((row, idx) => (
+                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                         {activeTab === 'customers' ? (
+                           <>
+                             <td className="p-3 font-medium align-top">{row.name}</td>
+                             <td className="p-3 align-top"><RankStars rank={row.rank} /></td>
+                             <td className="p-3 align-top">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td>
+                             <td className="p-3 align-top truncate max-w-[200px]" title={row.productSummary}>{row.productSummary}</td>
+                             <td className="p-3 align-top"><Badge color="blue">{row.followUpStatus}</Badge></td>
+                             <td className="p-3 align-top truncate max-w-[150px]" title={row.interactions[0]?.nextSteps}>{row.interactions[0]?.nextSteps || '-'}</td>
+                             <td className="p-3 align-top truncate max-w-[150px]" title={row.contacts?.map((c:any) => c.name).join(', ')}>
+                               {row.contacts?.map((c:any) => c.name).join(', ')}
+                             </td>
+                             <td className="p-3 align-top">{row.lastStatusUpdate}</td>
+                           </>
+                         ) : (
+                           <>
+                             <td className="p-3 font-medium align-top">{row.customerName}</td>
+                             <td className="p-3 align-top">{row.sampleIndex}</td>
+                             <td className="p-3 align-top font-bold text-blue-600 dark:text-blue-400 max-w-[200px] truncate" title={row.sampleName}>{row.sampleName}</td>
+                             <td className="p-3 align-top text-[10px] whitespace-nowrap">
+                               <div>{row.crystalType} / {row.productForm}</div>
+                               <div>{row.originalSize} -&gt; {row.processedSize}</div>
+                             </td>
+                             <td className="p-3 align-top">{row.quantity}</td>
+                             <td className="p-3 align-top"><Badge color="blue">{row.status}</Badge></td>
+                             <td className="p-3 align-top">{row.isTestFinished ? <CheckCircle2 size={14} className="text-green-500" /> : <span className="text-slate-400">-</span>}</td>
+                             <td className="p-3 align-top">{row.lastStatusDate}</td>
+                             <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
+                           </>
+                         )}
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
             </div>
           )}
         </div>
       </Card>
       
       <Modal isOpen={isClearModalOpen} onClose={() => setIsClearModalOpen(false)} title="Clear Database">
-        <div className="space-y-6">
-           <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl flex items-center gap-4 text-red-600 dark:text-red-400">
-              <AlertTriangle size={32} />
-              <p className="font-bold">This is irreversible. All data will be wiped instantly.</p>
+        <div className="space-y-4">
+           <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-red-800 dark:text-red-200">
+              <AlertCircle className="w-6 h-6 shrink-0" />
+              <div>
+                <h4 className="font-bold">Warning: Irreversible Action</h4>
+                <p className="text-sm mt-1">This will permanently delete all customers, samples, and interaction records. This cannot be undone.</p>
+              </div>
            </div>
+           <p className="text-slate-700 dark:text-slate-300">Are you sure you want to completely wipe the database?</p>
            <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setIsClearModalOpen(false)}>Cancel</Button>
-              <Button variant="danger" onClick={() => { clearDatabase(); setIsClearModalOpen(false); }}>Yes, Delete Everything</Button>
+              <Button variant="danger" onClick={() => { clearDatabase(); setIsClearModalOpen(false); }}>Yes, Clear Everything</Button>
            </div>
         </div>
       </Modal>

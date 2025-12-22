@@ -56,9 +56,6 @@ export type ProductForm = 'Powder' | 'Suspension' | string;
 export type ProductCategory = 'Agglomerated Diamond' | 'Nano Diamond' | 'Spherical Diamond' | 'Diamond Ball' | 'Micron' | 'CVD' | string;
 export type GradingStatus = 'Graded' | 'Ungraded';
 
-// NEW: Test Completion States
-export type TestStatus = 'Ongoing' | 'Finished' | 'Terminated';
-
 // New Master Product Catalog Interface
 export interface MasterProduct {
   id: string;
@@ -83,8 +80,7 @@ export interface Sample {
   lastStatusDate: string; // Date of status update
   statusDetails?: string; // "【Date】Details ||| 【Date】Details"
   
-  // UPDATED: From boolean to string union
-  testStatus: TestStatus;
+  isTestFinished: boolean; // Test Finished vs Ongoing
   
   // Technical Specs
   crystalType?: CrystalType; // Single/Poly
@@ -112,8 +108,6 @@ export interface Sample {
   sentDate?: string;
   feedback?: string;
   feedbackDate?: string;
-  // Kept for backward compatibility during transitions if any
-  isTestFinished?: boolean; 
 }
 
 export interface DashboardStats {
