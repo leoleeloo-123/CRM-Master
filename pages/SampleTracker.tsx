@@ -15,7 +15,9 @@ interface SampleTrackerProps {
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
   const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
+  
+  // Requirement: Default to 'list' view
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
@@ -26,7 +28,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   // Filter States
   const [filterCustomer, setFilterCustomer] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
-  const [filterTestFinished, setFilterTestFinished] = useState<string>('all'); 
+  
+  // Requirement: Default to 'ongoing' (archiving finished samples from default view)
+  const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
   const [filterCrystalType, setFilterCrystalType] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterForm, setFilterForm] = useState<string>('');
@@ -52,9 +56,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                           (s.originalSize || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.processedSize || '').toLowerCase().includes(searchTerm.toLowerCase());
     
+    // Test Finished filtering logic
     let matchesTest = true;
     if (filterTestFinished === 'finished') matchesTest = s.isTestFinished === true;
-    if (filterTestFinished === 'ongoing') matchesTest = s.isTestFinished === false;
+    else if (filterTestFinished === 'ongoing') matchesTest = s.isTestFinished === false;
+    // 'all' matches both
 
     const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
     const matchesStatus = filterStatus ? s.status === filterStatus : true;
@@ -69,10 +75,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const uniqueCustomerIds = Array.from(new Set(samples.map(s => s.customerId)));
   const customerFilterOptions = customers.filter(c => uniqueCustomerIds.includes(c.id));
 
-  // Helper for dynamic colors based on string hash or predefined list
+  // Helper for dynamic colors
   const getStatusStyle = (status: string, index: number) => {
     const s = status.toLowerCase();
-    // Try to match known keywords for consistent semantic coloring
     if (s.includes('request') || s.includes('申请') || s.includes('waiting') || s.includes('等待')) 
        return { icon: <ClipboardList className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' };
     if (s.includes('process') || s.includes('处理') || s.includes('production') || s.includes('制作')) 
@@ -82,7 +87,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     if (s.includes('feedback') || s.includes('反馈') || s.includes('result') || s.includes('结果') || s.includes('done') || s.includes('finish')) 
        return { icon: <CheckCircle2 className="w-4 h-4 xl:w-5 xl:h-5" />, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' };
     
-    // Fallback cyclic colors
     const colors = [
       'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400',
       'bg-pink-100 text-pink-600 dark:bg-pink-900/50 dark:text-pink-400',
@@ -190,14 +194,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     );
   };
   
-  const renderOption = (value: string) => {
-      const translated = t(value as any);
-      return translated;
-  };
+  const renderOption = (value: string) => t(value as any);
   
-  // Dynamic Display Name for Sample
   const getDisplaySampleName = (s: Sample) => {
-    // If we have structure, try to localize
     if (s.crystalType && s.productCategory?.length) {
       const catStr = s.productCategory.map(c => t(c as any)).join(', ');
       const crystal = t(s.crystalType as any);
@@ -209,21 +208,18 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     return s.sampleName;
   };
 
-  // --- Drag and Drop Handlers ---
-  
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedColumnIndex(index);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault(); // Essential to allow dropping
+    e.preventDefault();
   };
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
-    if (draggedColumnIndex === null) return;
-    if (draggedColumnIndex === dropIndex) return;
+    if (draggedColumnIndex === null || draggedColumnIndex === dropIndex) return;
 
     const newStatuses = [...tagOptions.sampleStatus];
     const [movedItem] = newStatuses.splice(draggedColumnIndex, 1);
@@ -257,18 +253,17 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     setMenuOpenColumn(null);
   };
   
-  // Reset all filters
   const resetFilters = () => {
       setFilterCustomer('');
       setFilterStatus('');
-      setFilterTestFinished('all');
+      setFilterTestFinished('ongoing');
       setFilterCrystalType('');
       setFilterCategory('');
       setFilterForm('');
       setSearchTerm('');
   };
 
-  const hasActiveFilters = filterCustomer || filterStatus || filterTestFinished !== 'all' || filterCrystalType || filterCategory || filterForm || searchTerm;
+  const hasActiveFilters = filterCustomer || filterStatus || filterTestFinished !== 'ongoing' || filterCrystalType || filterCategory || filterForm || searchTerm;
 
   return (
     <div className="h-[calc(100vh-2rem)] xl:h-[calc(100vh-3rem)] flex flex-col">
@@ -278,28 +273,27 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
           <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg">{t('monitorSamples')}</p>
         </div>
         <div className="flex gap-2">
+          {/* Requirement: List on the left, Board on the right. Default to List. */}
           <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-lg flex">
-             <button 
-               onClick={() => setViewMode('board')}
-               className={`px-3 py-1 xl:px-5 xl:py-2 text-sm xl:text-base font-medium rounded-md transition-all ${viewMode === 'board' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
-             >
-               {t('board')}
-             </button>
              <button 
                onClick={() => setViewMode('list')}
                className={`px-3 py-1 xl:px-5 xl:py-2 text-sm xl:text-base font-medium rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
              >
                {t('list')}
              </button>
+             <button 
+               onClick={() => setViewMode('board')}
+               className={`px-3 py-1 xl:px-5 xl:py-2 text-sm xl:text-base font-medium rounded-md transition-all ${viewMode === 'board' ? 'bg-white dark:bg-slate-600 shadow text-blue-600 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
+             >
+               {t('board')}
+             </button>
           </div>
           <Button className="flex items-center gap-2" onClick={handleOpenNew}><Plus className="w-4 h-4 xl:w-5 xl:h-5" /> {t('newSample')}</Button>
         </div>
       </div>
 
-      {/* Advanced Filter Bar - Split into 2 separate rows as requested */}
       <Card className="p-4 xl:p-6 mb-6 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
          <div className="flex flex-col gap-4">
-             {/* Row 1: Search Bar (Full Width) */}
              <div className="relative w-full">
                <Search className="absolute left-3 top-2.5 xl:top-3.5 text-slate-400 w-4 h-4 xl:w-6 xl:h-6" />
                <input 
@@ -311,7 +305,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                />
              </div>
              
-             {/* Row 2: All Filters (Combined) */}
              <div className="flex flex-wrap gap-2 items-center text-sm xl:text-base">
                 <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mr-2 font-medium shrink-0">
                   <Filter className="w-4 h-4 xl:w-5 xl:h-5" /> {t('filters')}:
@@ -385,7 +378,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
 
       {viewMode === 'board' && (
         <div className="flex-1 overflow-x-auto pb-4">
-           {/* Dynamic Kanban Board */}
            <div className="flex gap-6 h-full min-w-[max-content] px-1">
              {tagOptions.sampleStatus.map((status, index) => {
                const colSamples = filteredSamples.filter(s => s.status === status);
@@ -415,7 +407,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                        >
                          <MoreHorizontal className="w-4 h-4" />
                        </button>
-                       
                        {isMenuOpen && (
                          <div className="absolute right-0 top-8 bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 rounded-lg z-20 w-40 overflow-hidden py-1">
                             <button onClick={() => moveColumn(index, 'left')} disabled={index===0} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 disabled:opacity-30">
@@ -433,11 +424,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      </div>
                    </div>
                    
-                   {/* Column Drop Overlay Highlight */}
-                   {draggedColumnIndex !== null && draggedColumnIndex !== index && (
-                      <div className="pointer-events-none absolute inset-0 bg-blue-500/5 border-2 border-blue-500 rounded-xl opacity-0 hover:opacity-100"></div>
-                   )}
-
                    <div className="space-y-3 xl:space-y-5 overflow-y-auto flex-1 pr-2 min-h-[200px]">
                      {colSamples.map(sample => (
                        <Card key={sample.id} className="p-3 xl:p-5 hover:shadow-md cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500" onClick={() => handleOpenEdit(sample)}>
@@ -449,26 +435,21 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                          </div>
                          <h4 className="font-bold text-slate-800 dark:text-white text-base xl:text-xl">{sample.customerName}</h4>
                          <p className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 font-bold mt-1">{getDisplaySampleName(sample)}</p>
-                         
                          <div className="flex flex-wrap gap-1 mt-2 xl:mt-3">
                             <Badge color="blue">{renderOption(sample.productForm || '')}</Badge>
                             <Badge color="purple">{renderOption(sample.crystalType || '')}</Badge>
                          </div>
-                         
                          <div className="mt-2 text-xs xl:text-sm space-y-1">
                             {sample.originalSize && <div className="text-slate-600 dark:text-slate-400"><span className="text-slate-400 dark:text-slate-500 uppercase text-[10px] mr-1">{t('origLabel')}:</span>{sample.originalSize}</div>}
                             {sample.processedSize && <div className="text-slate-600 dark:text-slate-400"><span className="text-slate-400 dark:text-slate-500 uppercase text-[10px] mr-1">{t('procLabel')}:</span>{sample.processedSize}</div>}
                          </div>
-
                          <div className="mt-2 text-xs xl:text-base text-slate-600 dark:text-slate-300 line-clamp-2">
                            {sample.statusDetails}
                          </div>
-                         
                          <div className="mt-2 xl:mt-3 flex justify-between items-center">
                             <span className={`text-xs xl:text-sm px-2 py-0.5 rounded ${sample.isTestFinished ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-700'}`}>
                                {sample.isTestFinished ? t('filterTestFinished') : t('filterTestOngoing')}
                             </span>
-                            {/* Days Since Update Metric on Card */}
                             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
                                <CalendarDays size={12} className="text-slate-400"/>
                                {renderDaysSinceUpdate(sample.lastStatusDate)}
@@ -480,30 +461,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                  </div>
                );
              })}
-             
-             {/* Fallback for samples with unknown status */}
-             {(() => {
-                const known = new Set(tagOptions.sampleStatus);
-                const unknownSamples = filteredSamples.filter(s => !known.has(s.status));
-                if (unknownSamples.length > 0) {
-                   return (
-                     <div className="flex-1 w-[300px] xl:w-[400px] shrink-0 bg-slate-100 dark:bg-slate-800 rounded-xl p-4 xl:p-6 flex flex-col h-full border border-dashed border-slate-300 dark:border-slate-600 opacity-80">
-                        <div className="flex items-center gap-2 mb-4 p-2 text-slate-500 font-bold uppercase">
-                           <div className="w-2 h-2 rounded-full bg-slate-400"></div> Uncategorized ({unknownSamples.length})
-                        </div>
-                        <div className="space-y-3 overflow-y-auto flex-1">
-                           {unknownSamples.map(sample => (
-                              <Card key={sample.id} className="p-4 opacity-75 hover:opacity-100 cursor-pointer" onClick={() => handleOpenEdit(sample)}>
-                                 <h4 className="font-bold">{sample.customerName}</h4>
-                                 <Badge color="gray">{sample.status}</Badge>
-                              </Card>
-                           ))}
-                        </div>
-                     </div>
-                   );
-                }
-                return null;
-             })()}
            </div>
         </div>
       )}
@@ -555,7 +512,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                              )}
                              {!s.originalSize && !s.processedSize && <span className="text-slate-400">-</span>}
                         </div>
-                        <div className="text-slate-400 text-[10px]">{s.isGraded}</div>
                      </td>
                      <td className="p-4 xl:p-6 align-top font-semibold text-slate-900 dark:text-white">
                         {s.quantity}
@@ -587,11 +543,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         </Card>
       )}
 
-      {/* New/Edit Sample Modal - Modified to only be "New Sample" */}
+      {/* New Sample Modal */}
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={t('createSample')}>
         <div className="space-y-6">
-          
-          {/* Customer & Index Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('customer')} *</label>
@@ -618,7 +572,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
             </div>
           </div>
 
-          {/* Master Product Selection / Name */}
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
              <div className="flex flex-col md:flex-row gap-4">
                <div className="flex-1">
@@ -641,15 +594,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                    className="w-full border rounded-lg p-2 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500"
                    value={currentSample.sampleName || ''}
                    readOnly
-                   placeholder={t('autoGeneratedPlaceholder')}
                  />
-                 <p className="text-xs text-slate-400 mt-1">
-                   {t('logicNote')}
-                 </p>
                </div>
              </div>
              
-             {/* Editable Spec Grid */}
              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t('crystal')}</label>
@@ -661,7 +609,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                     {tagOptions.crystalType.map(type => <option key={type} value={type}>{renderOption(type)}</option>)}
                   </select>
                 </div>
-                
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t('category')}</label>
                   <select 
@@ -673,7 +620,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                     {tagOptions.productCategory.map(cat => <option key={cat} value={cat}>{renderOption(cat)}</option>)}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t('form')}</label>
                   <select 
@@ -684,23 +630,19 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      {tagOptions.productForm.map(form => <option key={form} value={form}>{renderOption(form)}</option>)}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t('original')}</label>
                   <input 
                      className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
                      value={currentSample.originalSize || ''}
-                     placeholder="e.g. 10um"
                      onChange={(e) => handleSpecChange('originalSize', e.target.value)}
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t('processed')}</label>
                   <input 
                      className="w-full text-xs border rounded p-1.5 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"
                      value={currentSample.processedSize || ''}
-                     placeholder="e.g. 50nm"
                      onChange={(e) => handleSpecChange('processedSize', e.target.value)}
                   />
                 </div>
@@ -709,90 +651,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
-               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('sampleSku')}</label>
-               <input 
-                 type="text"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
-                 value={currentSample.sampleSKU || ''}
-                 onChange={e => setCurrentSample({...currentSample, sampleSKU: e.target.value})}
-               />
-             </div>
-             <div>
-               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('grading')}</label>
-                  <select 
-                      className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600"
-                      value={currentSample.isGraded}
-                      onChange={(e) => setCurrentSample({...currentSample, isGraded: e.target.value as GradingStatus})}
-                   >
-                     <option value="Graded">{t('graded')}</option>
-                     <option value="Ungraded">{t('ungraded')}</option>
-                   </select>
-             </div>
-          </div>
-
-          {/* Logistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">{t('quantity')}</label>
-                <input className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600" value={currentSample.quantity || ''} onChange={e => setCurrentSample({...currentSample, quantity: e.target.value})} placeholder="e.g. 50g"/>
+                <input className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600" value={currentSample.quantity || ''} onChange={e => setCurrentSample({...currentSample, quantity: e.target.value})} />
              </div>
              <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">{t('application')}</label>
                 <input className="w-full text-sm border rounded p-2 dark:bg-slate-900 dark:border-slate-600" value={currentSample.application || ''} onChange={e => setCurrentSample({...currentSample, application: e.target.value})} />
-             </div>
-          </div>
-
-          {/* Status & Dates */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-             <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('currentStatus')}</label>
-                <select 
-                  className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
-                  value={currentSample.status}
-                  onChange={(e) => setCurrentSample({...currentSample, status: e.target.value as SampleStatus})}
-                >
-                  {tagOptions.sampleStatus.map(status => (
-                     <option key={status} value={status}>{renderOption(status)}</option>
-                  ))}
-                </select>
-             </div>
-             <div>
-               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('statusDate')}</label>
-               <input 
-                 type="date"
-                 className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
-                 value={currentSample.lastStatusDate || ''}
-                 onChange={e => setCurrentSample({...currentSample, lastStatusDate: e.target.value})}
-               />
-             </div>
-             <div className="flex items-center gap-2 h-full pt-6">
-                <input 
-                  type="checkbox"
-                  id="testFinished"
-                  checked={currentSample.isTestFinished}
-                  onChange={e => setCurrentSample({...currentSample, isTestFinished: e.target.checked})}
-                  className="w-5 h-5 rounded text-blue-600"
-                />
-                <label htmlFor="testFinished" className="font-bold text-slate-700 dark:text-slate-300">{t('testFinished')}</label>
-             </div>
-          </div>
-          
-          <div>
-             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('statusHistory')}</label>
-             <p className="text-xs text-slate-400 mb-2">{t('statusHistoryPlaceholder')}</p>
-             <textarea 
-               className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 h-24 font-mono text-sm"
-               value={currentSample.statusDetails || ''}
-               onChange={e => setCurrentSample({...currentSample, statusDetails: e.target.value})}
-               placeholder="【2025-01-01】Details..."
-             />
-          </div>
-
-          {/* Links */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('trackingNum')}</label>
-                <input className="w-full border rounded-lg p-2 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600" value={currentSample.trackingNumber || ''} onChange={e => setCurrentSample({...currentSample, trackingNumber: e.target.value})} />
              </div>
           </div>
 
