@@ -340,7 +340,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              {/* Interactive Unreplied Days */}
              <div className="flex-1 h-full relative group">
                 <Card className={`h-full overflow-hidden transition-all ${isEditingCustomerReply ? 'ring-2 ring-blue-500' : ''}`}>
-                   <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="absolute top-2 right-2 z-10 transition-opacity">
                       {!isEditingCustomerReply ? (
                         <button onClick={startEditCustomerReply} className="p-1 bg-white/80 dark:bg-slate-800/80 rounded shadow-sm text-slate-400 hover:text-blue-500"><Edit size={14} /></button>
                       ) : (
@@ -370,7 +370,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              {/* Interactive Unfollowed Days */}
              <div className="flex-1 h-full relative group">
                 <Card className={`h-full overflow-hidden transition-all ${isEditingMyReply ? 'ring-2 ring-blue-500' : ''}`}>
-                   <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="absolute top-2 right-2 z-10 transition-opacity">
                       {!isEditingMyReply ? (
                         <button onClick={startEditMyReply} className="p-1 bg-white/80 dark:bg-slate-800/80 rounded shadow-sm text-slate-400 hover:text-blue-500"><Edit size={14} /></button>
                       ) : (

@@ -68,6 +68,8 @@ export const translations = {
     logInteraction: 'Log Interaction',
     newRequest: 'New Request',
     noSamples: 'No samples recorded for this customer.',
+    // Added missing translation key
+    noApplicationProvided: 'No application details provided.',
     confirmDeleteInteraction: 'Are you sure you want to delete this interaction?',
     
     // Contacts Edit
@@ -262,6 +264,8 @@ export const translations = {
     logInteraction: '记录互动',
     newRequest: '新建样品申请',
     noSamples: '该客户暂无样品记录。',
+    // Added missing translation key
+    noApplicationProvided: '暂无应用详情。',
     confirmDeleteInteraction: '您确定要删除此互动记录吗？',
     
     // Contacts Edit
