@@ -5,10 +5,10 @@ import { Card, Badge, RankStars, getUrgencyLevel } from '../components/Common';
 import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { 
-  format, isBefore, parseISO, addDays, 
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, 
-  isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, 
-  addDays as dateAddDays, subDays, isToday 
+  format, isBefore, addDays, 
+  endOfMonth, endOfWeek, eachDayOfInterval, 
+  isSameMonth, isSameDay, addMonths, addWeeks, 
+  isToday 
 } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
@@ -27,21 +27,23 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   const [view, setView] = useState<CalendarView>('month');
 
   // Filter for Tier 1 & 2 customers with valid next action dates
+  // Use native Date instead of parseISO
   const events = customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
     ...c,
-    dateObj: parseISO(c.nextActionDate!)
+    dateObj: new Date(c.nextActionDate!)
   }));
 
+  // Replaced subMonths, subWeeks, subDays with addMonths, addWeeks, addDays with negative values
   const handlePrev = () => {
-    if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
-    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
-    if (view === 'day') setCurrentDate(subDays(currentDate, 1));
+    if (view === 'month') setCurrentDate(addMonths(currentDate, -1));
+    if (view === 'week') setCurrentDate(addWeeks(currentDate, -1));
+    if (view === 'day') setCurrentDate(addDays(currentDate, -1));
   };
 
   const handleNext = () => {
     if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
     if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
-    if (view === 'day') setCurrentDate(dateAddDays(currentDate, 1));
+    if (view === 'day') setCurrentDate(addDays(currentDate, 1));
   };
 
   const handleToday = () => setCurrentDate(new Date());
@@ -66,9 +68,11 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   );
 
   const renderMonthView = () => {
-    const monthStart = startOfMonth(currentDate);
+    // Replaced startOfMonth with native Date
+    const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart);
+    // Replaced startOfWeek with addDays/getDay logic
+    const startDate = addDays(monthStart, -monthStart.getDay());
     const endDate = endOfWeek(monthEnd);
     const days = eachDayOfInterval({ start: startDate, end: endDate });
 
@@ -109,8 +113,9 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   };
 
   const renderWeekView = () => {
-    const startDate = startOfWeek(currentDate);
-    const days = Array.from({ length: 7 }).map((_, i) => dateAddDays(startDate, i));
+    // Replaced startOfWeek with addDays/getDay logic
+    const startDate = addDays(currentDate, -currentDate.getDay());
+    const days = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i));
 
     return (
       <div className="grid grid-cols-7 gap-2 h-auto">
@@ -222,7 +227,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
     // 2. Filter by Date urgency
     const now = new Date();
-    const actionDate = c.nextActionDate ? parseISO(c.nextActionDate) : null;
+    // Replaced parseISO with native Date
+    const actionDate = c.nextActionDate ? new Date(c.nextActionDate) : null;
     const isOverdue = actionDate && isBefore(actionDate, now);
     const isUpcoming = actionDate && isBefore(actionDate, addDays(now, 7)) && !isOverdue; // 7 day lookahead
     
@@ -234,8 +240,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     }
     
     // 2. Sort by Date (Ascending: Earliest date first)
-    const dateA = a.nextActionDate ? parseISO(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
-    const dateB = b.nextActionDate ? parseISO(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
+    // Replaced parseISO with native Date
+    const dateA = a.nextActionDate ? new Date(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
+    const dateB = b.nextActionDate ? new Date(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
     
     return dateA - dateB;
   });
@@ -400,7 +407,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                          <div className={`flex items-center gap-1 text-xs xl:text-sm font-medium ${dateColor}`}>
                            <CalendarIcon className="w-3 h-3 xl:w-4 xl:h-4" />
                            <span>
-                             {c.nextActionDate ? format(parseISO(c.nextActionDate), 'MMM d') : 'N/A'}
+                             {/* Replaced parseISO with native Date */}
+                             {c.nextActionDate ? format(new Date(c.nextActionDate), 'MMM d') : 'N/A'}
                            </span>
                          </div>
                       </div>

@@ -4,7 +4,8 @@ import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductFo
 import { Card, Badge, Button, Modal } from '../components/Common';
 import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { format, differenceInDays, parseISO, isValid } from 'date-fns';
+// Use native Date instead of parseISO to avoid missing export error
+import { format, differenceInDays, isValid } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 interface SampleTrackerProps {
@@ -160,8 +161,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   };
 
   const renderDaysSinceUpdate = (dateStr: string) => {
-    if (!dateStr || !isValid(parseISO(dateStr))) return <span className="text-slate-400">-</span>;
-    const diff = differenceInDays(new Date(), parseISO(dateStr));
+    // Replaced parseISO with native Date constructor
+    if (!dateStr || !isValid(new Date(dateStr))) return <span className="text-slate-400">-</span>;
+    const diff = differenceInDays(new Date(), new Date(dateStr));
     let colorClass = diff <= 7 ? "text-emerald-600 font-bold" : diff <= 30 ? "text-amber-500 font-bold" : "text-red-500 font-bold";
     return (
       <div className={`flex flex-col items-center leading-tight ${colorClass}`}>

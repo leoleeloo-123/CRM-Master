@@ -2,7 +2,8 @@
 import React from 'react';
 import { Rank } from '../types';
 import { Star, AlertCircle, CheckCircle2, Clock, CalendarDays, Timer, X } from 'lucide-react';
-import { differenceInDays, parseISO, isValid } from 'date-fns';
+// Use native Date instead of parseISO to avoid missing export error
+import { differenceInDays, isValid } from 'date-fns';
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = '', onClick }) => (
   <div onClick={onClick} className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 ${className}`}>
@@ -101,14 +102,16 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 
 export const DaysCounter: React.FC<{ date?: string; label: string; type: 'elapsed' | 'remaining' }> = ({ date, label, type }) => {
   // If no date, render a placeholder
-  if (!date || !isValid(parseISO(date))) return (
+  // Use native Date constructor instead of parseISO
+  if (!date || !isValid(new Date(date))) return (
     <div className="flex flex-col items-center justify-center p-3 xl:p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[120px] h-full shadow-sm">
       <span className="text-slate-300 dark:text-slate-600 font-medium text-3xl xl:text-5xl mb-1">-</span>
       <span className="text-xs text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider text-center leading-tight">{label}</span>
     </div>
   );
 
-  const daysDiff = differenceInDays(new Date(), parseISO(date));
+  // Use native Date constructor instead of parseISO
+  const daysDiff = differenceInDays(new Date(), new Date(date));
   // If type is 'elapsed', we want positive numbers for past dates (now > date).
   // If type is 'remaining', we want positive numbers for future dates (date > now), so we invert.
   const displayDays = type === 'elapsed' ? daysDiff : -daysDiff; 
@@ -172,7 +175,8 @@ export const getUrgencyLevel = (dateStr?: string): 'urgent' | 'warning' | 'safe'
   if (!dateStr) return 'none';
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Normalize today
-  const target = parseISO(dateStr);
+  // Use native Date constructor instead of parseISO
+  const target = new Date(dateStr);
   
   if (!isValid(target)) return 'none';
   
