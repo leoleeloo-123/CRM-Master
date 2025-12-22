@@ -24,7 +24,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   const { t } = useApp();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<CalendarView>('day'); // Default to day view per screenshot
+  const [view, setView] = useState<CalendarView>('month'); // Changed default to Month view
 
   // Filter for Tier 1 & 2 customers with valid next action dates
   const events = customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
