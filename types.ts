@@ -1,3 +1,4 @@
+
 export type Rank = 1 | 2 | 3 | 4 | 5; // 1 is Highest Importance, 5 is Lowest
 
 export type CustomerStatus = 'Active' | 'Pending' | 'Inactive' | 'Prospect' | string;
@@ -16,7 +17,7 @@ export interface Interaction {
   id: string;
   date: string;
   summary: string; // The "Process Summary"
-  nextSteps?: string;
+  nextSteps?: string; // Kept for legacy compatibility if needed, but UI will focus on Customer.upcomingPlan
   tags?: string[]; 
   docLinks?: string[]; // Hyperlinks to docs
 }
@@ -46,6 +47,9 @@ export interface Customer {
   interactions: Interaction[]; // "Connection Process Summary"
   
   docLinks?: string[]; // General document links for the company
+
+  // New independent field for upcoming plans
+  upcomingPlan?: string;
 }
 
 export type SampleStatus = 'Requested' | 'Processing' | 'Sent' | 'Delivered' | 'Testing' | 'Feedback Received' | 'Closed' | string;

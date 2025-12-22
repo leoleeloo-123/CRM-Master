@@ -105,8 +105,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const productSummary = (safeCol(5) || '').replace(/\|\|\|/g, '\n');
     const lastStatusUpdate = normalizeDate(safeCol(6));
     const followUpStatus = mapStatusFromImport(safeCol(9));
-    const nextSteps = safeCol(10) || '';
-    const nextActionDate = normalizeDate(safeCol(11));
+    const upcomingPlan = safeCol(10) || ''; // 下一步 column
+    const nextActionDate = normalizeDate(safeCol(11)); // 关键日期 column
     const lastCustomerReplyDate = normalizeDate(safeCol(14));
     const lastMyReplyDate = normalizeDate(safeCol(16));
     const docLinks = splitByDelimiter(safeCol(18));
@@ -159,17 +159,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
          tags: []
        };
     }).reverse();
-    
-     if (interactions.length === 0 && nextSteps) {
-       interactions.push({
-         id: `int_${tempIdPrefix}_next`,
-         date: new Date().toISOString().split('T')[0],
-         summary: 'Pending Next Step',
-         nextSteps: nextSteps
-       });
-    } else if (interactions.length > 0 && nextSteps) {
-       interactions[0].nextSteps = nextSteps;
-    }
 
     return {
       id: `new_c_${tempIdPrefix}`,
@@ -181,6 +170,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       lastStatusUpdate: lastStatusUpdate,
       followUpStatus: followUpStatus,
       nextActionDate: nextActionDate,
+      upcomingPlan: upcomingPlan, // Correctly map "下一步" to this field
       lastCustomerReplyDate: lastCustomerReplyDate,
       lastMyReplyDate: lastMyReplyDate,
       lastContactDate: lastMyReplyDate,
@@ -290,7 +280,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
       const contactInfos = c.contacts.map(contact => contact.email || contact.phone || '').join(' ||| ');
       const interactionText = [...c.interactions].reverse().map(i => `【${i.date}】 ${i.summary}`).join(' ||| ');
-      const nextStep = c.interactions.length > 0 ? (c.interactions[0].nextSteps || '') : '';
+      const nextStep = c.upcomingPlan || ''; // Export "下一步" from the independent upcomingPlan field
       const docLinks = c.docLinks ? c.docLinks.join(' ||| ') : '';
       const productSummaryExport = (c.productSummary || '').replace(/\n/g, ' ||| ');
       const statusExport = mapStatusToExport(c.followUpStatus);
@@ -718,7 +708,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                              <td className="p-3 align-top">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td>
                              <td className="p-3 align-top truncate max-w-[200px]" title={row.productSummary}>{row.productSummary}</td>
                              <td className="p-3 align-top"><Badge color="blue">{row.followUpStatus}</Badge></td>
-                             <td className="p-3 align-top truncate max-w-[150px]" title={row.interactions[0]?.nextSteps}>{row.interactions[0]?.nextSteps || '-'}</td>
+                             <td className="p-3 align-top truncate max-w-[150px]" title={row.upcomingPlan}>{row.upcomingPlan || '-'}</td>
                              <td className="p-3 align-top truncate max-w-[150px]" title={row.contacts?.map((c:any) => c.name).join(', ')}>
                                {row.contacts?.map((c:any) => c.name).join(', ')}
                              </td>

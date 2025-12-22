@@ -24,16 +24,14 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   const { t } = useApp();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<CalendarView>('month');
+  const [view, setView] = useState<CalendarView>('day'); // Default to day view per screenshot
 
   // Filter for Tier 1 & 2 customers with valid next action dates
-  // Use native Date instead of parseISO
   const events = customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
     ...c,
     dateObj: new Date(c.nextActionDate!)
   }));
 
-  // Replaced subMonths, subWeeks, subDays with addMonths, addWeeks, addDays with negative values
   const handlePrev = () => {
     if (view === 'month') setCurrentDate(addMonths(currentDate, -1));
     if (view === 'week') setCurrentDate(addWeeks(currentDate, -1));
@@ -60,22 +58,18 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
       key={c.id} 
       onClick={(e) => { e.stopPropagation(); navigate(`/customers/${c.id}`); }}
       className={`cursor-pointer rounded px-2 py-1 text-xs xl:text-sm font-medium border truncate transition-all hover:scale-105 hover:shadow-sm mb-1 ${getUrgencyColor(c.nextActionDate!)}`}
-      title={`${c.name} - ${c.interactions[0]?.nextSteps || 'No next step'}`}
+      title={`${c.name} - ${c.upcomingPlan || 'No upcoming plan'}`}
     >
-      {/* Show full name but truncated with CSS, instead of hard substring */}
       {c.name}
     </div>
   );
 
   const renderMonthView = () => {
-    // Replaced startOfMonth with native Date
     const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const monthEnd = endOfMonth(monthStart);
-    // Replaced startOfWeek with addDays/getDay logic
     const startDate = addDays(monthStart, -monthStart.getDay());
     const endDate = endOfWeek(monthEnd);
     const days = eachDayOfInterval({ start: startDate, end: endDate });
-
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
@@ -85,7 +79,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
               <div key={d} className="text-center text-sm xl:text-base font-bold text-slate-500 uppercase">{d}</div>
             ))}
          </div>
-         {/* Increased min-height for cells to 120px to allow more content */}
          <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(120px,auto)]">
             {days.map(day => {
                const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
@@ -100,7 +93,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
                     <span className={`text-sm xl:text-lg font-bold self-end px-2 rounded-full ${isDayToday ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
                       {format(day, 'd')}
                     </span>
-                    {/* Removed max-height so cell grows with content */}
                     <div className="flex-1 flex flex-col gap-1">
                        {dayEvents.map(e => renderEventBadge(e, false))}
                     </div>
@@ -113,7 +105,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   };
 
   const renderWeekView = () => {
-    // Replaced startOfWeek with addDays/getDay logic
     const startDate = addDays(currentDate, -currentDate.getDay());
     const days = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i));
 
@@ -140,28 +131,31 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   };
 
   const renderDayView = () => {
-     const dayEvents = events.filter(e => isSameDay(e.dateObj, currentDate));
+     const dayEvents = events.filter(e => isSameDay(e.dateObj, currentDate)).sort((a,b) => a.rank - b.rank);
      
      return (
-       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 h-auto">
-          <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 min-h-[400px]">
+          <h4 className="text-xl font-bold mb-6 flex items-center gap-2">
              {format(currentDate, 'EEEE, MMMM do')}
              {isToday(currentDate) && <Badge color="blue">Today</Badge>}
           </h4>
           {dayEvents.length === 0 ? (
-             <p className="text-slate-400 italic py-4">No critical actions scheduled for this day.</p>
+             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                <CalendarIcon size={48} className="opacity-10 mb-2" />
+                <p className="italic">No critical actions scheduled for this day.</p>
+             </div>
           ) : (
-             <div className="space-y-3">
+             <div className="space-y-4">
                {dayEvents.map(e => (
-                 <div key={e.id} onClick={() => navigate(`/customers/${e.id}`)} className="flex items-start gap-4 p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:shadow-md cursor-pointer transition-all bg-slate-50 dark:bg-slate-900/50">
-                    <div className={`w-1 self-stretch rounded-full ${getUrgencyLevel(e.nextActionDate!) === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
+                 <div key={e.id} onClick={() => navigate(`/customers/${e.id}`)} className="flex items-start gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-lg cursor-pointer transition-all bg-white dark:bg-slate-900/50 group">
+                    <div className={`w-1.5 self-stretch rounded-full ${getUrgencyLevel(e.nextActionDate!) === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
                     <div className="flex-1">
-                       <div className="flex justify-between">
-                          <h5 className="font-bold text-slate-800 dark:text-white text-lg">{e.name}</h5>
+                       <div className="flex justify-between items-start">
+                          <h5 className="font-extrabold text-slate-800 dark:text-white text-lg group-hover:text-blue-600 transition-colors">{e.name}</h5>
                           <RankStars rank={e.rank} />
                        </div>
-                       <p className="text-slate-600 dark:text-slate-300 mt-1">{e.interactions[0]?.nextSteps || 'Check details'}</p>
-                       <div className="mt-2 flex gap-2">
+                       <p className="text-slate-600 dark:text-slate-300 mt-1 font-medium">{e.upcomingPlan || 'Check details'}</p>
+                       <div className="mt-3">
                           <Badge color="gray">{e.status}</Badge>
                        </div>
                     </div>
@@ -174,27 +168,26 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   };
 
   return (
-    // Removed h-full to allow calendar to shrink to fit content (reducing whitespace)
-    <Card className="p-4 xl:p-6 flex flex-col">
-       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+    <Card className="p-4 xl:p-6 flex flex-col shadow-sm">
+       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <div className="flex items-center gap-2">
              <CalendarIcon className="w-5 h-5 xl:w-6 xl:h-6 text-blue-600 dark:text-blue-400" />
-             <h3 className="font-bold text-slate-800 dark:text-white text-lg xl:text-xl">{t('calendar')}</h3>
-             <span className="text-sm xl:text-base font-medium text-slate-500 dark:text-slate-400 ml-2 hidden md:inline">
+             <h3 className="font-bold text-slate-800 dark:text-white text-lg xl:text-xl uppercase tracking-wider">{t('calendar')}</h3>
+             <span className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 ml-2">
                 {format(currentDate, 'MMMM yyyy')}
              </span>
           </div>
           
           <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
-             <button onClick={() => setView('day')} className={`px-3 py-1 text-xs xl:text-sm font-bold rounded ${view === 'day' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewDay')}</button>
-             <button onClick={() => setView('week')} className={`px-3 py-1 text-xs xl:text-sm font-bold rounded ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewWeek')}</button>
-             <button onClick={() => setView('month')} className={`px-3 py-1 text-xs xl:text-sm font-bold rounded ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
+             <button onClick={() => setView('day')} className={`px-4 py-1.5 text-xs xl:text-sm font-bold rounded-md transition-all ${view === 'day' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('viewDay')}</button>
+             <button onClick={() => setView('week')} className={`px-4 py-1.5 text-xs xl:text-sm font-bold rounded-md transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('viewWeek')}</button>
+             <button onClick={() => setView('month')} className={`px-4 py-1.5 text-xs xl:text-sm font-bold rounded-md transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
           </div>
 
-          <div className="flex items-center gap-1">
-             <button onClick={handlePrev} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronLeft size={20}/></button>
-             <button onClick={handleToday} className="px-2 py-1 text-xs xl:text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 rounded">{t('today')}</button>
-             <button onClick={handleNext} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronRight size={20}/></button>
+          <div className="flex items-center gap-2">
+             <button onClick={handlePrev} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500"><ChevronLeft size={20}/></button>
+             <button onClick={handleToday} className="px-3 py-1.5 text-xs xl:text-sm font-bold bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-sm">{t('today')}</button>
+             <button onClick={handleNext} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500"><ChevronRight size={20}/></button>
           </div>
        </div>
        
@@ -202,11 +195,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
           {view === 'month' && renderMonthView()}
           {view === 'week' && renderWeekView()}
           {view === 'day' && renderDayView()}
-       </div>
-       <div className="mt-4 flex gap-4 text-xs text-slate-500 justify-end">
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Urgent (&lt;7d)</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-400"></div> Warning (&lt;14d)</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Safe</div>
        </div>
     </Card>
   );
@@ -221,63 +209,38 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const [priorityFilter, setPriorityFilter] = useState<'1' | '1-2'>('1');
 
   const criticalCustomers = customers.filter(c => {
-    // 1. Filter by Rank based on state
     const rankCondition = priorityFilter === '1' ? c.rank === 1 : c.rank <= 2;
     if (!rankCondition) return false;
 
-    // 2. Filter by Date urgency
     const now = new Date();
-    // Replaced parseISO with native Date
     const actionDate = c.nextActionDate ? new Date(c.nextActionDate) : null;
     const isOverdue = actionDate && isBefore(actionDate, now);
-    const isUpcoming = actionDate && isBefore(actionDate, addDays(now, 7)) && !isOverdue; // 7 day lookahead
+    const isUpcoming = actionDate && isBefore(actionDate, addDays(now, 7)) && !isOverdue;
     
     return isOverdue || isUpcoming;
   }).sort((a, b) => {
-    // 1. Sort by Rank (Ascending: 1 before 2)
     if (a.rank !== b.rank) {
       return a.rank - b.rank;
     }
-    
-    // 2. Sort by Date (Ascending: Earliest date first)
-    // Replaced parseISO with native Date
     const dateA = a.nextActionDate ? new Date(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
     const dateB = b.nextActionDate ? new Date(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
-    
     return dateA - dateB;
   });
 
   const activeSamples = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received', '已送达', '已关闭', '已反馈'].includes(s.status)).length;
-  // Broadly define pending feedback as Sent or Delivered but not Closed
   const pendingFeedback = samples.filter(s => ['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status)).length;
   
-  // --- Dynamic Sample Pipeline Data ---
-  // Generate colors cyclically
   const COLORS = ['#94a3b8', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4'];
   
-  // 1. Aggregate counts based on tagOptions.sampleStatus to preserve order
   const sampleStatusData = tagOptions.sampleStatus.map((status, index) => {
     return {
       name: t(status as any) || status,
       value: samples.filter(s => s.status === status).length,
       color: COLORS[index % COLORS.length]
     };
-  }).filter(item => item.value > 0); // Only show non-zero statuses
-
-  // 2. Catch any samples with statuses NOT in the configured list
-  const knownStatuses = new Set(tagOptions.sampleStatus);
-  const otherCount = samples.filter(s => !knownStatuses.has(s.status)).length;
-  
-  if (otherCount > 0) {
-    sampleStatusData.push({
-      name: 'Other',
-      value: otherCount,
-      color: '#64748b' // Slate-500
-    });
-  }
+  }).filter(item => item.value > 0);
 
   const regionDataRaw = customers.reduce((acc, curr) => {
-    // Check if region is an array (it should be now), but fallback to string handling just in case of old data
     const regions = Array.isArray(curr.region) ? curr.region : [curr.region];
     regions.forEach(r => {
       acc[r] = (acc[r] || 0) + 1;
@@ -296,49 +259,49 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     <div className="space-y-6 xl:space-y-10">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-2xl xl:text-4xl font-bold text-slate-800 dark:text-white mb-1">{t('dashboard')}</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg">{t('welcome')}</p>
+          <h2 className="text-2xl xl:text-4xl font-black text-slate-800 dark:text-white mb-1 tracking-tight">CRM Master</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg font-medium">Welcome back</p>
         </div>
         <div className="text-sm xl:text-lg text-slate-500 dark:text-slate-400">
-          {t('today')}: <span className="font-medium text-slate-900 dark:text-white">{format(new Date(), 'MMMM do, yyyy')}</span>
+          Today: <span className="font-bold text-slate-900 dark:text-white">{format(new Date(), 'MMMM do, yyyy')}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xl:gap-8">
-        <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-blue-500">
-          <div className="p-3 xl:p-4 bg-blue-50 dark:bg-blue-900/50 rounded-full text-blue-600 dark:text-blue-400">
+        <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-blue-500 shadow-sm">
+          <div className="p-3 xl:p-4 bg-blue-50 dark:bg-blue-900/50 rounded-2xl text-blue-600 dark:text-blue-400 shadow-sm border border-blue-100">
             <Activity className={iconClass} />
           </div>
           <div>
-            <p className="text-sm xl:text-base text-slate-500 dark:text-slate-400">{t('totalCustomers')}</p>
-            <p className="text-2xl xl:text-4xl font-bold text-slate-800 dark:text-white">{customers.length}</p>
+            <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{t('totalCustomers')}</p>
+            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white">{customers.length}</p>
           </div>
         </Card>
-        <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-amber-500">
-          <div className="p-3 xl:p-4 bg-amber-50 dark:bg-amber-900/50 rounded-full text-amber-600 dark:text-amber-400">
+        <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-amber-500 shadow-sm">
+          <div className="p-3 xl:p-4 bg-amber-50 dark:bg-amber-900/50 rounded-2xl text-amber-600 dark:text-amber-400 shadow-sm border border-amber-100">
             <FlaskConical className={iconClass} />
           </div>
           <div>
-            <p className="text-sm xl:text-base text-slate-500 dark:text-slate-400">{t('activeSamples')}</p>
-            <p className="text-2xl xl:text-4xl font-bold text-slate-800 dark:text-white">{activeSamples}</p>
+            <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{t('activeSamples')}</p>
+            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white">{activeSamples}</p>
           </div>
         </Card>
-        <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-purple-500">
-          <div className="p-3 xl:p-4 bg-purple-50 dark:bg-purple-900/50 rounded-full text-purple-600 dark:text-purple-400">
+        <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-purple-500 shadow-sm">
+          <div className="p-3 xl:p-4 bg-purple-50 dark:bg-purple-900/50 rounded-2xl text-purple-600 dark:text-purple-400 shadow-sm border border-purple-100">
             <CalendarIcon className={iconClass} />
           </div>
           <div>
-            <p className="text-sm xl:text-base text-slate-500 dark:text-slate-400">{t('pendingFeedback')}</p>
-            <p className="text-2xl xl:text-4xl font-bold text-slate-800 dark:text-white">{pendingFeedback}</p>
+            <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Pending Feedback</p>
+            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white">{pendingFeedback}</p>
           </div>
         </Card>
-        <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-red-500">
-          <div className="p-3 xl:p-4 bg-red-50 dark:bg-red-900/50 rounded-full text-red-600 dark:text-red-400">
+        <Card className="p-4 xl:p-6 flex items-center gap-4 xl:gap-6 border-l-4 border-l-red-500 shadow-sm">
+          <div className="p-3 xl:p-4 bg-red-50 dark:bg-red-900/50 rounded-2xl text-red-600 dark:text-red-400 shadow-sm border border-red-100">
             <AlertTriangle className={iconClass} />
           </div>
           <div>
-            <p className="text-sm xl:text-base text-slate-500 dark:text-slate-400">{t('criticalActions')}</p>
-            <p className="text-2xl xl:text-4xl font-bold text-slate-800 dark:text-white">{criticalCustomers.length}</p>
+            <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Critical Actions</p>
+            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white">{criticalCustomers.length}</p>
           </div>
         </Card>
       </div>
@@ -347,41 +310,41 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         
         {/* Left Column: Priority Attention */}
         <div className="lg:col-span-1 space-y-4 xl:space-y-6 flex flex-col h-full">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg xl:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 xl:w-7 xl:h-7 text-amber-500" />
+              <h3 className="text-xl xl:text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2 tracking-tight uppercase">
+                <AlertTriangle className="w-6 h-6 text-amber-500" />
                 {t('priorityAttention')}
               </h3>
               <button 
                 onClick={() => navigate('/customers')}
-                className="text-sm xl:text-lg text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium flex items-center gap-1"
+                className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center gap-1"
               >
-                {t('viewAll')} <ArrowRight className="w-3.5 h-3.5 xl:w-5 xl:h-5" />
+                View All <ArrowRight size={14} />
               </button>
             </div>
             
-            {/* Filter Toggle */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg self-start">
+            {/* Filter Toggle Per Screenshot */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start shadow-inner">
                <button 
                  onClick={() => setPriorityFilter('1')}
-                 className={`px-3 py-1 text-xs font-bold rounded ${priorityFilter === '1' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+                 className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all ${priorityFilter === '1' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
                >
-                 {t('filterTier1Only')}
+                 Tier 1 Only
                </button>
                <button 
                  onClick={() => setPriorityFilter('1-2')}
-                 className={`px-3 py-1 text-xs font-bold rounded ${priorityFilter === '1-2' ? 'bg-white dark:bg-slate-700 shadow text-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+                 className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all ${priorityFilter === '1-2' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
                >
-                 {t('filterTier1And2')}
+                 Tier 1 & 2
                </button>
             </div>
           </div>
           
-          <div className="space-y-3 xl:space-y-4 overflow-y-auto max-h-[800px] pr-2 scrollbar-thin">
+          <div className="space-y-4 overflow-y-auto max-h-[800px] pr-2 scrollbar-hide">
             {criticalCustomers.length === 0 ? (
-              <Card className="p-8 xl:p-12 text-center text-slate-500 dark:text-slate-400 text-lg xl:text-xl">
-                <p>{t('noCriticalActions')}</p>
+              <Card className="p-12 text-center text-slate-400 italic">
+                <p>No critical actions pending. Great job!</p>
               </Card>
             ) : (
               criticalCustomers.map(c => { 
@@ -389,33 +352,29 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 let dateColor = "text-slate-500 dark:text-slate-400";
                 if (urgency === 'urgent') dateColor = "text-red-600 dark:text-red-500 font-bold";
                 if (urgency === 'warning') dateColor = "text-amber-600 dark:text-amber-500 font-bold";
-                if (urgency === 'safe') dateColor = "text-emerald-600 dark:text-emerald-500 font-bold";
 
                 return (
-                  <Card key={c.id} className="p-3 xl:p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/customers/${c.id}`)}>
-                    <div className="flex flex-col gap-2">
+                  <Card key={c.id} className="p-4 hover:shadow-xl transition-all cursor-pointer border border-slate-100 dark:border-slate-800 group" onClick={() => navigate(`/customers/${c.id}`)}>
+                    <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-start">
-                         <div className="flex gap-2">
+                         <div className="flex gap-3">
                              <div className={`w-1.5 self-stretch rounded-full ${urgency === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
                              <div>
-                                <h4 className="font-bold text-slate-800 dark:text-white text-sm xl:text-base">{c.name}</h4>
+                                <h4 className="font-black text-slate-900 dark:text-white text-base group-hover:text-blue-600 transition-colors">{c.name}</h4>
                                 <div className="mt-1">
                                    <RankStars rank={c.rank} />
                                 </div>
                              </div>
                          </div>
-                         <div className={`flex items-center gap-1 text-xs xl:text-sm font-medium ${dateColor}`}>
-                           <CalendarIcon className="w-3 h-3 xl:w-4 xl:h-4" />
-                           <span>
-                             {/* Replaced parseISO with native Date */}
-                             {c.nextActionDate ? format(new Date(c.nextActionDate), 'MMM d') : 'N/A'}
-                           </span>
+                         <div className={`flex items-center gap-1 text-[11px] font-black uppercase tracking-wider ${dateColor}`}>
+                           <CalendarIcon size={12} />
+                           <span>{c.nextActionDate ? format(new Date(c.nextActionDate), 'MMM d') : 'N/A'}</span>
                          </div>
                       </div>
-                      <p className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 line-clamp-2 pl-3.5">
-                         {c.interactions[0]?.nextSteps || "Update required"}
+                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 line-clamp-2 pl-4 leading-relaxed italic">
+                         {c.upcomingPlan || "Update required"}
                       </p>
-                      <div className="flex justify-between items-center pl-3.5 mt-1">
+                      <div className="flex justify-between items-center pl-4">
                          <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
                       </div>
                     </div>
@@ -428,24 +387,22 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
         {/* Right Column: Calendar & Charts */}
         <div className="lg:col-span-2 space-y-6 xl:space-y-10">
-           
-           {/* NEW CALENDAR COMPONENT */}
            <DashboardCalendar customers={customers} />
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="p-5 xl:p-8">
-                <h3 className="font-bold text-slate-800 dark:text-white mb-4 xl:mb-6 text-base xl:text-xl">{t('samplePipeline')}</h3>
+              <Card className="p-6 xl:p-8 shadow-sm">
+                <h3 className="font-black text-slate-800 dark:text-white mb-6 text-lg xl:text-xl uppercase tracking-wider">{t('samplePipeline')}</h3>
                 {sampleStatusData.length > 0 ? (
                   <>
-                    <div className="h-48 xl:h-64 w-full">
+                    <div className="h-56 xl:h-64 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={sampleStatusData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={50}
-                            outerRadius={75}
+                            innerRadius={60}
+                            outerRadius={85}
                             paddingAngle={5}
                             dataKey="value"
                           >
@@ -453,14 +410,14 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff', fontSize: '14px' }} />
+                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', color: '#fff' }} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="grid grid-cols-2 gap-3 mt-4">
                       {sampleStatusData.map(d => (
-                        <div key={d.name} className="flex items-center gap-2 text-xs xl:text-sm text-slate-600 dark:text-slate-300">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }}></div>
+                        <div key={d.name} className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                          <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: d.color }}></div>
                           <span className="truncate">{d.name}: {d.value}</span>
                         </div>
                       ))}
@@ -471,16 +428,16 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 )}
               </Card>
 
-              <Card className="p-5 xl:p-8">
-                <h3 className="font-bold text-slate-800 dark:text-white mb-4 xl:mb-6 text-base xl:text-xl">{t('customersByRegion')}</h3>
-                <div className="h-48 xl:h-64 w-full">
+              <Card className="p-6 xl:p-8 shadow-sm">
+                <h3 className="font-black text-slate-800 dark:text-white mb-6 text-lg xl:text-xl uppercase tracking-wider">Customers by Region</h3>
+                <div className="h-56 xl:h-64 w-full">
                    <ResponsiveContainer width="100%" height="100%">
                      <BarChart data={regionData}>
-                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                       <XAxis dataKey="name" tick={{fontSize: 10, fill: '#64748b'}} interval={0} angle={-30} textAnchor="end" height={50} />
-                       <YAxis allowDecimals={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                       <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }} />
-                       <Bar dataKey="count" fill="#475569" radius={[4, 4, 0, 0]} />
+                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                       <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: 'bold', fill: '#64748b'}} interval={0} angle={-30} textAnchor="end" height={50} />
+                       <YAxis allowDecimals={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#64748b'}} />
+                       <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', color: '#fff' }} />
+                       <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} />
                      </BarChart>
                    </ResponsiveContainer>
                 </div>

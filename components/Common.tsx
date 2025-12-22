@@ -1,7 +1,7 @@
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { Rank } from '../types';
-import { Star, AlertCircle, CheckCircle2, Clock, CalendarDays, Timer, X, Edit2 } from 'lucide-react';
+import { Star, AlertCircle, CheckCircle2, Clock, CalendarDays, Timer, X, Edit2, PencilLine } from 'lucide-react';
 import { differenceInDays, isValid } from 'date-fns';
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = '', onClick }) => (
@@ -118,19 +118,24 @@ export const DaysCounter: React.FC<{
   }
 
   return (
-    <div className={`flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[120px] h-40 shadow-sm relative group ${isInteractive ? 'cursor-pointer hover:border-blue-400' : ''}`}>
+    <div className={`flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[120px] h-40 shadow-sm relative group transition-all hover:shadow-md ${isInteractive ? 'hover:border-blue-400' : ''}`}>
       <div className={`font-black text-4xl mb-1 ${colorClass}`}>
         {!date || !isValid(new Date(date)) ? '-' : Math.abs(displayDays)}
       </div>
       <span className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest text-center px-2">{label}</span>
       
       {isInteractive && (
-        <>
-          <input type="date" className="absolute inset-0 opacity-0 cursor-pointer z-10" value={date || ''} onChange={handleInputChange} />
-          <div className="absolute bottom-2 right-2 p-1 rounded-md bg-slate-50 dark:bg-slate-700 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Edit2 size={10} className="text-slate-400" />
-          </div>
-        </>
+        <div className="absolute top-2 right-2 flex flex-col items-center">
+           <div className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm pointer-events-none group-hover:scale-110 transition-transform">
+              <PencilLine size={12} />
+           </div>
+           <input 
+              type="date" 
+              className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full" 
+              value={date || ''} 
+              onChange={handleInputChange} 
+           />
+        </div>
       )}
     </div>
   );

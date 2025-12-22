@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal } from '../components/Common';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, Edit3, Trash } from 'lucide-react';
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, Edit3, Trash, PencilLine } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -25,11 +25,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isEditSummaryOpen, setIsEditSummaryOpen] = useState(false);
   const [isEditContactsOpen, setIsEditContactsOpen] = useState(false);
   const [isEditTagsOpen, setIsEditTagsOpen] = useState(false);
+  const [isEditUpcomingPlanOpen, setIsEditUpcomingPlanOpen] = useState(false);
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
 
   // Local Edit States
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState('');
+  const [tempUpcomingPlan, setTempUpcomingPlan] = useState('');
 
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
@@ -53,6 +55,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     const tagsArr = tempTags.split(',').map(t => t.trim()).filter(t => t);
     saveUpdate({ tags: tagsArr });
     setIsEditTagsOpen(false);
+  };
+
+  const handleUpdateUpcomingPlan = () => {
+    saveUpdate({ upcomingPlan: tempUpcomingPlan });
+    setIsEditUpcomingPlanOpen(false);
   };
 
   const togglePrimaryContact = (index: number) => {
@@ -88,7 +95,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     saveUpdate({ 
       interactions: newInteractions,
       lastMyReplyDate: updated.date,
-      lastContactDate: updated.date
+      lastContactDate: updated.date,
+      lastStatusUpdate: updated.date
     });
     setEditingInteraction(null);
   };
@@ -108,7 +116,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const urgency = getUrgencyLevel(customer.nextActionDate);
-  const urgencyClass = urgency === 'urgent' ? "bg-red-50 border-red-200" : urgency === 'warning' ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200";
+  const urgencyClass = urgency === 'urgent' ? "bg-[#FFF1F2] border-red-200" : urgency === 'warning' ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200";
 
   return (
     <div className="space-y-6 pb-12">
@@ -155,8 +163,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
           </Card>
           
-          <DaysCounter date={customer.nextActionDate} label={t('daysUntilDDL')} type="remaining" onDateChange={(d) => saveUpdate({ nextActionDate: d })} />
-          <DaysCounter date={customer.lastStatusUpdate} label={t('daysSinceUpdate')} type="elapsed" onDateChange={(d) => saveUpdate({ lastStatusUpdate: d })} />
+          <DaysCounter date={customer.nextActionDate} label={t('daysUntilDDL')} type="remaining" />
+          <DaysCounter date={customer.lastStatusUpdate} label={t('daysSinceUpdate')} type="elapsed" />
           <DaysCounter date={customer.lastCustomerReplyDate} label={t('unrepliedDays')} type="elapsed" onDateChange={(d) => saveUpdate({ lastCustomerReplyDate: d })} />
           <DaysCounter date={customer.lastMyReplyDate} label={t('unfollowedDays')} type="elapsed" onDateChange={(d) => saveUpdate({ lastMyReplyDate: d })} />
        </div>
@@ -167,22 +175,22 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
            {/* Contacts Card */}
            <Card className="p-6">
              <div className="flex justify-between items-center mb-6 pb-2 border-b">
-               <h3 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-2">
+               <h3 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-wide">
                  <UserCheck size={20} className="text-blue-600" /> {t('keyContacts')}
                </h3>
-               <button onClick={() => setIsEditContactsOpen(true)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md text-slate-400 hover:text-blue-500 transition-colors">
-                  <Edit3 size={18} />
+               <button onClick={() => setIsEditContactsOpen(true)} className="p-1.5 rounded-md bg-[#059669] text-white shadow-sm hover:bg-[#047857] transition-colors">
+                  <PencilLine size={16} />
                </button>
              </div>
              <div className="space-y-4">
                {customer.contacts.map((contact, idx) => (
-                 <div key={idx} className={`p-4 rounded-xl border-2 ${contact.isPrimary ? 'border-blue-500 bg-blue-50/50' : 'border-slate-100 bg-slate-50'}`}>
+                 <div key={idx} className={`p-4 rounded-xl border-2 ${contact.isPrimary ? 'border-slate-200 bg-slate-50/50' : 'border-slate-100 bg-slate-50'}`}>
                     <div className="flex items-center justify-between mb-1">
-                       <span className="font-bold text-slate-900">{contact.name}</span>
+                       <span className="font-bold text-slate-900 text-sm">{idx + 1}. {contact.name}</span>
                        {contact.isPrimary && <Star size={14} className="fill-blue-500 text-blue-500" />}
                     </div>
                     <p className="text-xs font-bold text-blue-600 mb-2">{contact.title}</p>
-                    <div className="text-[10px] space-y-1 text-slate-500 font-medium">
+                    <div className="text-[10px] space-y-1 text-slate-400 font-medium">
                        <div className="flex items-center gap-1.5"><Mail size={10}/> {contact.email || '-'}</div>
                        <div className="flex items-center gap-1.5"><Phone size={10}/> {contact.phone || '-'}</div>
                     </div>
@@ -197,11 +205,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
            {/* Exhibitions Card */}
            <Card className="p-6">
              <div className="flex justify-between items-center mb-4">
-               <h3 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-2">
+               <h3 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-wide">
                  <List size={20} className="text-indigo-600" /> {t('exhibitions')}
                </h3>
-               <button onClick={() => { setTempTags(customer.tags.join(', ')); setIsEditTagsOpen(true); }} className="text-slate-400 hover:text-blue-500">
-                 <Edit3 size={18} />
+               <button onClick={() => { setTempTags(customer.tags.join(', ')); setIsEditTagsOpen(true); }} className="p-1.5 rounded-md bg-[#059669] text-white shadow-sm hover:bg-[#047857] transition-colors">
+                 <PencilLine size={16} />
                </button>
              </div>
              <div className="flex flex-wrap gap-2">
@@ -215,11 +223,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          {/* Main Content */}
          <div className="lg:col-span-2 space-y-6">
             {/* Summary Card */}
-            <Card className="overflow-hidden border-0 shadow-lg">
-               <div className="px-6 py-4 bg-emerald-600 flex justify-between items-center">
-                  <h3 className="font-black text-lg text-white flex items-center gap-2"><Box size={20}/> {t('productSummary')}</h3>
-                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-1.5 rounded-md hover:bg-emerald-700 text-white transition-colors">
-                    <Edit size={18}/>
+            <Card className="overflow-hidden border border-slate-200 shadow-sm">
+               <div className="px-6 py-4 bg-[#059669] flex justify-between items-center">
+                  <h3 className="font-black text-lg text-white flex items-center gap-2 uppercase tracking-wide"><Box size={20}/> {t('productSummary')}</h3>
+                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-1.5 rounded-md bg-white/20 text-white shadow-sm hover:bg-white/30 transition-colors">
+                    <PencilLine size={18}/>
                   </button>
                </div>
                <div className="p-8">
@@ -239,57 +247,58 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-in fade-in duration-300">
-                {/* Urgent Plan Section */}
-                <div className={`p-6 rounded-2xl border-l-8 shadow-sm group relative ${urgencyClass}`}>
+                {/* Independent Upcoming Plan Section - Refined for Screenshot */}
+                <div className={`p-6 rounded-2xl border-2 shadow-sm group relative ${urgencyClass}`}>
                   <button 
                     onClick={() => {
-                      const latest = customer.interactions[0];
-                      setEditingInteraction(latest || { id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '', nextSteps: '' });
+                      setTempUpcomingPlan(customer.upcomingPlan || '');
+                      setIsEditUpcomingPlanOpen(true);
                     }}
-                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-white/50 rounded-lg hover:bg-white text-slate-600"
+                    className="absolute top-4 right-4 p-1.5 rounded-md bg-[#059669] text-white shadow-sm hover:bg-[#047857] transition-colors"
                   >
-                    <Edit size={16} />
+                    <PencilLine size={16} />
                   </button>
-                  <div className="flex items-center gap-4 mb-3">
-                     <Clock size={28} className="text-slate-900" />
+                  <div className="flex items-center gap-4 mb-4">
+                     <div className="p-2 bg-white rounded-xl shadow-sm border">
+                        <Clock size={24} className="text-slate-900" />
+                     </div>
                      <div>
-                        <h4 className="font-black text-[10px] text-slate-500 tracking-widest uppercase">UPCOMING PLAN</h4>
-                        <span className="text-xs font-black text-slate-900">DDL: {customer.nextActionDate || 'TBD'}</span>
+                        <h4 className="font-black text-[10px] text-slate-500 tracking-widest uppercase mb-0.5">UPCOMING PLAN</h4>
+                        <div className="flex items-center gap-2">
+                           <span className="text-sm font-black text-slate-900">DDL: {customer.nextActionDate || 'TBD'}</span>
+                           {urgency === 'urgent' && <Badge color="red">Urgent</Badge>}
+                        </div>
                      </div>
                   </div>
-                  <p className="text-lg font-bold text-slate-900">{customer.interactions[0]?.nextSteps || "No upcoming plan logged."}</p>
+                  <p className="text-lg font-black text-slate-900 leading-snug">
+                     {customer.upcomingPlan || <span className="text-slate-400 italic font-medium text-base">No upcoming plan logged.</span>}
+                  </p>
                 </div>
 
                 {/* History Section */}
                 <div className="space-y-6">
                    <div className="flex justify-between items-center">
-                     <h3 className="font-black text-xl text-slate-900 dark:text-white flex items-center gap-2">
+                     <h3 className="font-black text-xl text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-wide">
                         <Calendar size={20} className="text-blue-600"/> {t('interactionHistory')}
                      </h3>
-                     <Button variant="primary" className="text-xs py-1.5" onClick={() => setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '', nextSteps: '' })}>
-                       <Plus size={14} /> Log Progress
+                     <Button className="text-xs py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 font-bold" onClick={() => setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' })}>
+                       <Plus size={14} className="mr-1" /> Log Progress
                      </Button>
                    </div>
                    
-                   <div className="relative border-l-4 border-slate-200 dark:border-slate-700 ml-4 pl-8 py-2 space-y-8">
+                   <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 pl-8 py-2 space-y-8">
                      {customer.interactions.length > 0 ? customer.interactions.map((int, i) => (
                        <div key={int.id} className="relative group">
-                          <div className="absolute -left-[42px] top-0 w-6 h-6 rounded-full bg-white dark:bg-slate-900 border-4 border-blue-600 shadow-sm flex items-center justify-center font-black text-[8px]">{customer.interactions.length - i}</div>
+                          <div className="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-[10px]">{customer.interactions.length - i}</div>
                           <div className="flex items-center justify-between mb-2">
                              <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
-                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => setEditingInteraction(int)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-500"><Edit size={14}/></button>
-                                <button onClick={() => deleteInteraction(int.id)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-red-500"><Trash size={14}/></button>
+                             <div className="flex gap-2">
+                                <button onClick={() => setEditingInteraction(int)} className="p-1.5 rounded bg-[#059669] text-white shadow-sm hover:bg-[#047857] transition-colors"><PencilLine size={12}/></button>
+                                <button onClick={() => deleteInteraction(int.id)} className="p-1.5 rounded bg-red-600 text-white shadow-sm hover:bg-red-700 transition-colors"><Trash size={12}/></button>
                              </div>
                           </div>
-                          <Card className="p-4 border-2 border-slate-100 dark:border-slate-800">
+                          <Card className="p-5 border border-slate-100 dark:border-slate-800 shadow-sm">
                              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">{int.summary}</p>
-                             {int.nextSteps && (
-                                <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
-                                   <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-1">Target Action:</span>
-                                   <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{int.nextSteps}</p>
-                                </div>
-                             )}
                           </Card>
                        </div>
                      )) : (
@@ -339,6 +348,34 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              <div className="flex justify-end gap-3">
                 <Button variant="secondary" onClick={() => setIsEditSummaryOpen(false)}>Cancel</Button>
                 <Button onClick={handleUpdateSummary}><Save size={18} /> Save Summary</Button>
+             </div>
+          </div>
+       </Modal>
+
+       {/* Edit Upcoming Plan Modal - Maps to "下一步" and "关键日期" */}
+       <Modal isOpen={isEditUpcomingPlanOpen} onClose={() => setIsEditUpcomingPlanOpen(false)} title="Update Upcoming Plan">
+          <div className="space-y-4">
+             <div className="space-y-1">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Plan Details (下一步)</label>
+                <textarea 
+                  className="w-full h-32 p-4 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
+                  value={tempUpcomingPlan}
+                  onChange={(e) => setTempUpcomingPlan(e.target.value)}
+                  placeholder="What is the next objective for this client?"
+                />
+             </div>
+             <div className="space-y-1">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Date (关键日期 / DDL)</label>
+                <input 
+                  type="date"
+                  className="w-full p-3 border rounded-lg font-bold"
+                  value={customer.nextActionDate || ''}
+                  onChange={(e) => saveUpdate({ nextActionDate: e.target.value })}
+                />
+             </div>
+             <div className="flex justify-end gap-3 pt-4">
+                <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdateUpcomingPlan}><Save size={18} /> Save Plan</Button>
              </div>
           </div>
        </Modal>
@@ -426,16 +463,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                   </div>
                </div>
                <div className="space-y-1">
-                  <label className="text-xs font-black text-slate-400 uppercase">SUMMARY OF PROGRESS</label>
-                  <textarea className="w-full h-32 p-3 border rounded-xl font-medium" placeholder="What happened in this interaction?" value={editingInteraction.summary} onChange={(e) => setEditingInteraction({...editingInteraction, summary: e.target.value})} />
-               </div>
-               <div className="space-y-1">
-                  <label className="text-xs font-black text-blue-600 uppercase tracking-widest">NEXT STEP TARGET</label>
-                  <input className="w-full p-3 border-2 border-blue-100 rounded-xl font-bold" placeholder="What is the next objective?" value={editingInteraction.nextSteps} onChange={(e) => setEditingInteraction({...editingInteraction, nextSteps: e.target.value})} />
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">SUMMARY OF PROGRESS</label>
+                  <textarea className="w-full h-32 p-3 border rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none" placeholder="What happened in this interaction?" value={editingInteraction.summary} onChange={(e) => setEditingInteraction({...editingInteraction, summary: e.target.value})} />
                </div>
                <div className="flex justify-end gap-3 pt-4">
                   <Button variant="secondary" onClick={() => setEditingInteraction(null)}>Cancel</Button>
-                  <Button onClick={() => saveInteraction(editingInteraction)}><Save size={18}/> Update Database</Button>
+                  <Button onClick={() => saveInteraction(editingInteraction)} className="bg-blue-600 hover:bg-blue-700 text-white"><Save size={18} className="mr-1" /> Update History</Button>
                </div>
             </div>
          </Modal>
