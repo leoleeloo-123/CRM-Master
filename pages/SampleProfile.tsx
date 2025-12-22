@@ -19,8 +19,9 @@ const SampleProfile: React.FC = () => {
   const [isEditingSpecs, setIsEditingSpecs] = useState(false);
   const [editSample, setEditSample] = useState<Partial<Sample>>({});
   
-  // Editable State for Status & Progress
+  // Separate Editable States for Status & Test Progress
   const [isEditingStatus, setIsEditingStatus] = useState(false);
+  const [isEditingTest, setIsEditingTest] = useState(false);
   
   // Editable State for Application
   const [isEditingApp, setIsEditingApp] = useState(false);
@@ -89,17 +90,28 @@ const SampleProfile: React.FC = () => {
     setIsEditingSpecs(false);
   };
 
-  const handleSaveStatusProgress = () => {
+  const handleSaveStatus = () => {
     if (!sample || !editSample) return;
     const updatedSample = { 
       ...sample, 
       status: editSample.status || sample.status,
-      isTestFinished: editSample.isTestFinished ?? sample.isTestFinished,
       lastStatusDate: format(new Date(), 'yyyy-MM-dd')
     } as Sample;
     
     setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
     setIsEditingStatus(false);
+  };
+
+  const handleSaveTest = () => {
+    if (!sample || !editSample) return;
+    const updatedSample = { 
+      ...sample, 
+      isTestFinished: editSample.isTestFinished ?? sample.isTestFinished,
+      lastStatusDate: format(new Date(), 'yyyy-MM-dd')
+    } as Sample;
+    
+    setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
+    setIsEditingTest(false);
   };
 
   const handleSaveApplication = () => {
@@ -172,15 +184,16 @@ const SampleProfile: React.FC = () => {
 
        {/* Top Metrics Summary */}
        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-8 h-auto">
+          {/* Current Status Card */}
           <Card className={`p-4 border-l-4 border-l-blue-500 flex flex-col justify-center transition-all ${isEditingStatus ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
              <div className="flex justify-between items-center mb-1">
                <span className="text-xs uppercase font-bold text-slate-400">{t('currentStatus')}</span>
                {!isEditingStatus ? (
-                 <button onClick={() => setIsEditingStatus(true)} className="text-slate-400 hover:text-blue-500"><Edit size={14} /></button>
+                 <button onClick={() => setIsEditingStatus(true)} className="text-slate-400 hover:text-blue-500 transition-colors"><Edit size={14} /></button>
                ) : (
                  <div className="flex gap-2">
-                    <button onClick={handleSaveStatusProgress} className="text-emerald-600"><Save size={14} /></button>
-                    <button onClick={() => setIsEditingStatus(false)} className="text-red-500"><X size={14} /></button>
+                    <button onClick={handleSaveStatus} className="text-emerald-600 hover:scale-110 transition-transform"><Save size={14} /></button>
+                    <button onClick={() => setIsEditingStatus(false)} className="text-red-500 hover:scale-110 transition-transform"><X size={14} /></button>
                  </div>
                )}
              </div>
@@ -202,24 +215,37 @@ const SampleProfile: React.FC = () => {
 
           <DaysCounter date={sample.lastStatusDate} label={t('daysSinceUpdate')} type="elapsed" />
 
-          <Card className={`p-4 flex flex-col justify-center items-center transition-all ${isEditingStatus ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
-             <span className="text-xs uppercase font-bold text-slate-400 mb-2">{t('testFinished')}</span>
-             {isEditingStatus ? (
-               <select 
-                  className="w-full border rounded p-1 text-sm bg-white dark:bg-slate-800 dark:border-slate-600"
-                  value={editSample.isTestFinished ? 'yes' : 'no'}
-                  onChange={e => setEditSample({...editSample, isTestFinished: e.target.value === 'yes'})}
-               >
-                  <option value="no">{t('filterTestOngoing')}</option>
-                  <option value="yes">{t('filterTestFinished')}</option>
-               </select>
-             ) : (
-               sample.isTestFinished ? (
-                 <Badge color="green" >{t('filterTestFinished')}</Badge>
+          {/* Test Finished Card */}
+          <Card className={`p-4 flex flex-col justify-center transition-all ${isEditingTest ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+             <div className="flex justify-between items-center mb-1">
+               <span className="text-xs uppercase font-bold text-slate-400">{t('testFinished')}</span>
+               {!isEditingTest ? (
+                 <button onClick={() => setIsEditingTest(true)} className="text-slate-400 hover:text-blue-500 transition-colors"><Edit size={14} /></button>
                ) : (
-                 <Badge color="yellow">{t('filterTestOngoing')}</Badge>
-               )
-             )}
+                 <div className="flex gap-2">
+                    <button onClick={handleSaveTest} className="text-emerald-600 hover:scale-110 transition-transform"><Save size={14} /></button>
+                    <button onClick={() => setIsEditingTest(false)} className="text-red-500 hover:scale-110 transition-transform"><X size={14} /></button>
+                 </div>
+               )}
+             </div>
+             <div className="flex flex-col items-center">
+              {isEditingTest ? (
+                <select 
+                    className="w-full border rounded p-1 text-sm bg-white dark:bg-slate-800 dark:border-slate-600"
+                    value={editSample.isTestFinished ? 'yes' : 'no'}
+                    onChange={e => setEditSample({...editSample, isTestFinished: e.target.value === 'yes'})}
+                >
+                    <option value="no">{t('filterTestOngoing')}</option>
+                    <option value="yes">{t('filterTestFinished')}</option>
+                </select>
+              ) : (
+                sample.isTestFinished ? (
+                  <Badge color="green" >{t('filterTestFinished')}</Badge>
+                ) : (
+                  <Badge color="yellow">{t('filterTestOngoing')}</Badge>
+                )
+              )}
+             </div>
           </Card>
 
           <Card className="p-4 flex flex-col justify-center">
