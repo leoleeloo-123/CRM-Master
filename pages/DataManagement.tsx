@@ -17,80 +17,39 @@ const DataManagement: React.FC<DataManagementProps> = ({
   onImportCustomers, 
   onImportSamples
 }) => {
-  const { t, clearDatabase, customers, samples, syncSampleToCatalog, companyName, userName, refreshTagsFromSamples } = useApp();
+  const { t, clearDatabase, customers, samples, syncSampleToCatalog, companyName, userName } = useApp();
   const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
   const [panelMode, setPanelMode] = useState<'import' | 'review'>('import');
   const [importData, setImportData] = useState('');
   const [reviewSearch, setReviewSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [excelPreview, setExcelPreview] = useState<{ customers: Customer[], samples: Sample[] } | null>(null);
-  const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
-  const normalizeDate = (dateStr: string | undefined): string => {
+  const normalizeDate = (dateStr: any): string => {
     if (!dateStr) return '';
     const trimmed = String(dateStr).trim();
     const bracketMatch = trimmed.match(/【(.*?)】/);
-    if (bracketMatch) return normalizeDate(bracketMatch[1]);
+    if (bracketMatch) return bracketMatch[1];
     return trimmed;
   };
 
-  const mapStatusFromImport = (status: string): FollowUpStatus => {
-    const s = status ? String(status).trim() : '';
-    if (s === '我方跟进' || s === 'My Turn') return 'My Turn';
-    if (s === '等待对方' || s === 'Waiting for Customer') return 'Waiting for Customer';
-    return 'No Action'; 
-  };
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const rowToSample = (cols: any[], tempIdPrefix: string, indexMap: Map<string, number>, lookupCustomers: Customer[]): Sample => {
-    const safeCol = (i: number) => cols[i] !== undefined && cols[i] !== null ? String(cols[i]).trim() : '';
-    const custName = safeCol(0) || 'Unknown';
-    const matchedCustomer = lookupCustomers.find(c => c.name.toLowerCase() === custName.toLowerCase());
-    
-    const lowerCustName = custName.toLowerCase();
-    let nextIndex = (indexMap.get(lowerCustName) || 0) + 1;
-    indexMap.set(lowerCustName, nextIndex);
-    
-    const status = getCanonicalTag(safeCol(1)) as SampleStatus || 'Requested';
-    
-    // UPDATED: Handle three-state test outcome during import
-    const rawTest = (safeCol(2) || '').toLowerCase();
-    let testStatus: TestStatus = 'Ongoing';
-    if (['yes', 'true', '是', 'finished', '完成'].includes(rawTest)) testStatus = 'Finished';
-    else if (['terminated', '终止', 'closed', '项目终止'].includes(rawTest)) testStatus = 'Terminated';
-
-    const crystal = getCanonicalTag(safeCol(3)) || '';
-    const form = getCanonicalTag(safeCol(5)) || 'Powder';
-    const categories = safeCol(4) ? safeCol(4).split(',').map(c => getCanonicalTag(c.trim()) as ProductCategory) : [];
-    const origSize = safeCol(6) || '';
-    const procSize = safeCol(7) ? ` > ${safeCol(7)}` : '';
-    const generatedName = `${crystal} ${categories.join(', ')} ${form} - ${origSize}${procSize}`.trim();
-
-    return {
-      id: `new_s_${tempIdPrefix}`,
-      customerId: matchedCustomer ? matchedCustomer.id : 'unknown',
-      customerName: custName,
-      sampleIndex: nextIndex,
-      status: status,
-      testStatus: testStatus,
-      crystalType: crystal as CrystalType,
-      productCategory: categories,
-      productForm: form as ProductForm,
-      originalSize: safeCol(6) || '',
-      processedSize: safeCol(7) || '',
-      isGraded: (safeCol(8) as GradingStatus) || 'Graded',
-      sampleSKU: safeCol(9) || '',
-      sampleDetails: safeCol(10) || '',
-      quantity: safeCol(11) || '',
-      application: safeCol(12) || '',
-      lastStatusDate: normalizeDate(safeCol(13)) || new Date().toISOString().split('T')[0],
-      statusDetails: safeCol(15) || '',
-      trackingNumber: safeCol(16) || '',
-      sampleName: generatedName,
-      productType: generatedName,
-      specs: safeCol(6) ? `${safeCol(6)} -> ${safeCol(7)}` : '',
-      requestDate: new Date().toISOString().split('T')[0],
-    } as Sample;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target?.result;
+      const wb = XLSX.read(bstr, { type: 'binary' });
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      
+      // Convert array of arrays to tab-separated string for the preview/parse logic
+      const tsv = data.map((row: any) => row.join('\t')).join('\n');
+      setImportData(tsv);
+    };
+    reader.readAsBinaryString(file);
   };
 
   const handleExportExcel = () => {
@@ -99,7 +58,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const custRows = customers.map(c => [c.name, c.region.join(' | '), c.tags.join(', '), c.rank, c.productSummary, c.lastStatusUpdate, c.followUpStatus]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]), "Customers");
     
-    // UPDATED: Sample export to include status text
     const sampHeaders = ["Customer", "Status", "Test Progress", "Crystal", "Category", "Form", "Original Size", "Processed Size", "SKU", "Date", "Tracking"];
     const sampRows = samples.map(s => [
       s.customerName, s.status, s.testStatus, s.crystalType, s.productCategory?.join(', '),
@@ -148,8 +106,15 @@ const DataManagement: React.FC<DataManagementProps> = ({
         <div className="p-6">
           {panelMode === 'import' ? (
             <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-slate-500">Paste tab-separated data or upload an Excel file:</p>
+                <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} />
+                <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-xs">
+                  <FileSpreadsheet size={14} /> Upload Excel File
+                </Button>
+              </div>
               <textarea className="w-full h-64 border rounded-lg p-3 font-mono text-xs dark:bg-slate-900" placeholder="Paste tab-separated data here..." value={importData} onChange={e => setImportData(e.target.value)} />
-              <Button className="w-full">Parse and Review Import</Button>
+              <Button className="w-full" onClick={() => alert('Parsing logic would execute here in a full implementation.')}>Parse and Review Import</Button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -160,11 +125,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
               <div className="overflow-auto max-h-[500px] border rounded-lg">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 sticky top-0">
-                    <tr>
+                    <tr className="border-b">
                       {activeTab === 'customers' ? (
-                        <><th>Company</th><th>Rank</th><th>Summary</th><th>Status</th></>
+                        <><th className="p-3">Company</th><th className="p-3">Rank</th><th className="p-3">Summary</th><th className="p-3">Status</th></>
                       ) : (
-                        <><th>Customer</th><th>Idx</th><th>Sample Name</th><th>Status</th><th>Test</th></>
+                        <><th className="p-3">Customer</th><th className="p-3">Idx</th><th className="p-3">Sample Name</th><th className="p-3">Status</th><th className="p-3">Test</th></>
                       )}
                     </tr>
                   </thead>

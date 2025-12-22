@@ -4,7 +4,6 @@ import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductFo
 import { Card, Badge, Button, Modal } from '../components/Common';
 import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-// Use native Date instead of parseISO to avoid missing export error
 import { format, differenceInDays, isValid } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,8 +25,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   
   const [filterCustomer, setFilterCustomer] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
-  
-  // 'ongoing' shows 'Ongoing', 'finished' shows 'Finished' & 'Terminated'
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
   const [filterCrystalType, setFilterCrystalType] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
@@ -53,7 +50,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                           (s.originalSize || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.processedSize || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    // UPDATED: Filtering logic to handle 'Terminated' as an archived state
     let matchesTest = true;
     if (filterTestFinished === 'finished') {
        matchesTest = s.testStatus === 'Finished' || s.testStatus === 'Terminated';
@@ -161,7 +157,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   };
 
   const renderDaysSinceUpdate = (dateStr: string) => {
-    // Replaced parseISO with native Date constructor
     if (!dateStr || !isValid(new Date(dateStr))) return <span className="text-slate-400">-</span>;
     const diff = differenceInDays(new Date(), new Date(dateStr));
     let colorClass = diff <= 7 ? "text-emerald-600 font-bold" : diff <= 30 ? "text-amber-500 font-bold" : "text-red-500 font-bold";
@@ -455,7 +450,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                        ) : s.testStatus === 'Terminated' ? (
                           <Badge color="red">{t('projectTerminated')}</Badge>
                        ) : (
-                          <Badge color="green">Yes</Badge>
+                          <Badge color="green">{t('filterTestFinished')}</Badge>
                        )}
                      </td>
                    </tr>
