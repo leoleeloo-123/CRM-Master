@@ -54,10 +54,6 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     return s;
   };
 
-  const handleRankUpdate = (id: string, newRank: Rank) => {
-    setCustomers(prev => prev.map(c => c.id === id ? { ...c, rank: newRank } : c));
-  };
-
   const handleCreateCustomer = () => {
     if (!newCustomer.name) {
       alert('Customer Name is required');
@@ -168,13 +164,11 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                     </div>
                   </td>
                   <td className="p-4 xl:p-6 align-top">
-                    <div onClick={(e) => e.stopPropagation()}>
-                       <RankStars 
-                         rank={customer.rank} 
-                         editable={true} 
-                         onRankChange={(newRank) => handleRankUpdate(customer.id, newRank)} 
-                       />
-                    </div>
+                    {/* Disallow direct editing in list to prevent misclicks */}
+                    <RankStars 
+                      rank={customer.rank} 
+                      editable={false} 
+                    />
                   </td>
                   <td className="p-4 xl:p-6 align-top">
                     <div className="flex items-center gap-2">
