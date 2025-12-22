@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Customer, Sample, FollowUpStatus, Interaction, Contact } from '../types';
+import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel } from '../components/Common';
 import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, ExternalLink, Link as LinkIcon, Save, X, Trash2, Tag, List } from 'lucide-react';
 import { format } from 'date-fns';
@@ -19,6 +19,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const { t } = useApp();
   const [activeTab, setActiveTab] = useState<'overview' | 'samples'>('overview');
   
+  // Rank Edit State
+  const [isEditingRank, setIsEditingRank] = useState(false);
+
   // Product Summary Edit State
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editSummaryText, setEditSummaryText] = useState('');
@@ -53,6 +56,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   if (!customer) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Customer not found. <Button onClick={() => navigate('/customers')}>{t('back')}</Button></div>;
   }
+
+  // --- Rank Handler ---
+  const handleRankChange = (newRank: Rank) => {
+    onUpdateCustomer({ ...customer, rank: newRank });
+    setIsEditingRank(false);
+  };
 
   // --- Contacts Handlers ---
   const startEditContacts = () => {
@@ -293,7 +302,30 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          <div className="flex-1">
            <div className="flex items-center gap-3 xl:gap-5">
              <h1 className="text-3xl xl:text-5xl font-bold text-slate-900 dark:text-white">{customer.name}</h1>
-             <RankStars rank={customer.rank} />
+             <div className="flex items-center gap-2 group">
+               <RankStars 
+                 rank={customer.rank} 
+                 editable={isEditingRank} 
+                 onRankChange={handleRankChange} 
+               />
+               {!isEditingRank ? (
+                 <button 
+                   onClick={() => setIsEditingRank(true)} 
+                   className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-blue-500 transition-opacity"
+                   title="Edit Rank"
+                 >
+                   <Edit size={16} />
+                 </button>
+               ) : (
+                 <button 
+                   onClick={() => setIsEditingRank(false)} 
+                   className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                   title="Cancel Edit"
+                 >
+                   <X size={16} />
+                 </button>
+               )}
+             </div>
            </div>
            <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-2 text-sm xl:text-lg">
              <MapPin className={iconClass} /> {regions} 

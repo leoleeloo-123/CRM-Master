@@ -27,14 +27,21 @@ export const Badge: React.FC<{ children: React.ReactNode; color?: 'blue' | 'gree
 };
 
 // Rank 1 is HIGHEST priority (5 filled stars). Rank 5 is LOWEST (1 filled star).
-export const RankStars: React.FC<{ rank: Rank }> = ({ rank }) => {
+export const RankStars: React.FC<{ rank: Rank; onRankChange?: (newRank: Rank) => void; editable?: boolean }> = ({ rank, onRankChange, editable }) => {
   const filledCount = 6 - rank; 
   return (
-    <div className="flex gap-0.5" title={`Rank ${rank} - ${rank === 1 ? 'Highest' : 'Lowest'} Importance`}>
+    <div className={`flex gap-0.5 ${editable ? 'cursor-pointer' : ''}`} title={`Rank ${rank} - ${rank === 1 ? 'Highest' : 'Lowest'} Importance`}>
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
-          className={`${i < filledCount ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'} w-[14px] h-[14px] xl:w-[18px] xl:h-[18px]`}
+          onClick={(e) => {
+            if (editable && onRankChange) {
+              e.stopPropagation();
+              const newRank = (6 - (i + 1)) as Rank;
+              onRankChange(newRank);
+            }
+          }}
+          className={`${i < filledCount ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'} w-[14px] h-[14px] xl:w-[18px] xl:h-[18px] ${editable ? 'hover:scale-125 transition-transform' : ''}`}
         />
       ))}
     </div>
