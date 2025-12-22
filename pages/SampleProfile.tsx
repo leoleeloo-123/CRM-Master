@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Edit, Plus, Trash2, CalendarDays, ExternalLink, Activity } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Edit, Plus, Trash2, CalendarDays, ExternalLink, Activity, Target } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
 
@@ -15,10 +15,17 @@ const SampleProfile: React.FC = () => {
   const sample = samples.find(s => s.id === id);
   const customer = customers.find(c => c.id === sample?.customerId);
 
-  // Editable State
+  // Editable State for Specs
   const [isEditingSpecs, setIsEditingSpecs] = useState(false);
   const [editSample, setEditSample] = useState<Partial<Sample>>({});
   
+  // Editable State for Status & Progress
+  const [isEditingStatus, setIsEditingStatus] = useState(false);
+  
+  // Editable State for Application
+  const [isEditingApp, setIsEditingApp] = useState(false);
+  const [editAppText, setEditAppText] = useState('');
+
   // Status History State
   const [historyItems, setHistoryItems] = useState<{id: string, date: string, text: string}[]>([]);
   const [isAddingHistory, setIsAddingHistory] = useState(false);
@@ -29,6 +36,7 @@ const SampleProfile: React.FC = () => {
   useEffect(() => {
     if (sample) {
       setEditSample(sample);
+      setEditAppText(sample.application || '');
       parseHistory(sample.statusDetails);
     }
   }, [sample]);
@@ -40,7 +48,6 @@ const SampleProfile: React.FC = () => {
     }
     const parts = detailsStr.split('|||').map(s => s.trim()).filter(s => s);
     const items = parts.map((part, idx) => {
-      // Regex to extract date 【YYYY-MM-DD】
       const match = part.match(/【(.*?)】(.*)/);
       if (match) {
         return {
@@ -51,7 +58,7 @@ const SampleProfile: React.FC = () => {
       } else {
         return {
           id: `hist_${idx}`,
-          date: format(new Date(), 'yyyy-MM-dd'), // Fallback if no date found
+          date: format(new Date(), 'yyyy-MM-dd'),
           text: part
         };
       }
@@ -66,10 +73,7 @@ const SampleProfile: React.FC = () => {
   const handleSaveSpecs = () => {
     if (!sample || !editSample) return;
     
-    // Auto-update sample name if components changed
     if (editSample.productCategory || editSample.crystalType || editSample.productForm) {
-       // Logic reused from AppContext/SampleTracker (Sync logic) could be called here or handled manually
-       // Simple reconstruction for now:
        const catStr = editSample.productCategory?.map(c => t(c as any)).join(', ') || '';
        const crystal = t((editSample.crystalType || '') as any);
        const form = t((editSample.productForm || '') as any);
@@ -80,13 +84,28 @@ const SampleProfile: React.FC = () => {
     }
 
     const updatedSample = { ...sample, ...editSample } as Sample;
+    setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
+    syncSampleToCatalog(updatedSample);
+    setIsEditingSpecs(false);
+  };
+
+  const handleSaveStatusProgress = () => {
+    if (!sample || !editSample) return;
+    const updatedSample = { 
+      ...sample, 
+      status: editSample.status || sample.status,
+      isTestFinished: editSample.isTestFinished ?? sample.isTestFinished,
+      lastStatusDate: format(new Date(), 'yyyy-MM-dd')
+    } as Sample;
     
     setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
-    
-    // Also sync to catalog if needed
-    syncSampleToCatalog(updatedSample);
-    
-    setIsEditingSpecs(false);
+    setIsEditingStatus(false);
+  };
+
+  const handleSaveApplication = () => {
+    if (!sample) return;
+    setSamples(prev => prev.map(s => s.id === id ? { ...s, application: editAppText } : s));
+    setIsEditingApp(false);
   };
 
   const handleSaveHistoryItem = (item: {id: string, date: string, text: string}) => {
@@ -106,7 +125,6 @@ const SampleProfile: React.FC = () => {
       text: newHistoryText
     };
     
-    // Add to top
     const updatedHistory = [newItem, ...historyItems];
     setHistoryItems(updatedHistory);
     const serialized = serializeHistory(updatedHistory);
@@ -132,7 +150,7 @@ const SampleProfile: React.FC = () => {
   const renderOption = (val: string) => t(val as any);
 
   return (
-    <div className="space-y-6 xl:space-y-8 animate-in fade-in">
+    <div className="space-y-6 xl:space-y-8 animate-in fade-in pb-10">
        {/* Header */}
        <div className="flex items-center gap-4">
          <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
@@ -152,24 +170,58 @@ const SampleProfile: React.FC = () => {
          </div>
        </div>
 
-       {/* Top Metrics */}
-       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-8 h-auto lg:h-32">
-          <Card className="p-4 border-l-4 border-l-blue-500 flex flex-col justify-center">
-             <span className="text-xs uppercase font-bold text-slate-400 mb-1">{t('currentStatus')}</span>
-             <div className="flex items-center gap-2">
-               <StatusIcon status={sample.status} />
-               <span className="text-xl font-bold">{renderOption(sample.status)}</span>
+       {/* Top Metrics Summary */}
+       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-8 h-auto">
+          <Card className={`p-4 border-l-4 border-l-blue-500 flex flex-col justify-center transition-all ${isEditingStatus ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+             <div className="flex justify-between items-center mb-1">
+               <span className="text-xs uppercase font-bold text-slate-400">{t('currentStatus')}</span>
+               {!isEditingStatus ? (
+                 <button onClick={() => setIsEditingStatus(true)} className="text-slate-400 hover:text-blue-500"><Edit size={14} /></button>
+               ) : (
+                 <div className="flex gap-2">
+                    <button onClick={handleSaveStatusProgress} className="text-emerald-600"><Save size={14} /></button>
+                    <button onClick={() => setIsEditingStatus(false)} className="text-red-500"><X size={14} /></button>
+                 </div>
+               )}
              </div>
-          </Card>
-          <DaysCounter date={sample.lastStatusDate} label={t('daysSinceUpdate')} type="elapsed" />
-          <Card className="p-4 flex flex-col justify-center items-center">
-             <span className="text-xs uppercase font-bold text-slate-400 mb-2">{t('testFinished')}</span>
-             {sample.isTestFinished ? (
-               <Badge color="green" >YES / COMPLETED</Badge>
+             {isEditingStatus ? (
+                <select 
+                  className="w-full border rounded p-1 text-sm bg-white dark:bg-slate-800 dark:border-slate-600"
+                  value={editSample.status}
+                  onChange={e => setEditSample({...editSample, status: e.target.value as SampleStatus})}
+                >
+                   {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{renderOption(s)}</option>)}
+                </select>
              ) : (
-               <Badge color="yellow">ONGOING</Badge>
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={sample.status} />
+                  <span className="text-xl font-bold">{renderOption(sample.status)}</span>
+                </div>
              )}
           </Card>
+
+          <DaysCounter date={sample.lastStatusDate} label={t('daysSinceUpdate')} type="elapsed" />
+
+          <Card className={`p-4 flex flex-col justify-center items-center transition-all ${isEditingStatus ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+             <span className="text-xs uppercase font-bold text-slate-400 mb-2">{t('testFinished')}</span>
+             {isEditingStatus ? (
+               <select 
+                  className="w-full border rounded p-1 text-sm bg-white dark:bg-slate-800 dark:border-slate-600"
+                  value={editSample.isTestFinished ? 'yes' : 'no'}
+                  onChange={e => setEditSample({...editSample, isTestFinished: e.target.value === 'yes'})}
+               >
+                  <option value="no">{t('filterTestOngoing')}</option>
+                  <option value="yes">{t('filterTestFinished')}</option>
+               </select>
+             ) : (
+               sample.isTestFinished ? (
+                 <Badge color="green" >{t('filterTestFinished')}</Badge>
+               ) : (
+                 <Badge color="yellow">{t('filterTestOngoing')}</Badge>
+               )
+             )}
+          </Card>
+
           <Card className="p-4 flex flex-col justify-center">
              <span className="text-xs uppercase font-bold text-slate-400 mb-1">{t('tracking')}</span>
              {sample.trackingNumber ? (
@@ -180,8 +232,8 @@ const SampleProfile: React.FC = () => {
           </Card>
        </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-10">
-          {/* Left Column: Specs */}
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-10 items-start">
+          {/* Left Column: Specs & Application */}
           <div className="space-y-6">
              <Card className="p-6 xl:p-8">
                 <div className="flex justify-between items-center mb-6 pb-2 border-b border-slate-100 dark:border-slate-700">
@@ -200,7 +252,6 @@ const SampleProfile: React.FC = () => {
                 
                 <div className="space-y-4">
                    {isEditingSpecs ? (
-                     // Edit Mode
                      <div className="space-y-3">
                         <div>
                            <label className="text-xs font-bold text-slate-500">Crystal</label>
@@ -236,13 +287,8 @@ const SampleProfile: React.FC = () => {
                            <label className="text-xs font-bold text-slate-500">Quantity</label>
                            <input className="w-full border rounded p-1.5 text-sm dark:bg-slate-900 dark:border-slate-600" value={editSample.quantity} onChange={e => setEditSample({...editSample, quantity: e.target.value})} />
                         </div>
-                         <div>
-                           <label className="text-xs font-bold text-slate-500">Application</label>
-                           <input className="w-full border rounded p-1.5 text-sm dark:bg-slate-900 dark:border-slate-600" value={editSample.application} onChange={e => setEditSample({...editSample, application: e.target.value})} />
-                        </div>
                      </div>
                    ) : (
-                     // View Mode
                      <>
                         <div className="flex justify-between">
                            <span className="text-slate-500 text-sm">{t('crystal')}</span>
@@ -268,19 +314,44 @@ const SampleProfile: React.FC = () => {
                            <span className="text-slate-500 text-sm">{t('quantity')}</span>
                            <span className="font-bold text-slate-800 dark:text-white">{sample.quantity || '-'}</span>
                         </div>
-                         <div className="flex justify-between">
-                           <span className="text-slate-500 text-sm">{t('application')}</span>
-                           <span className="font-medium text-slate-800 dark:text-white text-right max-w-[150px]">{sample.application || '-'}</span>
-                        </div>
                      </>
                    )}
                 </div>
              </Card>
+
+             {/* Dedicated Application Card */}
+             <Card className={`p-6 xl:p-8 transition-all ${isEditingApp ? 'ring-2 ring-blue-500' : ''}`}>
+                <div className="flex justify-between items-center mb-4">
+                   <h3 className="font-bold text-lg flex items-center gap-2">
+                     <Target className="w-5 h-5 text-emerald-500" /> {t('application')}
+                   </h3>
+                   {!isEditingApp ? (
+                      <button onClick={() => setIsEditingApp(true)} className="text-slate-400 hover:text-blue-500 transition-colors"><Edit size={16} /></button>
+                   ) : (
+                      <div className="flex gap-2">
+                        <button onClick={handleSaveApplication} className="text-emerald-600"><Save size={18} /></button>
+                        <button onClick={() => setIsEditingApp(false)} className="text-red-500"><X size={18} /></button>
+                      </div>
+                   )}
+                </div>
+                {isEditingApp ? (
+                   <textarea 
+                     className="w-full border rounded-lg p-3 text-sm xl:text-base dark:bg-slate-900 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[100px]"
+                     value={editAppText}
+                     onChange={(e) => setEditAppText(e.target.value)}
+                     placeholder="Enter application details..."
+                   />
+                ) : (
+                   <p className="text-slate-700 dark:text-slate-200 text-sm xl:text-lg leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-100 dark:border-slate-800 italic">
+                      {sample.application || t('noApplicationProvided')}
+                   </p>
+                )}
+             </Card>
           </div>
 
           {/* Right Column: Status History */}
-          <div className="lg:col-span-2">
-             <Card className="p-6 xl:p-8 min-h-[500px]">
+          <div className="lg:col-span-2 h-full">
+             <Card className="p-6 xl:p-8 h-fit">
                 <div className="flex justify-between items-center mb-6 pb-2 border-b border-slate-100 dark:border-slate-700">
                    <h3 className="font-bold text-lg flex items-center gap-2">
                      <Activity className="w-5 h-5 text-amber-500" /> {t('statusHistory')}
@@ -314,7 +385,6 @@ const SampleProfile: React.FC = () => {
                 <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 space-y-8 pl-8 py-2">
                    {historyItems.map((item, index) => (
                      <div key={item.id} className="relative group">
-                        {/* Dot */}
                         <div className="absolute -left-[39px] top-1.5 w-4 h-4 rounded-full bg-white dark:bg-slate-900 border-2 border-slate-400 group-hover:border-blue-500 transition-colors"></div>
                         
                         {editingHistoryId === item.id ? (
@@ -341,7 +411,7 @@ const SampleProfile: React.FC = () => {
                                     <button onClick={() => handleDeleteHistory(item.id)} className="text-slate-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                                  </div>
                               </div>
-                              <p className="text-slate-800 dark:text-white text-base">{item.text}</p>
+                              <p className="text-slate-800 dark:text-white text-base leading-relaxed">{item.text}</p>
                            </div>
                         )}
                      </div>
