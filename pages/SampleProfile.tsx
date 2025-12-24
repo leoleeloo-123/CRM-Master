@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal, getUrgencyLevel } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
 
@@ -22,11 +22,13 @@ const SampleProfile: React.FC = () => {
   const [isEditingApp, setIsEditingApp] = useState(false);
   const [isEditingTracking, setIsEditingTracking] = useState(false);
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
+  const [isEditingSKU, setIsEditingSKU] = useState(false);
   const [isEditingPlan, setIsEditingPlan] = useState(false);
   
   const [editAppText, setEditAppText] = useState('');
   const [editTrackingText, setEditTrackingText] = useState('');
   const [editQuantityText, setEditQuantityText] = useState('');
+  const [editSKUText, setEditSKUText] = useState('');
   const [editCategoryText, setEditCategoryText] = useState('');
   const [editPlanText, setEditPlanText] = useState('');
   const [editPlanDate, setEditPlanDate] = useState('');
@@ -43,6 +45,7 @@ const SampleProfile: React.FC = () => {
       setEditAppText(sample.application || '');
       setEditTrackingText(sample.trackingNumber || '');
       setEditQuantityText(sample.quantity || '');
+      setEditSKUText(sample.sampleSKU || '');
       setEditCategoryText(sample.productCategory?.join(', ') || '');
       setEditPlanText(sample.upcomingPlan || '');
       setEditPlanDate(sample.nextActionDate || format(new Date(), 'yyyy-MM-dd'));
@@ -112,6 +115,11 @@ const SampleProfile: React.FC = () => {
     setIsEditingQuantity(false);
   };
 
+  const handleSaveSKU = () => {
+    saveSampleUpdate({ sampleSKU: editSKUText });
+    setIsEditingSKU(false);
+  };
+
   const handleSavePlan = () => {
     saveSampleUpdate({ upcomingPlan: editPlanText, nextActionDate: editPlanDate });
     setIsEditingPlan(false);
@@ -158,13 +166,16 @@ const SampleProfile: React.FC = () => {
            <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
          </button>
          <div>
+            <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">{sample.sampleName}</h1>
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{sample.sampleName}</h1>
-              <Badge color="blue">{sample.sampleSKU || 'NO SKU'}</Badge>
+               <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">Customer</span>
+               <div 
+                  onClick={() => navigate(`/customers/${sample.customerId}`)}
+                  className="px-6 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-black text-sm xl:text-lg cursor-pointer hover:bg-blue-100 transition-all border border-blue-100 dark:border-blue-800 shadow-sm"
+                >
+                  {sample.customerName}
+                </div>
             </div>
-            <p className="text-slate-400 font-black uppercase text-[10px] xl:text-xs tracking-widest mt-3">
-               CUSTOMER: <span className="text-blue-600 cursor-pointer hover:underline transition-all" onClick={() => navigate(`/customers/${sample.customerId}`)}>{sample.customerName}</span>
-            </p>
          </div>
        </div>
 
@@ -235,7 +246,7 @@ const SampleProfile: React.FC = () => {
 
        {/* Main Grid Content */}
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
-          {/* Left Column: Specs & Quantity */}
+          {/* Left Column: Specs & Quantity & SKU */}
           <div className="space-y-8">
              <Card className={cardBaseClass}>
                 <div className="flex justify-between items-center mb-10">
@@ -305,6 +316,23 @@ const SampleProfile: React.FC = () => {
                 ) : (
                    <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 text-center shadow-inner group">
                       <span className="text-xl xl:text-3xl font-black text-slate-900 dark:text-white tracking-tight">{sample.quantity || '未定'}</span>
+                   </div>
+                )}
+             </Card>
+
+             <Card className={cardBaseClass}>
+                <div className="flex justify-between items-center mb-8">
+                   <h3 className={titleClass}><ClipboardList className="w-6 h-6 text-slate-600" /> SKU</h3>
+                   <button onClick={() => setIsEditingSKU(!isEditingSKU)} className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-sm active:scale-90"><PencilLine size={20}/></button>
+                </div>
+                {isEditingSKU ? (
+                   <div className="space-y-4">
+                      <input className="w-full p-4 border-2 border-slate-100 rounded-2xl text-lg font-mono font-bold dark:bg-slate-800" value={editSKUText} onChange={e => setEditSKUText(e.target.value)} autoFocus />
+                      <Button onClick={handleSaveSKU} className="w-full">Update SKU</Button>
+                   </div>
+                ) : (
+                   <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 text-center shadow-inner group">
+                      <span className="text-sm xl:text-base font-black text-slate-600 dark:text-slate-400 font-mono tracking-wider">{sample.sampleSKU || 'NO SKU'}</span>
                    </div>
                 )}
              </Card>

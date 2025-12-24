@@ -186,8 +186,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                     </div>
                     <p className="text-sm xl:text-base font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight mb-4">{contact.title || 'Position unknown'}</p>
                     <div className="text-sm xl:text-base space-y-2 text-slate-500 font-bold tracking-tight">
-                       {contact.email && <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Mail className="w-4 h-4"/> {contact.email}</div>}
-                       {contact.phone && <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Phone className="w-4 h-4"/> {contact.phone}</div>}
+                       {contact.email && <div className="flex items-start gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100 break-all"><Mail className="w-4 h-4 mt-1 shrink-0"/> {contact.email}</div>}
+                       {contact.phone && <div className="flex items-start gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100 break-all"><Phone className="w-4 h-4 mt-1 shrink-0"/> {contact.phone}</div>}
                     </div>
                  </div>
                ))}
