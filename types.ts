@@ -112,6 +112,10 @@ export interface Sample {
   sentDate?: string;
   feedback?: string;
   feedbackDate?: string;
+
+  // Sync with Customer features
+  upcomingPlan?: string;
+  nextActionDate?: string;
 }
 
 export interface DashboardStats {
