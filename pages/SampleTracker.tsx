@@ -163,32 +163,45 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      <th className="p-4">{t('grading')}</th>
                      <th className="p-4">{t('qtyAbbr')}</th>
                      <th className="p-4">Status</th>
+                     <th className="p-4">Next Step</th>
+                     <th className="p-4">Key Date</th>
                      <th className="p-4 text-center">Aging</th>
                      <th className="p-4">Test</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredSamples.map(s => (
-                    <tr key={s.id} onClick={() => navigate(`/samples/${s.id}`)} className={`cursor-pointer hover:bg-slate-100/50 border-l-4 transition-colors ${getUrgencyColor(s.lastStatusDate)}`}>
-                      <td className="p-4 font-bold text-slate-900 dark:text-white">{s.customerName}</td>
-                      <td className="p-4">
-                         <div className="font-bold text-blue-600 dark:text-blue-400">{s.sampleName}</div>
-                         <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
-                      </td>
-                      <td className="p-4">
-                        {getGradingBadge(s.isGraded)}
-                      </td>
-                      <td className="p-4 font-bold text-slate-700 dark:text-slate-300">{s.quantity}</td>
-                      <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
-                      <td className="p-4 text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
-                      <td className="p-4">
-                         {getTestStatusBadge(s.testStatus)}
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredSamples.map(s => {
+                    const isTestFinished = s.testStatus === 'Finished' || s.testStatus === 'Terminated';
+                    return (
+                      <tr key={s.id} onClick={() => navigate(`/samples/${s.id}`)} className={`cursor-pointer hover:bg-slate-100/50 border-l-4 transition-colors ${getUrgencyColor(s.lastStatusDate)}`}>
+                        <td className="p-4 font-bold text-slate-900 dark:text-white">{s.customerName}</td>
+                        <td className="p-4">
+                           <div className="font-bold text-blue-600 dark:text-blue-400">{s.sampleName}</div>
+                           <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
+                        </td>
+                        <td className="p-4">
+                          {getGradingBadge(s.isGraded)}
+                        </td>
+                        <td className="p-4 font-bold text-slate-700 dark:text-slate-300">{s.quantity}</td>
+                        <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
+                        <td className="p-4 max-w-[200px]">
+                           <div className="truncate text-xs text-slate-600 dark:text-slate-300 italic" title={s.upcomingPlan}>
+                             {isTestFinished ? <span className="text-slate-400">N/A</span> : (s.upcomingPlan || '-')}
+                           </div>
+                        </td>
+                        <td className="p-4 whitespace-nowrap text-xs font-bold text-slate-600 dark:text-slate-400">
+                           {isTestFinished ? 'N/A' : (s.nextActionDate || '-')}
+                        </td>
+                        <td className="p-4 text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
+                        <td className="p-4">
+                           {getTestStatusBadge(s.testStatus)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {filteredSamples.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
+                      <td colSpan={9} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
                     </tr>
                   )}
                 </tbody>
