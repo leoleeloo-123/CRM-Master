@@ -154,7 +154,7 @@ const SampleProfile: React.FC = () => {
          </button>
          <div>
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none uppercase">{sample.sampleName}</h1>
+              <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{sample.sampleName}</h1>
               <Badge color="blue">{sample.sampleSKU || 'NO SKU'}</Badge>
             </div>
             <p className="text-slate-400 font-black uppercase text-[10px] xl:text-xs tracking-widest mt-3">
