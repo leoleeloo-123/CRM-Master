@@ -100,9 +100,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const name = safeCol(0) || 'Unknown';
     const regions = splitByDelimiter(safeCol(1));
     const finalRegions = regions.length > 0 ? regions : ['Unknown'];
-    const rawTags = splitByDelimiter(safeCol(2));
-    // Support cleaning up legacy numbers during import
-    const cleanTags = rawTags.map(t => t.replace(/^\d+[\.\、\s]*\s*/, ''));
+    const cleanTags = splitByDelimiter(safeCol(2)); // Respect user's original tag format
+    
     const rank = (parseInt(safeCol(4)) || 3) as Rank;
     const productSummary = (safeCol(5) || '').replace(/\|\|\|/g, '\n');
     const lastStatusUpdate = normalizeDate(safeCol(6));
@@ -118,8 +117,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const contacts = contactNames.map((cName, i) => {
        const info = contactInfos[i] || '';
        const isEmail = info.includes('@');
-       // Clean up leading numbers if they exist (legacy support)
-       let cleanName = cName.replace(/^\d+[\.\s]*\s*/, '');
+       
+       let cleanName = cName.trim();
        let isPrimary = false;
        if (cleanName.includes('【主要联系人】')) {
            isPrimary = true;
@@ -173,7 +172,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       lastStatusUpdate: lastStatusUpdate,
       followUpStatus: followUpStatus,
       nextActionDate: nextActionDate,
-      upcomingPlan: upcomingPlan, // Correctly map "下一步" to this field
+      upcomingPlan: upcomingPlan, 
       lastCustomerReplyDate: lastCustomerReplyDate,
       lastMyReplyDate: lastMyReplyDate,
       lastContactDate: lastMyReplyDate,
@@ -188,17 +187,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const safeCol = (i: number) => cols[i] !== undefined && cols[i] !== null ? String(cols[i]).trim() : '';
 
     const custName = safeCol(0) || 'Unknown';
-    // Link to customer: Prefer the one in lookupCustomers (which might include newly parsed ones)
     const matchedCustomer = lookupCustomers.find(c => c.name.toLowerCase() === custName.toLowerCase());
     
-    // Auto-generate Index
     const lowerCustName = custName.toLowerCase();
     let nextIndex = (indexMap.get(lowerCustName) || 0) + 1;
     indexMap.set(lowerCustName, nextIndex);
     
     const statusDetails = safeCol(15) || '';
 
-    // Normalize Tags using getCanonicalTag
     const status = getCanonicalTag(safeCol(1)) as SampleStatus || 'Requested';
     const crystal = getCanonicalTag(safeCol(3)) || '';
     const form = getCanonicalTag(safeCol(5)) || 'Powder';
@@ -206,13 +202,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
     
     const categoryStr = categories.join(', ');
 
-    // Auto-generate sampleName logic: [Crystal] [Category] [Form] - [Orig] > [Proc]
     const origSize = safeCol(6) || '';
     const procSize = safeCol(7) ? ` > ${safeCol(7)}` : '';
     
     const generatedName = `${crystal} ${categoryStr} ${form} - ${origSize}${procSize}`.trim();
     
-    // Unified Test Status Logic: Connects "No", "Yes", "Terminated" from Excel
     const testFinishedColVal = (safeCol(2) || '').trim();
     let testStatus: TestStatus = 'Ongoing';
     const canonicalTestStatus = getCanonicalTag(testFinishedColVal);
@@ -222,7 +216,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
     } else if (canonicalTestStatus === 'Terminated') {
       testStatus = 'Terminated';
     } else {
-      testStatus = 'Ongoing'; // Default for "No" or empty
+      testStatus = 'Ongoing'; 
     }
 
     return {
@@ -245,25 +239,19 @@ const DataManagement: React.FC<DataManagementProps> = ({
       quantity: safeCol(11) || '',
       application: safeCol(12) || '',
       lastStatusDate: normalizeDate(safeCol(13)) || new Date().toISOString().split('T')[0],
-      // Col 14 is Days Since (Ignored)
       statusDetails: statusDetails,
       trackingNumber: safeCol(16) || '',
       
       sampleName: generatedName,
-      
-      // Legacy/Mapping
       productType: generatedName,
       specs: safeCol(6) ? `${safeCol(6)} -> ${safeCol(7)}` : '',
       requestDate: new Date().toISOString().split('T')[0],
     } as Sample;
   };
 
-  // --- EXPORT ---
-
   const handleExportExcel = () => {
     const wb = XLSX.utils.book_new();
 
-    // 1. Customer Sheet
     const custHeaders = [
       "客户", "地区", "展会", "展会官网", "等级", "状态与产品总结", "状态更新", "未更新", 
       "对接人员", "状态", "下一步", "关键日期", "DDL", "对接流程总结", "对方回复", 
@@ -271,12 +259,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
     ];
     
     const custRows = customers.map(c => {
-      // FIX: Stop adding auto-numbers to tags in export to prevent duplication on re-import
       const tags = c.tags.join(' ||| ');
       const regions = Array.isArray(c.region) ? c.region.join(' ||| ') : c.region;
       
-      const contactNames = c.contacts.map((contact, i) => {
-        // FIX: Stop adding auto-numbers to contact names in export to prevent duplication on re-import
+      const contactNames = c.contacts.map((contact) => {
         let str = contact.name;
         if (contact.title) str += ` (${contact.title})`;
         if (contact.isPrimary) str += ` 【主要联系人】`;
@@ -300,7 +286,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const custSheet = XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]);
     XLSX.utils.book_append_sheet(wb, custSheet, "Customers");
 
-    // 2. Sample Sheet
     const sampHeaders = [
       "1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", 
       "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", 
@@ -361,9 +346,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
     XLSX.writeFile(wb, fileName);
   };
 
-
-  // --- IMPORT ---
-
   const clearPreview = () => {
     setParsedPreview(null);
     setExcelPreview(null);
@@ -380,7 +362,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
     try {
       const rows = importData.trim().split('\n').filter(r => r.trim() !== '');
-      const parsed = rows.map((row, i) => {
+      const parsed = rows.map((row) => {
         const cols = row.split('\t').map(c => c.trim());
         const tempId = Math.random().toString(36).substr(2, 9);
 

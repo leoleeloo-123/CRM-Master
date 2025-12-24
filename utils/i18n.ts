@@ -120,7 +120,7 @@ export const translations = {
     '多晶': 'Polycrystalline',
     '微粉': 'Powder',
     '悬浮液': 'Suspension',
-    '聚晶': 'Agglomerated Diamond',
+    '团聚': 'Agglomerated Diamond',
     '纳米金刚石': 'Nano Diamond',
     '球形金刚石': 'Spherical Diamond',
     '金刚石球': 'Diamond Ball',
@@ -323,7 +323,7 @@ export const translations = {
     '多晶': '多晶',
     '微粉': '微粉',
     '悬浮液': '悬浮液',
-    '聚晶': '团聚',
+    '团聚': '团聚',
     '纳米金刚石': '纳米金刚石',
     '球形金刚石': '球形金刚石',
     '金刚石球': '金刚石球',
@@ -422,14 +422,16 @@ const ALIASES: Record<string, string> = {
   'Suspension': '悬浮液',
   
   // Categories
-  'Agglomerated Diamond': '聚晶',
-  'Agglomerated': '聚晶',
-  '团聚': '聚晶',
+  'Agglomerated Diamond': '团聚',
+  'Agglomerated': '团聚',
+  '聚晶': '团聚',
+  '团聚': '团聚',
+  '纳米金刚石': '纳米金刚石',
   'Nano Diamond': '纳米金刚石',
   'Nano': '纳米金刚石',
-  'Spherical Diamond': '球形金刚石',
-  'Diamond Ball': '金刚石球',
-  'Micron': '微米粉',
+  '球形金刚石': '球形金刚石',
+  '金刚石球': '金刚石球',
+  '微米粉': '微米粉',
 
   // Statuses
   'Requested': '已申请',
@@ -455,16 +457,12 @@ const ALIASES: Record<string, string> = {
 
 /**
  * Normalizes a term (tag) to its canonical CHINESE key.
- * 1. Checks if it is already a valid System Key (present in translations.en keys).
- * 2. Checks ALIASES to convert English/Variant -> Chinese Key.
- * 3. Checks if it is a Translation Value in current language? (Less strict, prioritize aliases).
  */
 export const getCanonicalTag = (term: string): string => {
   if (!term) return '';
   const trimmed = term.trim();
   
-  // 1. Is it already a System Key? (We check translations.en keys, which now contains Chinese keys)
-  // We use 'en' here just as a reference to the Master Key List.
+  // 1. Is it already a System Key?
   if (translations.en[trimmed as keyof typeof translations.en]) {
       return trimmed;
   }
@@ -474,8 +472,7 @@ export const getCanonicalTag = (term: string): string => {
       return ALIASES[trimmed];
   }
 
-  // 3. Check if it matches a known value (reverse lookup from EN translation?)
-  // If user passes 'Single Crystal', finding it in EN values returns '单晶' key.
+  // 3. Check if it matches a known value
   const enEntry = Object.entries(translations.en).find(([key, val]) => val === trimmed);
   if (enEntry) return enEntry[0];
 

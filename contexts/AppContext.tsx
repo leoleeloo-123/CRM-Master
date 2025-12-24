@@ -42,7 +42,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const DEFAULT_TAGS: TagOptions = {
   sampleStatus: ['已申请', '处理中', '已寄出', '已送达', '测试中', '已反馈', '已关闭'],
   crystalType: ['单晶', '多晶'],
-  productCategory: ['聚晶', '纳米金刚石', '球形金刚石', '金刚石球', '微米粉', 'CVD'],
+  productCategory: ['团聚', '纳米金刚石', '球形金刚石', '金刚石球', '微米粉', 'CVD'],
   productForm: ['微粉', '悬浮液']
 };
 
@@ -169,8 +169,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshTagsFromSamples = (sampleList: Sample[], replace: boolean = false) => {
     setTagOptionsState(prev => {
-      // If replace is true, start with empty lists to override existing ones
-      // If replace is false (merge), perform a shallow copy of arrays to append to them
       const newTags = replace ? {
           sampleStatus: [],
           crystalType: [],
@@ -233,8 +231,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSamplesState([]);
     setMasterProducts([]);
     setIsDemoData(false);
-    setTagOptionsState(DEFAULT_TAGS); // Reset tags to default
-    // Note: We deliberately do NOT clear companyName or userName here.
+    setTagOptionsState(DEFAULT_TAGS); 
     localStorage.removeItem('customers');
     localStorage.removeItem('samples');
     localStorage.removeItem('masterProducts');

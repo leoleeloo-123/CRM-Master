@@ -1,3 +1,4 @@
+
 import { Customer, Sample, MasterProduct } from '../types';
 
 // Mock Data updated with generic demo data to avoid data leakage
@@ -132,9 +133,9 @@ export const MOCK_CUSTOMERS: Customer[] = [
 export const MOCK_MASTER_PRODUCTS: MasterProduct[] = [
   {
     id: 'mp1',
-    productName: '多晶 聚晶 微粉 - 5um > 5um',
+    productName: '多晶 团聚 微粉 - 5um > 5um',
     crystalType: '多晶',
-    productCategory: ['聚晶'],
+    productCategory: ['团聚'],
     productForm: '微粉',
     originalSize: '5um',
     processedSize: '5um'
@@ -174,14 +175,14 @@ export const MOCK_SAMPLES: Sample[] = [
     customerId: 'c1',
     customerName: 'Acme Corp',
     sampleIndex: 1,
-    sampleName: '多晶 聚晶 微粉 - 5um > 5um',
+    sampleName: '多晶 团聚 微粉 - 5um > 5um',
     productType: 'Powder',
     specs: '5um, Hydrophilic',
     quantity: '500g',
     status: '已反馈',
     testStatus: 'Finished',
     crystalType: '多晶',
-    productCategory: ['聚晶'],
+    productCategory: ['团聚'],
     productForm: '微粉',
     originalSize: '5um',
     processedSize: '5um',
