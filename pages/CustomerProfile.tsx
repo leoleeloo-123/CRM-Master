@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal } from '../components/Common';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, Edit3, Trash, PencilLine, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -28,7 +28,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [showAllInteractions, setShowAllInteractions] = useState(false);
 
   const [tempSummary, setTempSummary] = useState('');
-  const [tempTags, setTempTags] = useState('');
+  const [tempTags, setTempTags] = useState<string[]>([]);
   const [tempUpcomingPlan, setTempUpcomingPlan] = useState('');
 
   const customer = customers.find(c => c.id === id);
@@ -48,8 +48,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const handleUpdateTags = () => {
-    const tagsArr = tempTags.split(',').map(t => t.trim()).filter(t => t);
-    saveUpdate({ tags: tagsArr });
+    // Filter out empty strings before saving to keep data clean
+    const finalTags = tempTags.map(t => t.trim()).filter(t => t);
+    saveUpdate({ tags: finalTags });
     setIsEditTagsOpen(false);
   };
 
@@ -71,7 +72,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const addContact = () => {
-    const newContacts = [...customer.contacts, { name: 'New Contact', title: 'Position', isPrimary: false }];
+    const newContacts = [...customer.contacts, { name: '', title: '', isPrimary: false }];
     saveUpdate({ contacts: newContacts });
   };
 
@@ -109,13 +110,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const urgency = getUrgencyLevel(customer.nextActionDate);
-  const urgencyClass = urgency === 'urgent' ? "bg-[#FFF1F2] border-red-200" : urgency === 'warning' ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200";
+  const urgencyClass = urgency === 'urgent' ? "bg-rose-50 border-rose-100" : urgency === 'warning' ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200";
 
   const visibleInteractions = showAllInteractions 
     ? customer.interactions 
     : customer.interactions.slice(0, 3);
 
-  // Standardizing consistent font classes
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
   const secondaryTextClass = "text-sm xl:text-base text-slate-500 dark:text-slate-400 font-bold tracking-tight";
@@ -133,11 +133,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
            </div>
            <div className="flex items-center gap-3 mt-3 text-slate-400 font-black uppercase text-xs tracking-widest">
              <MapPin className="w-4 h-4" /> 
-             <input 
-               className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none px-1 transition-colors" 
-               value={customer.region.join(', ')} 
-               onChange={(e) => saveUpdate({ region: e.target.value.split(',').map(r => r.trim()) })}
-             />
+             <span>{customer.region.join(', ') || 'Unknown Region'}</span>
            </div>
          </div>
        </div>
@@ -147,7 +143,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('status')}</span>
              <div className="flex items-center gap-3 my-2">
                  <StatusIcon status={customer.followUpStatus} />
-                 <span className="font-black text-xl xl:text-2xl text-slate-900 dark:text-white truncate tracking-tight">
+                 <span className="font-black text-xl xl:text-2xl text-slate-900 dark:text-white truncate tracking-tight uppercase">
                    {getStatusLabel(customer.followUpStatus)}
                  </span>
              </div>
@@ -183,15 +179,15 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
              <div className="space-y-5">
                {customer.contacts.map((contact, idx) => (
-                 <div key={idx} className={`p-5 rounded-2xl border-2 transition-colors ${contact.isPrimary ? 'border-slate-200 bg-slate-50/50 dark:bg-slate-800/20' : 'border-slate-50 bg-slate-50/20 dark:bg-slate-800/10'}`}>
+                 <div key={idx} className={`p-5 rounded-2xl border-2 transition-colors ${contact.isPrimary ? 'border-blue-100 bg-blue-50/20 dark:bg-blue-900/10' : 'border-slate-50 bg-slate-50/20 dark:bg-slate-800/10'}`}>
                     <div className="flex items-center justify-between mb-2">
-                       <span className="font-black text-slate-900 dark:text-white text-base xl:text-lg">{idx + 1}. {contact.name}</span>
-                       {contact.isPrimary && <Star className="w-4 h-4 fill-blue-500 text-blue-500" />}
+                       <span className="font-black text-slate-900 dark:text-white text-base xl:text-lg">{idx + 1}. {contact.name || 'Unnamed Contact'}</span>
+                       {contact.isPrimary && <Star className="w-4 h-4 fill-amber-400 text-amber-400" />}
                     </div>
-                    <p className="text-sm xl:text-base font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight mb-4">{contact.title}</p>
+                    <p className="text-sm xl:text-base font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight mb-4">{contact.title || 'Position unknown'}</p>
                     <div className="text-sm xl:text-base space-y-2 text-slate-500 font-bold tracking-tight">
-                       <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Mail className="w-4 h-4"/> {contact.email || '-'}</div>
-                       <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Phone className="w-4 h-4"/> {contact.phone || '-'}</div>
+                       {contact.email && <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Mail className="w-4 h-4"/> {contact.email}</div>}
+                       {contact.phone && <div className="flex items-center gap-2 transition-colors hover:text-slate-900 dark:hover:text-slate-100"><Phone className="w-4 h-4"/> {contact.phone}</div>}
                     </div>
                  </div>
                ))}
@@ -201,30 +197,32 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
            </Card>
            
-           {/* Exhibitions Section */}
+           {/* Exhibitions Section - List form with numbering */}
            <Card className="p-6 xl:p-8 shadow-sm">
-             <div className="flex justify-between items-center mb-6">
+             <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-100 dark:border-slate-700">
                <h3 className={titleClass}>
                  <List className="w-5 h-5 xl:w-6 xl:h-6 text-indigo-600" /> {t('exhibitions')}
                </h3>
-               <button onClick={() => { setTempTags(customer.tags.join(', ')); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
+               <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
                  <PencilLine className="w-4 h-4 xl:w-5 xl:h-5" />
                </button>
              </div>
-             <div className="flex flex-wrap gap-2.5">
+             <div className="space-y-3">
                {customer.tags.length > 0 ? customer.tags.map((tag, i) => (
-                 <Badge key={i} color="gray">{tag}</Badge>
-               )) : <span className={secondaryTextClass + " italic"}>No tags added.</span>}
+                 <div key={i} className="px-5 py-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs xl:text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-400 mr-2">{i + 1}.</span> {tag}
+                 </div>
+               )) : <span className={secondaryTextClass + " italic"}>No exhibition history logged.</span>}
              </div>
            </Card>
          </div>
 
          <div className="lg:col-span-2 space-y-8">
             {/* Status & Product Summary Section */}
-            <Card className="overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
-               <div className="px-6 xl:px-8 py-5 bg-emerald-600 flex justify-between items-center">
-                  <h3 className="font-black text-base xl:text-lg text-white flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 xl:w-6 xl:h-6"/> {t('productSummary')}</h3>
-                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-white/20 text-white shadow-sm hover:bg-white/30 transition-all active:scale-95">
+            <Card className="overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-900/40">
+               <div className="px-6 xl:px-8 py-5 bg-white dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-700">
+                  <h3 className="font-black text-base xl:text-lg text-slate-800 dark:text-white flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 xl:w-6 xl:h-6 text-emerald-600"/> {t('productSummary')}</h3>
+                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
                     <PencilLine className="w-5 h-5 xl:w-6 xl:h-6"/>
                   </button>
                </div>
@@ -232,7 +230,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                   <p className={contentTextClass}>{customer.productSummary || "No summary provided."}</p>
                   <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] xl:text-xs text-slate-400 font-black uppercase tracking-widest">
                      <span>{t('lastUpdated')}: {customer.lastStatusUpdate}</span>
-                     <Badge color="green">{customer.status}</Badge>
+                     <Badge color="green">{customer.status.toUpperCase()}</Badge>
                   </div>
                </div>
             </Card>
@@ -257,7 +255,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                         <h4 className="font-black text-[10px] xl:text-xs text-slate-400 tracking-[0.2em] uppercase mb-1">UPCOMING PLAN</h4>
                         <div className="flex items-center gap-3">
                            <span className="text-base xl:text-lg font-black text-slate-900 dark:text-white tracking-tight">DDL: {customer.nextActionDate || 'TBD'}</span>
-                           {urgency === 'urgent' && <Badge color="red">Urgent</Badge>}
+                           {urgency === 'urgent' && <Badge color="red">URGENT</Badge>}
                         </div>
                      </div>
                   </div>
@@ -281,12 +279,14 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                        <>
                          {visibleInteractions.map((int, i) => (
                            <div key={int.id} className="relative group">
-                              <div className="absolute -left-[54px] top-0 w-8 h-8 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-xs">{customer.interactions.length - i}</div>
+                              <div className="absolute -left-[54px] top-0 w-8 h-8 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-xs">
+                                {customer.interactions.length - i}
+                              </div>
                               <div className="flex items-center justify-between mb-4">
                                  <span className="font-black text-sm xl:text-base text-slate-900 dark:text-white tracking-tight">{int.date}</span>
                                  <div className="flex gap-2">
                                     <button onClick={() => setEditingInteraction(int)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine className="w-4 h-4 xl:w-5 xl:h-5"/></button>
-                                    <button onClick={() => deleteInteraction(int.id)} className="p-2 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-95"><Trash className="w-4 h-4 xl:w-5 xl:h-5"/></button>
+                                    <button onClick={() => deleteInteraction(int.id)} className="p-2 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-95"><Trash2 className="w-4 h-4 xl:w-5 xl:h-5"/></button>
                                  </div>
                               </div>
                               <Card className="p-6 xl:p-8 border border-slate-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/40">
@@ -324,7 +324,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                    <Card key={sample.id} className="p-6 xl:p-8 hover:shadow-2xl transition-all cursor-pointer border-2 hover:border-blue-500 group bg-white dark:bg-slate-900/40" onClick={() => navigate(`/samples/${sample.id}`)}>
                       <div className="flex justify-between items-start mb-6">
                          <div className="p-3 bg-blue-50 dark:bg-blue-900/40 rounded-xl shadow-sm"><Box className="text-blue-600 w-6 h-6 xl:w-8 xl:h-8" /></div>
-                         <Badge color="blue">{sample.status}</Badge>
+                         <Badge color="blue">{sample.status.toUpperCase()}</Badge>
                       </div>
                       <h4 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 tracking-tight leading-tight">{sample.sampleName}</h4>
                       <div className="text-[10px] xl:text-xs font-black text-slate-400 flex items-center gap-4 uppercase tracking-widest mt-4">
@@ -350,7 +350,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              <textarea className="w-full h-80 p-5 border-2 rounded-2xl bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-slate-800 dark:text-white text-base xl:text-lg transition-all" value={tempSummary} onChange={(e) => setTempSummary(e.target.value)} />
              <div className="flex justify-end gap-3 pt-2">
                 <Button variant="secondary" onClick={() => setIsEditSummaryOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateSummary} className="px-8"><Save className="w-5 h-5" /> Save Summary</Button>
+                <Button onClick={handleUpdateSummary} className="px-8"><Save className="w-5 h-5 mr-1" /> Save Summary</Button>
              </div>
           </div>
        </Modal>
@@ -367,7 +367,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
              <div className="flex justify-end gap-3 pt-6">
                 <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateUpcomingPlan} className="px-8"><Save className="w-5 h-5" /> Save Plan</Button>
+                <Button onClick={handleUpdateUpcomingPlan} className="px-8"><Save className="w-5 h-5 mr-1" /> Save Plan</Button>
              </div>
           </div>
        </Modal>
@@ -382,25 +382,25 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                        <button onClick={() => togglePrimaryContact(idx)} className={`p-2 rounded-xl transition-all ${contact.isPrimary ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/30' : 'text-slate-300 hover:text-amber-400'}`} title="Set as Primary">
                          <Star className="w-6 h-6" fill={contact.isPrimary ? 'currentColor' : 'none'} />
                        </button>
-                       <button onClick={() => deleteContact(idx)} className="p-2 text-slate-300 hover:text-red-500 transition-colors active:scale-90"><Trash className="w-6 h-6"/></button>
+                       <button onClick={() => deleteContact(idx)} className="p-2 text-slate-300 hover:text-red-500 transition-colors active:scale-90"><Trash2 className="w-6 h-6"/></button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-5">
                     <div className="space-y-1.5">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Name</label>
-                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-black dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={contact.name} onChange={(e) => updateContact(idx, { name: e.target.value })} />
+                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-black dark:bg-slate-900 dark:border-slate-700 dark:text-white outline-none focus:border-blue-500" value={contact.name} onChange={(e) => updateContact(idx, { name: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Title</label>
-                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={contact.title} onChange={(e) => updateContact(idx, { title: e.target.value })} />
+                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white outline-none focus:border-blue-500" value={contact.title} onChange={(e) => updateContact(idx, { title: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
-                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={contact.email} onChange={(e) => updateContact(idx, { email: e.target.value })} />
+                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white outline-none focus:border-blue-500" value={contact.email || ''} onChange={(e) => updateContact(idx, { email: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone</label>
-                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={contact.phone} onChange={(e) => updateContact(idx, { phone: e.target.value })} />
+                       <input className="w-full p-3 border-2 rounded-xl text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 dark:text-white outline-none focus:border-blue-500" value={contact.phone || ''} onChange={(e) => updateContact(idx, { phone: e.target.value })} />
                     </div>
                   </div>
                </div>
@@ -414,15 +414,40 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
           </div>
        </Modal>
 
-       <Modal isOpen={isEditTagsOpen} onClose={() => setIsEditTagsOpen(false)} title={t('exhibitions')}>
-          <div className="space-y-6">
-             <div className="space-y-2">
-                <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Separate tags with commas</label>
-                <input className="w-full p-5 border-2 rounded-2xl font-black text-blue-600 dark:text-blue-400 dark:bg-slate-800 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-base xl:text-lg transition-all" value={tempTags} onChange={(e) => setTempTags(e.target.value)} placeholder="e.g. CES 2024, Industry Fair" />
+       <Modal isOpen={isEditTagsOpen} onClose={() => setIsEditTagsOpen(false)} title={t('exhibitions').toUpperCase()}>
+          <div className="space-y-8">
+             <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
+                {tempTags.map((tag, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div className="flex-1 relative">
+                       <input 
+                         className="w-full p-4 pl-6 border-2 rounded-xl font-black uppercase text-blue-600 dark:text-blue-400 dark:bg-slate-800 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm xl:text-base transition-all" 
+                         value={tag} 
+                         onChange={(e) => {
+                           const newTags = [...tempTags];
+                           newTags[idx] = e.target.value;
+                           setTempTags(newTags);
+                         }} 
+                       />
+                    </div>
+                    <button 
+                      onClick={() => setTempTags(tempTags.filter((_, i) => i !== idx))}
+                      className="p-3 text-slate-300 hover:text-red-500 transition-colors active:scale-90"
+                    >
+                      <Trash2 className="w-6 h-6" />
+                    </button>
+                  </div>
+                ))}
+                <button 
+                  className="w-full py-5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3"
+                  onClick={() => setTempTags([...tempTags, ''])}
+                >
+                  <Plus className="w-5 h-5" /> {t('addExhibition')}
+                </button>
              </div>
-             <div className="flex justify-end gap-3 pt-4">
-                <Button variant="secondary" onClick={() => setIsEditTagsOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateTags} className="px-8">Save Tags</Button>
+             <div className="flex justify-end gap-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <Button variant="secondary" onClick={() => setIsEditTagsOpen(false)} className="px-8 font-black uppercase tracking-widest">Cancel</Button>
+                <Button onClick={handleUpdateTags} className="px-8 font-black uppercase tracking-widest">Save Exhibitions</Button>
              </div>
           </div>
        </Modal>
