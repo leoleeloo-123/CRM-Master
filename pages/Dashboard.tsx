@@ -78,7 +78,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
               <div key={d} className="text-center text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest">{d}</div>
             ))}
          </div>
-         <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(100px,auto)]">
+         <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(120px,auto)]">
             {days.map(day => {
                const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
                const isCurrentMonth = isSameMonth(day, monthStart);
@@ -119,7 +119,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
                    <div className="text-[10px] xl:text-xs font-black uppercase tracking-widest text-slate-400">{format(day, 'EEE')}</div>
                    <div className="text-xl xl:text-2xl font-black">{format(day, 'd')}</div>
                 </div>
-                <div className="p-2 flex-1 bg-white dark:bg-slate-800 space-y-2 min-h-[150px]">
+                <div className="p-2 flex-1 bg-white dark:bg-slate-800 space-y-2 min-h-[250px]">
                    {dayEvents.length > 0 ? dayEvents.map(e => renderEventBadge(e, false)) : <div className="text-xs text-slate-300 text-center py-4">-</div>}
                 </div>
              </div>
@@ -295,8 +295,12 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </Card>
       </div>
 
+      <div className="w-full">
+         <DashboardCalendar customers={customers} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
-        <div className="lg:col-span-1 space-y-6 xl:space-y-8 flex flex-col h-full">
+        <div className="flex flex-col h-full space-y-6 xl:space-y-8">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg xl:text-xl font-black text-slate-800 dark:text-white flex items-center gap-3 tracking-wider uppercase">
@@ -314,7 +318,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             </div>
           </div>
           
-          <div className="space-y-4 overflow-y-auto max-h-[800px] pr-2 scrollbar-hide">
+          <div className="space-y-4 overflow-y-auto max-h-[600px] pr-2 scrollbar-hide">
             {criticalCustomers.length === 0 ? (
               <Card className="p-12 text-center text-slate-400 italic font-medium">
                 <p>No critical actions pending. Great job!</p>
@@ -356,64 +360,66 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-8 xl:space-y-12">
-           <DashboardCalendar customers={customers} />
-
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Card className="p-8 xl:p-10 shadow-sm">
-                <h3 className="font-black text-slate-800 dark:text-white mb-8 text-base xl:text-lg uppercase tracking-wider">{t('samplePipeline')}</h3>
-                {sampleStatusData.length > 0 ? (
-                  <>
-                    <div className="h-64 xl:h-80 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={sampleStatusData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={65}
-                            outerRadius={95}
-                            paddingAngle={5}
-                            dataKey="value"
-                          >
-                            {sampleStatusData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 'bold' }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-6">
-                      {sampleStatusData.map(d => (
-                        <div key={d.name} className="flex items-center gap-3 text-xs xl:text-sm font-black text-slate-500 uppercase tracking-tight">
-                          <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: d.color }}></div>
-                          <span className="truncate">{d.name}: {d.value}</span>
-                        </div>
+        <Card className="p-8 xl:p-10 shadow-sm flex flex-col">
+          <h3 className="font-black text-slate-800 dark:text-white mb-8 text-base xl:text-lg uppercase tracking-wider">{t('samplePipeline')}</h3>
+          {sampleStatusData.length > 0 ? (
+            <>
+              <div className="h-64 xl:h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={sampleStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={65}
+                      outerRadius={95}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {sampleStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="h-48 flex items-center justify-center text-slate-400 italic font-medium">No sample data available.</div>
-                )}
-              </Card>
+                    </Pie>
+                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 'bold' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-1 gap-3 mt-6">
+                {sampleStatusData.map(d => (
+                  <div key={d.name} className="flex items-center gap-3 text-xs xl:text-sm font-black text-slate-500 uppercase tracking-tight">
+                    <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: d.color }}></div>
+                    <span className="truncate">{d.name}: {d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-slate-400 italic font-medium">No sample data available.</div>
+          )}
+        </Card>
 
-              <Card className="p-8 xl:p-10 shadow-sm">
-                <h3 className="font-black text-slate-800 dark:text-white mb-8 text-base xl:text-lg uppercase tracking-wider">Customers by Region</h3>
-                <div className="h-64 xl:h-80 w-full">
-                   <ResponsiveContainer width="100%" height="100%">
-                     <BarChart data={regionData}>
-                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                       <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: '900', fill: '#94a3b8'}} interval={0} angle={-30} textAnchor="end" height={60} />
-                       <YAxis allowDecimals={false} tick={{fontSize: 10, fontWeight: '900', fill: '#94a3b8'}} />
-                       <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 'bold' }} />
-                       <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                     </BarChart>
-                   </ResponsiveContainer>
-                </div>
-              </Card>
-           </div>
-        </div>
+        <Card className="p-8 xl:p-10 shadow-sm flex flex-col">
+          <h3 className="font-black text-slate-800 dark:text-white mb-8 text-base xl:text-lg uppercase tracking-wider">Customers by Region</h3>
+          <div className="h-64 xl:h-80 w-full">
+             <ResponsiveContainer width="100%" height="100%">
+               <BarChart data={regionData}>
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                 <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: '900', fill: '#94a3b8'}} interval={0} angle={-30} textAnchor="end" height={60} />
+                 <YAxis allowDecimals={false} tick={{fontSize: 10, fontWeight: '900', fill: '#94a3b8'}} />
+                 <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 'bold' }} />
+                 <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+               </BarChart>
+             </ResponsiveContainer>
+          </div>
+          <div className="mt-6 flex-1 overflow-y-auto space-y-2">
+             {regionData.sort((a,b) => b.count - a.count).map(r => (
+               <div key={r.name} className="flex justify-between items-center text-xs xl:text-sm font-black text-slate-500 uppercase">
+                  <span>{r.name}</span>
+                  <Badge color="blue">{r.count}</Badge>
+               </div>
+             ))}
+          </div>
+        </Card>
       </div>
     </div>
   );
