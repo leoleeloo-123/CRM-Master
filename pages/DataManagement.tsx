@@ -101,6 +101,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const regions = splitByDelimiter(safeCol(1));
     const finalRegions = regions.length > 0 ? regions : ['Unknown'];
     const rawTags = splitByDelimiter(safeCol(2));
+    // Support cleaning up legacy numbers during import
     const cleanTags = rawTags.map(t => t.replace(/^\d+[\.\、\s]*\s*/, ''));
     const rank = (parseInt(safeCol(4)) || 3) as Rank;
     const productSummary = (safeCol(5) || '').replace(/\|\|\|/g, '\n');
@@ -117,6 +118,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const contacts = contactNames.map((cName, i) => {
        const info = contactInfos[i] || '';
        const isEmail = info.includes('@');
+       // Clean up leading numbers if they exist (legacy support)
        let cleanName = cName.replace(/^\d+[\.\s]*\s*/, '');
        let isPrimary = false;
        if (cleanName.includes('【主要联系人】')) {
@@ -269,11 +271,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
     ];
     
     const custRows = customers.map(c => {
-      const tags = c.tags.map((tag, i) => `${i + 1}. ${tag}`).join(' ||| ');
+      // FIX: Stop adding auto-numbers to tags in export to prevent duplication on re-import
+      const tags = c.tags.join(' ||| ');
       const regions = Array.isArray(c.region) ? c.region.join(' ||| ') : c.region;
       
       const contactNames = c.contacts.map((contact, i) => {
-        let str = `${i + 1}. ${contact.name}`;
+        // FIX: Stop adding auto-numbers to contact names in export to prevent duplication on re-import
+        let str = contact.name;
         if (contact.title) str += ` (${contact.title})`;
         if (contact.isPrimary) str += ` 【主要联系人】`;
         return str;
@@ -281,7 +285,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
       const contactInfos = c.contacts.map(contact => contact.email || contact.phone || '').join(' ||| ');
       const interactionText = [...c.interactions].reverse().map(i => `【${i.date}】 ${i.summary}`).join(' ||| ');
-      const nextStep = c.upcomingPlan || ''; // Export "下一步" from the independent upcomingPlan field
+      const nextStep = c.upcomingPlan || '';
       const docLinks = c.docLinks ? c.docLinks.join(' ||| ') : '';
       const productSummaryExport = (c.productSummary || '').replace(/\n/g, ' ||| ');
       const statusExport = mapStatusToExport(c.followUpStatus);
@@ -307,12 +311,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const sampRows = samples.map(s => {
        const safeDetails = (s.statusDetails || '').replace(/\n/g, ' ||| ');
        let daysSince = "";
-       // Use native Date instead of parseISO
        if (s.lastStatusDate && isValid(new Date(s.lastStatusDate))) {
          daysSince = String(differenceInDays(new Date(), new Date(s.lastStatusDate)));
        }
        
-       // Export unified testStatus back to human readable/importable terms
        let exportTestVal = "No";
        if (s.testStatus === 'Finished') exportTestVal = "Yes";
        else if (s.testStatus === 'Terminated') exportTestVal = "Terminated";
@@ -341,13 +343,9 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const sampSheet = XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]);
     XLSX.utils.book_append_sheet(wb, sampSheet, "Samples");
 
-    // Filename Logic: Master TB_[Organization]_[User]_[Timestamp].xlsx
-    // Timestamp: Eastern Time
     const now = new Date();
-    // Get ET Date object by string conversion
     const etDate = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
     
-    // Manual formatting for sortable filename: YYYYMMDD_HHmm
     const year = etDate.getFullYear();
     const month = String(etDate.getMonth() + 1).padStart(2, '0');
     const day = String(etDate.getDate()).padStart(2, '0');
@@ -355,7 +353,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const minute = String(etDate.getMinutes()).padStart(2, '0');
 
     const timestamp = `${year}${month}${day}_${hour}${minute}`;
-    // Sanitize names to be filename safe
     const safeOrg = companyName.replace(/[^a-z0-9]/gi, '_');
     const safeUser = userName.replace(/[^a-z0-9]/gi, '_');
     
@@ -390,10 +387,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
         if (activeTab === 'customers') {
           return rowToCustomer(cols, tempId);
         } else {
-          // For paste text, we calculate fresh map for this batch
           const indexMap = new Map<string, number>(); 
           if (importMode === 'merge') {
-             // Populate if appending
               samples.forEach(s => {
                  const lowerName = s.customerName.toLowerCase();
                  const currentMax = indexMap.get(lowerName) || 0;
@@ -423,20 +418,16 @@ const DataManagement: React.FC<DataManagementProps> = ({
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
         
-        // Parse Customers First
         let parsedCustomers: Customer[] = [];
         if (wb.Sheets['Customers']) {
            const rawRows = XLSX.utils.sheet_to_json(wb.Sheets['Customers'], { header: 1 });
-           // Skip header row
            parsedCustomers = rawRows.slice(1).filter((r: any) => r.length > 0).map((row: any) => 
              rowToCustomer(row, Math.random().toString(36).substr(2, 9))
            );
         }
 
-        // Determine Customer List to Link Samples Against
         const lookupCustomers = [...parsedCustomers, ...customers];
 
-        // Parse Samples
         let parsedSamples: Sample[] = [];
         if (wb.Sheets['Samples']) {
            const rawRows = XLSX.utils.sheet_to_json(wb.Sheets['Samples'], { header: 1 });
@@ -462,7 +453,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
         setExcelPreview({ customers: parsedCustomers, samples: parsedSamples });
         
-        // Default the preview table to whatever tab is active, or switch
         if (activeTab === 'customers' && parsedCustomers.length > 0) {
             setParsedPreview(parsedCustomers);
         } else if (parsedSamples.length > 0) {
@@ -490,19 +480,16 @@ const DataManagement: React.FC<DataManagementProps> = ({
     let importedSamples: Sample[] = [];
 
     if (excelPreview) {
-       // Import Both
        if (excelPreview.customers.length > 0) {
          onImportCustomers(excelPreview.customers, override);
        }
        if (excelPreview.samples.length > 0) {
          importedSamples = excelPreview.samples;
-         // Auto-sync samples to catalog
          importedSamples.forEach(s => syncSampleToCatalog(s));
          onImportSamples(importedSamples, override);
        }
        setImportStatus({ type: 'success', message: `Imported ${excelPreview.customers.length} Customers and ${excelPreview.samples.length} Samples.` });
     } else if (parsedPreview) {
-       // Text Import (Single Type)
        if (activeTab === 'customers') {
          onImportCustomers(parsedPreview as Customer[], override);
        } else {
@@ -513,9 +500,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
        setImportStatus({ type: 'success', message: `Imported ${parsedPreview.length} records.` });
     }
     
-    // New Step: Refresh Tags from the imported samples to add any new unique statuses/types
     if (importedSamples.length > 0) {
-        // Pass override flag to replace tags if in Replace mode
         refreshTagsFromSamples(importedSamples, override);
     }
     
@@ -525,7 +510,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Switch preview data when tab changes if we have excel loaded
   const switchTab = (tab: 'customers' | 'samples') => {
     setActiveTab(tab);
     if (viewMode === 'import') {
@@ -534,7 +518,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
         if (tab === 'customers') setParsedPreview(excelPreview.customers);
         else setParsedPreview(excelPreview.samples);
       } else {
-        setImportData(''); // Clear text data if switching modes without excel
+        setImportData('');
       }
     }
   };
@@ -672,9 +656,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
         </div>
       </div>
 
-      {/* TABS & CONTENT SECTION */}
       <Card className="p-0 border-l-0 overflow-hidden">
-        {/* Tabs */}
         <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
            <button 
              onClick={() => switchTab('customers')}
@@ -712,7 +694,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
                    </div>
                    
                    <div className="flex flex-col gap-3 items-end">
-                     {/* Import Mode Selection */}
                      {!parsedPreview && !excelPreview && (
                         <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
                           <button 
