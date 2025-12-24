@@ -303,8 +303,8 @@ const SampleProfile: React.FC = () => {
                       <Button onClick={handleSaveQuantity} className="w-full">Update Qty</Button>
                    </div>
                 ) : (
-                   <div className="p-8 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 text-center shadow-inner group">
-                      <span className="text-3xl xl:text-5xl font-black text-slate-900 dark:text-white tracking-tighter uppercase">{sample.quantity || '未定'}</span>
+                   <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 text-center shadow-inner group">
+                      <span className="text-xl xl:text-3xl font-black text-slate-900 dark:text-white tracking-tight">{sample.quantity || '未定'}</span>
                    </div>
                 )}
              </Card>
