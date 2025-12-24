@@ -559,6 +559,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     <th className="p-3 whitespace-nowrap">Status</th>
                     <th className="p-3 whitespace-nowrap">Test Finished</th>
                     <th className="p-3 whitespace-nowrap">Date</th>
+                    <th className="p-3 whitespace-nowrap">Next Step</th>
+                    <th className="p-3 whitespace-nowrap">Key Date</th>
                     <th className="p-3 whitespace-nowrap">History</th>
                   </>
                 )}
@@ -597,6 +599,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
                         </Badge>
                       </td>
                       <td className="p-3 align-top">{row.lastStatusDate}</td>
+                      <td className="p-3 align-top truncate max-w-[150px]" title={row.upcomingPlan}>{row.upcomingPlan || '-'}</td>
+                      <td className="p-3 align-top whitespace-nowrap">{row.nextActionDate || '-'}</td>
                       <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
                     </>
                   )}
@@ -604,7 +608,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="p-10 text-center text-slate-400 italic font-bold">No data found in database.</td>
+                  <td colSpan={11} className="p-10 text-center text-slate-400 italic font-bold">No data found in database.</td>
                 </tr>
               )}
             </tbody>

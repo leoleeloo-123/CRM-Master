@@ -137,8 +137,13 @@ const SampleProfile: React.FC = () => {
 
   if (!sample) return <div className="p-8 text-center font-black uppercase text-slate-400">Sample not found.</div>;
 
-  const urgency = getUrgencyLevel(sample.nextActionDate);
-  const urgencyClass = urgency === 'urgent' ? "bg-rose-50 border-rose-100" : urgency === 'warning' ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200";
+  const isTestFinished = sample.testStatus === 'Finished' || sample.testStatus === 'Terminated';
+  const urgency = isTestFinished ? 'none' : getUrgencyLevel(sample.nextActionDate);
+  const urgencyClass = isTestFinished 
+    ? "bg-slate-50 border-slate-200 dark:bg-slate-900/20 dark:border-slate-800"
+    : urgency === 'urgent' ? "bg-rose-50 border-rose-100" 
+    : urgency === 'warning' ? "bg-amber-50 border-amber-200" 
+    : "bg-slate-50 border-slate-200";
 
   // Common styles
   const cardBaseClass = "p-8 xl:p-10 shadow-sm border border-slate-100 dark:border-slate-800 rounded-[2rem] bg-white dark:bg-slate-900/40 relative overflow-hidden transition-all";
@@ -308,8 +313,8 @@ const SampleProfile: React.FC = () => {
           {/* Right Column: Upcoming Plan & Application & History */}
           <div className="lg:col-span-2 space-y-8">
              {/* Upcoming Plan Section */}
-             <div className={`${cardBaseClass} ${urgencyClass} border-2 px-10 py-10`}>
-                <button onClick={() => setIsEditingPlan(true)} className="absolute top-8 right-8 p-3 rounded-2xl bg-emerald-600 text-white shadow-lg active:scale-90 transition-all z-10">
+             <div className={`${cardBaseClass} ${urgencyClass} border-2 px-10 py-10 transition-colors`}>
+                <button onClick={() => setIsEditingPlan(true)} className={`absolute top-8 right-8 p-3 rounded-2xl bg-emerald-600 text-white shadow-lg active:scale-90 transition-all z-10 ${isTestFinished ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={isTestFinished}>
                   <PencilLine size={24} />
                 </button>
                 <div className="flex items-center gap-6 mb-8">
@@ -319,13 +324,13 @@ const SampleProfile: React.FC = () => {
                    <div>
                       <h4 className="font-black text-[10px] xl:text-xs text-slate-400 tracking-[0.2em] uppercase mb-1.5">UPCOMING PLAN</h4>
                       <div className="flex items-center gap-3">
-                         <span className="text-lg xl:text-xl font-black text-slate-900 dark:text-white tracking-tight">DDL: {sample.nextActionDate || 'TBD'}</span>
+                         <span className="text-lg xl:text-xl font-black text-slate-900 dark:text-white tracking-tight">DDL: {isTestFinished ? 'N/A' : (sample.nextActionDate || 'TBD')}</span>
                          {urgency === 'urgent' && <Badge color="red">URGENT</Badge>}
                       </div>
                    </div>
                 </div>
                 <p className="text-base xl:text-xl font-bold text-slate-800 dark:text-slate-200 leading-relaxed italic opacity-80 pl-2">
-                   {sample.upcomingPlan || <span className="text-slate-400">No upcoming plan logged for this sample.</span>}
+                   {isTestFinished ? <span className="text-slate-400">Sample testing concluded. No further upcoming plans.</span> : (sample.upcomingPlan || <span className="text-slate-400">No upcoming plan logged for this sample.</span>)}
                 </p>
              </div>
 
