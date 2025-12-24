@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Sample, SampleStatus, GradingStatus, TestStatus } from '../types';
+import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal } from '../components/Common';
 import { ArrowLeft, Box, Save, X, Edit, Plus, Trash2, CalendarDays, ExternalLink, Activity, Target, PencilLine, Ruler, Layers } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
@@ -26,6 +26,7 @@ const SampleProfile: React.FC = () => {
   const [editAppText, setEditAppText] = useState('');
   const [editTrackingText, setEditTrackingText] = useState('');
   const [editQuantityText, setEditQuantityText] = useState('');
+  const [editCategoryText, setEditCategoryText] = useState('');
 
   const [historyItems, setHistoryItems] = useState<{id: string, date: string, text: string}[]>([]);
   const [isAddingHistory, setIsAddingHistory] = useState(false);
@@ -39,6 +40,7 @@ const SampleProfile: React.FC = () => {
       setEditAppText(sample.application || '');
       setEditTrackingText(sample.trackingNumber || '');
       setEditQuantityText(sample.quantity || '');
+      setEditCategoryText(sample.productCategory?.join(', ') || '');
       parseHistory(sample.statusDetails);
     }
   }, [sample]);
@@ -71,7 +73,16 @@ const SampleProfile: React.FC = () => {
 
   const handleSaveSpecs = () => {
     if (!sample || !editSample) return;
-    const updatedSample = { ...sample, ...editSample } as Sample;
+    
+    // Parse category text back to array
+    const categories = editCategoryText.split(',').map(c => c.trim() as ProductCategory).filter(c => c);
+    
+    const updatedSample = { 
+      ...sample, 
+      ...editSample,
+      productCategory: categories
+    } as Sample;
+    
     setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
     syncSampleToCatalog(updatedSample);
     setIsEditingSpecs(false);
@@ -291,6 +302,10 @@ const SampleProfile: React.FC = () => {
                           </select>
                         </div>
                         <div className="space-y-1.5">
+                          <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('category')}</label>
+                          <input className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all dark:text-white" value={editCategoryText} onChange={e => setEditCategoryText(e.target.value)} placeholder="e.g. 团聚, 金刚石球" />
+                        </div>
+                        <div className="space-y-1.5">
                           <label className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('form')}</label>
                           <select className="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm xl:text-base font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" value={editSample.productForm} onChange={e => setEditSample({...editSample, productForm: e.target.value as any})}>
                             {tagOptions.productForm.map(t => <option key={t} value={t}>{renderOption(t)}</option>)}
@@ -319,6 +334,10 @@ const SampleProfile: React.FC = () => {
                         <div className="flex justify-between items-center py-1">
                           <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('crystal')}</span>
                           <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{renderOption(sample.crystalType || '-')}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('category')}</span>
+                          <span className="font-black text-slate-900 dark:text-white text-sm xl:text-base">{sample.productCategory?.map(c => renderOption(c)).join(', ') || '-'}</span>
                         </div>
                         <div className="flex justify-between items-center py-1">
                           <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('form')}</span>
