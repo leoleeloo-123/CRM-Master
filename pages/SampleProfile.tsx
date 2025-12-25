@@ -209,7 +209,7 @@ const SampleProfile: React.FC = () => {
              )}
           </Card>
 
-          <DaysCounter date={sample.lastStatusDate} label={t('daysSinceUpdate')} type="elapsed" />
+          <DaysCounter date={sample.lastStatusDate} label={t('daysSinceUpdate')} type="elapsed" onDateChange={(d) => saveSampleUpdate({ lastStatusDate: d })} />
 
           <Card className={`p-6 xl:p-8 flex flex-col justify-center shadow-sm rounded-[1.5rem] transition-all ${isEditingTest ? 'ring-4 ring-blue-500/20' : ''}`}>
              <div className="flex justify-between items-center mb-3">
