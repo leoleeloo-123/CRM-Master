@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal } from '../components/Common';
 import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp } from 'lucide-react';
@@ -16,15 +16,20 @@ interface CustomerProfileProps {
 const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, onUpdateCustomer }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useApp();
-  const [activeTab, setActiveTab] = useState<'overview' | 'samples'>('overview');
+  
+  // Initialize tab from query param if present
+  const [activeTab, setActiveTab] = useState<'overview' | 'samples'>(
+    searchParams.get('tab') === 'samples' ? 'samples' : 'overview'
+  );
+  
   const [isEditSummaryOpen, setIsEditSummaryOpen] = useState(false);
   const [isEditContactsOpen, setIsEditContactsOpen] = useState(false);
   const [isEditTagsOpen, setIsEditTagsOpen] = useState(false);
   const [isEditUpcomingPlanOpen, setIsEditUpcomingPlanOpen] = useState(false);
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
   
-  // Interaction folding state
   const [showAllInteractions, setShowAllInteractions] = useState(false);
 
   const [tempSummary, setTempSummary] = useState('');
@@ -33,6 +38,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
+
+  // Sync tab state if search params change
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'samples') setActiveTab('samples');
+    else if (tabParam === 'overview') setActiveTab('overview');
+  }, [searchParams]);
 
   if (!customer) {
     return <div className="p-8 text-center text-slate-500 font-bold">Customer not found. <Button onClick={() => navigate('/customers')}>{t('back')}</Button></div>;
@@ -48,7 +60,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const handleUpdateTags = () => {
-    // Filter out empty strings before saving to keep data clean
     const finalTags = tempTags.map(t => t.trim()).filter(t => t);
     saveUpdate({ tags: finalTags });
     setIsEditTagsOpen(false);
@@ -167,7 +178,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
          <div className="space-y-8">
-           {/* Key Contacts Section */}
            <Card className="p-6 xl:p-8 shadow-sm">
              <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-100 dark:border-slate-700">
                <h3 className={titleClass}>
@@ -197,7 +207,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
            </Card>
            
-           {/* Exhibitions Section - List form with numbering */}
            <Card className="p-6 xl:p-8 shadow-sm">
              <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-100 dark:border-slate-700">
                <h3 className={titleClass}>
@@ -218,7 +227,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          </div>
 
          <div className="lg:col-span-2 space-y-8">
-            {/* Status & Product Summary Section */}
             <Card className="overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-900/40">
                <div className="px-6 xl:px-8 py-5 bg-white dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-700">
                   <h3 className="font-black text-base xl:text-lg text-slate-800 dark:text-white flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 xl:w-6 xl:h-6 text-emerald-600"/> {t('productSummary')}</h3>
@@ -242,7 +250,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
             {activeTab === 'overview' && (
               <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                {/* Upcoming Plan Section */}
                 <div className={`p-8 xl:p-10 rounded-[2rem] border-2 shadow-sm group relative overflow-hidden transition-all ${urgencyClass}`}>
                   <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="absolute top-6 right-6 p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 z-10">
                     <PencilLine className="w-5 h-5 xl:w-6 xl:h-6" />
@@ -252,7 +259,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                         <Clock className="w-7 h-7 xl:w-9 xl:h-9 text-slate-900 dark:text-white" />
                      </div>
                      <div>
-                        <h4 className="font-black text-[10px] xl:text-xs text-slate-400 tracking-[0.2em] uppercase mb-1">UPCOMING PLAN</h4>
+                        <h4 className="font-black text-[10px] xl:text-xs text-slate-400 tracking-[0.2em] uppercase mb-1.5">UPCOMING PLAN</h4>
                         <div className="flex items-center gap-3">
                            <span className="text-base xl:text-lg font-black text-slate-900 dark:text-white tracking-tight">DDL: {customer.nextActionDate || 'TBD'}</span>
                            {urgency === 'urgent' && <Badge color="red">URGENT</Badge>}

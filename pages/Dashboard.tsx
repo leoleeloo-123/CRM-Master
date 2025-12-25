@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel, Button } from '../components/Common';
-import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check } from 'lucide-react';
+import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { 
   format, isBefore, addDays, 
@@ -15,8 +15,6 @@ import { useApp } from '../contexts/AppContext';
 
 /**
  * Hardcoded Holiday Data for 2024 - 2028
- * Note: Chinese Lunar Holidays (Spring Festival, Mid-Autumn) are mapped to their specific solar dates.
- * Multi-day periods (like China's Golden Week) are fully defined for each day.
  */
 const HOLIDAY_DATA: Record<string, Record<string, string>> = {
   'China': {
@@ -78,7 +76,15 @@ interface DashboardProps {
 
 type CalendarView = 'day' | 'week' | 'month';
 
-const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) => {
+// Explicit interface for sample group info to avoid 'unknown' type errors
+interface SampleGroupInfo {
+  customerId: string;
+  customerName: string;
+  count: number;
+  dateObj: Date;
+}
+
+const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> = ({ customers, samples }) => {
   const { t } = useApp();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -93,7 +99,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
         if (key) regions.add(key);
       });
     });
-    // Add default major regions if not found in customers to ensure the filter has options
     ['China', 'USA', 'Japan', 'Germany'].forEach(r => regions.add(r));
     return Array.from(regions);
   }, [customers]);
@@ -101,10 +106,28 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   const [selectedHolidayRegions, setSelectedHolidayRegions] = useState<string[]>(['China', 'USA', 'Japan']);
   const [isHolidayMenuOpen, setIsHolidayMenuOpen] = useState(false);
 
-  const events = customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
+  const customerEvents = customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
     ...c,
-    dateObj: new Date(c.nextActionDate!)
+    dateObj: new Date(c.nextActionDate!),
+    type: 'customer' as const
   }));
+
+  const sampleGroups = useMemo(() => {
+    // Explicitly define groups type to avoid 'unknown' when using Object.values
+    const groups: Record<string, Record<string, SampleGroupInfo>> = {};
+    samples.forEach(s => {
+      if (s.nextActionDate && (s.testStatus === 'Ongoing' || s.testStatus === undefined)) {
+        const dateStr = s.nextActionDate;
+        const cid = s.customerId;
+        if (!groups[dateStr]) groups[dateStr] = {};
+        if (!groups[dateStr][cid]) {
+          groups[dateStr][cid] = { customerId: cid, customerName: s.customerName, count: 0, dateObj: new Date(dateStr) };
+        }
+        groups[dateStr][cid].count++;
+      }
+    });
+    return groups;
+  }, [samples]);
 
   const handlePrev = () => {
     if (view === 'month') setCurrentDate(addMonths(currentDate, -1));
@@ -130,13 +153,11 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   const checkHolidays = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const activeHolidays: { region: string; name: string }[] = [];
-    
     selectedHolidayRegions.forEach(region => {
       if (HOLIDAY_DATA[region] && HOLIDAY_DATA[region][dateStr]) {
         activeHolidays.push({ region, name: HOLIDAY_DATA[region][dateStr] });
       }
     });
-    
     return activeHolidays;
   };
 
@@ -145,9 +166,20 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
       key={c.id} 
       onClick={(e) => { e.stopPropagation(); navigate(`/customers/${c.id}`); }}
       className={`cursor-pointer rounded px-2 py-0.5 text-[0.65rem] xl:text-[0.75rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm mb-1 ${getUrgencyColor(c.nextActionDate!)}`}
-      title={`${c.name} - ${c.upcomingPlan || 'No upcoming plan'}`}
+      title={`Customer: ${c.name} - ${c.upcomingPlan || 'No plan'}`}
     >
       {c.name}
+    </div>
+  );
+
+  const renderSampleGroupBadge = (group: { customerId: string, customerName: string, count: number }) => (
+    <div 
+      key={`samp-${group.customerId}`} 
+      onClick={(e) => { e.stopPropagation(); navigate(`/customers/${group.customerId}?tab=samples`); }}
+      className="cursor-pointer rounded px-2 py-0.5 text-[0.65rem] xl:text-[0.75rem] font-black border border-blue-200 bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 truncate transition-all hover:scale-[1.02] hover:shadow-sm mb-1"
+      title={`${group.customerName}: ${group.count} Sample Reminders`}
+    >
+      {group.customerName}: {group.count} Samples
     </div>
   );
 
@@ -155,7 +187,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
     <div 
       key={holiday.region + holiday.name} 
       className="text-[8px] xl:text-[9px] font-black text-slate-500/80 dark:text-slate-400 uppercase leading-none truncate whitespace-nowrap mb-0.5 bg-slate-200/50 dark:bg-slate-700/50 px-1 rounded-sm border border-slate-300/30"
-      title={`法定假期: ${holiday.region} ${holiday.name}`}
+      title={`Holiday: ${holiday.region} ${holiday.name}`}
     >
       {holiday.region.substring(0, 3)}: {holiday.name}
     </div>
@@ -178,7 +210,11 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
          </div>
          <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(120px,auto)]">
             {days.map(day => {
-               const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
+               const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
+               const dayStr = format(day, 'yyyy-MM-dd');
+               // FIX: Explicitly cast Object.values results to SampleGroupInfo[] to avoid 'unknown' type errors
+               const daySampleGroups = sampleGroups[dayStr] ? (Object.values(sampleGroups[dayStr]) as SampleGroupInfo[]) : [];
+               
                const dayHolidays = checkHolidays(day);
                const isCurrentMonth = isSameMonth(day, monthStart);
                const isDayToday = isToday(day);
@@ -202,7 +238,8 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
                       </span>
                     </div>
                     <div className="flex-1 flex flex-col gap-0.5 overflow-hidden">
-                       {dayEvents.map(e => renderEventBadge(e))}
+                       {dayCustEvents.map(e => renderEventBadge(e))}
+                       {daySampleGroups.map(g => renderSampleGroupBadge(g))}
                     </div>
                  </div>
                );
@@ -219,7 +256,11 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
     return (
       <div className="grid grid-cols-7 gap-2 h-auto">
         {days.map(day => {
-           const dayEvents = events.filter(e => isSameDay(e.dateObj, day));
+           const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
+           const dayStr = format(day, 'yyyy-MM-dd');
+           // FIX: Explicitly cast Object.values results to SampleGroupInfo[] to avoid 'unknown' type errors
+           const daySampleGroups = sampleGroups[dayStr] ? (Object.values(sampleGroups[dayStr]) as SampleGroupInfo[]) : [];
+           
            const dayHolidays = checkHolidays(day);
            const isDayToday = isToday(day);
            const hasHoliday = dayHolidays.length > 0;
@@ -236,7 +277,9 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
                    </div>
                 </div>
                 <div className={`p-2 flex-1 space-y-2 min-h-[400px] ${hasHoliday ? 'bg-slate-50/50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-800'}`}>
-                   {dayEvents.length > 0 ? dayEvents.map(e => renderEventBadge(e)) : <div className="text-xs text-slate-300 text-center py-4">-</div>}
+                   {dayCustEvents.map(e => renderEventBadge(e))}
+                   {daySampleGroups.map(g => renderSampleGroupBadge(g))}
+                   {dayCustEvents.length === 0 && daySampleGroups.length === 0 && <div className="text-xs text-slate-300 text-center py-4">-</div>}
                 </div>
              </div>
            );
@@ -246,7 +289,11 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
   };
 
   const renderDayView = () => {
-     const dayEvents = events.filter(e => isSameDay(e.dateObj, currentDate)).sort((a,b) => a.rank - b.rank);
+     const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, currentDate)).sort((a,b) => a.rank - b.rank);
+     const dayStr = format(currentDate, 'yyyy-MM-dd');
+     // FIX: Explicitly cast Object.values results to SampleGroupInfo[] to avoid 'unknown' type errors
+     const daySampleGroups = sampleGroups[dayStr] ? (Object.values(sampleGroups[dayStr]) as SampleGroupInfo[]) : [];
+     
      const dayHolidays = checkHolidays(currentDate);
      
      return (
@@ -259,31 +306,39 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
             <div className="flex flex-col items-end gap-1.5">
                {dayHolidays.map(h => (
                  <div key={h.name} className="px-3 py-1 bg-slate-200 dark:bg-slate-700 rounded-full text-[10px] xl:text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
-                   法定假期: {h.region} {h.name}
+                   Holiday: {h.region} {h.name}
                  </div>
                ))}
             </div>
           </div>
-          {dayEvents.length === 0 ? (
+          {dayCustEvents.length === 0 && daySampleGroups.length === 0 ? (
              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                 <CalendarIcon className="w-12 h-12 xl:w-16 xl:h-16 opacity-10 mb-2" />
                 <p className="italic text-sm xl:text-base font-medium">No critical actions scheduled for this day.</p>
              </div>
           ) : (
              <div className="space-y-4 max-w-4xl mx-auto">
-               {dayEvents.map(e => (
+               {dayCustEvents.map(e => (
                  <div key={e.id} onClick={() => navigate(`/customers/${e.id}`)} className="flex items-start gap-4 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 hover:shadow-xl cursor-pointer transition-all bg-white dark:bg-slate-900/50 group">
                     <div className={`w-1.5 self-stretch rounded-full ${getUrgencyLevel(e.nextActionDate!) === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
                     <div className="flex-1">
                        <div className="flex justify-between items-start">
-                          <h5 className="font-black text-slate-900 dark:text-white text-base xl:text-lg group-hover:text-blue-600 transition-colors tracking-tight">{e.name}</h5>
+                          <h5 className="font-black text-slate-900 dark:text-white text-base xl:text-lg group-hover:text-blue-600 transition-colors tracking-tight">{e.name} (Customer Action)</h5>
                           <div className="text-[1em]"><RankStars rank={e.rank} /></div>
                        </div>
                        <p className="text-slate-600 dark:text-slate-300 mt-2 font-bold text-sm xl:text-base leading-relaxed italic">{e.upcomingPlan || 'Check details'}</p>
-                       <div className="mt-4 flex gap-2">
-                          <Badge color="gray">{e.status}</Badge>
-                          <Badge color="blue">{e.region.join(', ')}</Badge>
+                    </div>
+                 </div>
+               ))}
+               {daySampleGroups.map(g => (
+                 <div key={`day-samp-${g.customerId}`} onClick={() => navigate(`/customers/${g.customerId}?tab=samples`)} className="flex items-start gap-4 p-6 rounded-2xl border border-blue-100 dark:border-blue-900/40 hover:shadow-xl cursor-pointer transition-all bg-blue-50/30 dark:bg-blue-900/20 group">
+                    <div className="w-1.5 self-stretch rounded-full bg-blue-500"></div>
+                    <div className="flex-1">
+                       <div className="flex justify-between items-start">
+                          <h5 className="font-black text-blue-900 dark:text-blue-100 text-base xl:text-lg group-hover:text-blue-600 transition-colors tracking-tight">{g.customerName}</h5>
+                          <Badge color="blue">Sample Reminders</Badge>
                        </div>
+                       <p className="text-blue-700 dark:text-blue-300 mt-2 font-bold text-sm xl:text-base leading-relaxed italic">{g.count} samples reaching their target date today.</p>
                     </div>
                  </div>
                ))}
@@ -309,24 +364,20 @@ const DashboardCalendar: React.FC<{ customers: Customer[] }> = ({ customers }) =
                 {format(currentDate, 'MMMM yyyy')}
              </span>
              
-             {/* Holiday Region Dropdown */}
              <div className="relative ml-4">
                 <button 
                   onClick={() => setIsHolidayMenuOpen(!isHolidayMenuOpen)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${isHolidayMenuOpen ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20 shadow-md scale-105' : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-50'}`}
                 >
                    <Globe size={14} />
-                   假期过滤 ({selectedHolidayRegions.length})
+                   Holidays ({selectedHolidayRegions.length})
                 </button>
                 {isHolidayMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsHolidayMenuOpen(false)}></div>
                     <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl z-50 p-3 animate-in fade-in zoom-in-95 duration-200">
                        <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 mb-2 flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">选择地区</span>
-                          <button className="text-[10px] text-blue-600 font-black hover:underline" onClick={() => setSelectedHolidayRegions(selectedHolidayRegions.length === availableRegions.length ? [] : availableRegions)}>
-                            {selectedHolidayRegions.length === availableRegions.length ? '取消' : '全选'}
-                          </button>
+                          <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Select Regions</span>
                        </div>
                        <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
                           {availableRegions.map(region => (
@@ -378,8 +429,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     if (!rankCondition) return false;
     const now = new Date();
     const actionDate = c.nextActionDate ? new Date(c.nextActionDate) : null;
-    const isOverdue = actionDate && isBefore(actionDate, now);
-    const isUpcoming = actionDate && isBefore(actionDate, addDays(now, 7)) && !isOverdue;
+    const isOverdue = actionDate && actionDate < now;
+    const isUpcoming = actionDate && actionDate < addDays(now, 7) && !isOverdue;
     return isOverdue || isUpcoming;
   }).sort((a, b) => {
     if (a.rank !== b.rank) return a.rank - b.rank;
@@ -454,7 +505,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           </div>
         </Card>
         <Card className="p-5 xl:p-8 flex items-center gap-5 xl:gap-8 border-l-4 border-l-red-500 shadow-sm border-2">
-          <div className="p-3 xl:p-5 bg-red-50 dark:bg-red-900/50 rounded-2xl text-red-600 dark:text-red-400 shadow-sm border border-red-100">
+          <div className="p-3 xl:p-5 bg-red-50 dark:bg-red-900/50 rounded-2xl text-red-600 dark:text-red-400 shadow-sm border border-blue-100">
             <AlertTriangle className={iconClass} />
           </div>
           <div>
@@ -465,7 +516,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
       </div>
 
       <div className="w-full">
-         <DashboardCalendar customers={customers} />
+         <DashboardCalendar customers={customers} samples={samples} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
