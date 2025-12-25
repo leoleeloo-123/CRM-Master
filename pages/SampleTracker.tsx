@@ -27,6 +27,20 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const [filterCustomer, setFilterCustomer] = useState<string>('');
   const [filterGrading, setFilterGrading] = useState<string>('');
 
+  // Add Sample Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newSample, setNewSample] = useState({
+    customerId: '',
+    crystalType: tagOptions.crystalType[0] || '',
+    productCategory: [tagOptions.productCategory[0] || ''],
+    productForm: tagOptions.productForm[0] || '',
+    originalSize: '',
+    processedSize: '',
+    quantity: '',
+    status: tagOptions.sampleStatus[0] || 'Requested',
+    sampleSKU: ''
+  });
+
   const filteredSamples = samples.filter(s => {
     const matchesSearch = (s.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.sampleName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,7 +68,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     if (!dateStr || !isValid(new Date(dateStr))) return "bg-white dark:bg-slate-800";
     const diff = differenceInDays(new Date(), new Date(dateStr));
     
-    // Strict Protocol: <7 Green, 7-30 Yellow, >30 Red
     if (diff < 7) return "bg-emerald-50/40 border-l-emerald-500 dark:bg-emerald-900/10";
     if (diff < 30) return "bg-amber-50/40 border-l-amber-500 dark:bg-amber-900/10";
     return "bg-red-50/40 border-l-red-500 dark:bg-red-900/10";
@@ -83,11 +96,61 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const resetFilters = () => {
     setSearchTerm('');
     setFilterStatus('');
-    setFilterTestFinished('all');
+    setFilterTestFinished('ongoing');
     setFilterCrystal('');
     setFilterForm('');
     setFilterCustomer('');
     setFilterGrading('');
+  };
+
+  const handleCreateSample = () => {
+    if (!newSample.customerId) {
+      alert("Please select a customer.");
+      return;
+    }
+
+    const targetCustomer = customers.find(c => c.id === newSample.customerId);
+    if (!targetCustomer) return;
+
+    // Calculate sample index for this specific customer
+    const existingForCustomer = samples.filter(s => s.customerId === newSample.customerId);
+    const maxIndex = existingForCustomer.reduce((max, s) => Math.max(max, s.sampleIndex || 0), 0);
+    const newIndex = maxIndex + 1;
+
+    // Generate Name: Crystal + Category + Form - Orig > Processed
+    const catStr = newSample.productCategory.join(', ');
+    const procPart = newSample.processedSize ? ` > ${newSample.processedSize}` : '';
+    const generatedName = `${newSample.crystalType} ${catStr} ${newSample.productForm} - ${newSample.originalSize}${procPart}`;
+
+    const newId = `s_${Date.now()}`;
+    const now = format(new Date(), 'yyyy-MM-dd');
+
+    const sampleRecord: Sample = {
+      id: newId,
+      customerId: newSample.customerId,
+      customerName: targetCustomer.name,
+      sampleIndex: newIndex,
+      sampleSKU: newSample.sampleSKU,
+      status: newSample.status,
+      lastStatusDate: now,
+      testStatus: 'Ongoing',
+      crystalType: newSample.crystalType,
+      productCategory: newSample.productCategory as ProductCategory[],
+      productForm: newSample.productForm as ProductForm,
+      originalSize: newSample.originalSize,
+      processedSize: newSample.processedSize,
+      quantity: newSample.quantity || '0',
+      sampleName: generatedName,
+      requestDate: now,
+      productType: generatedName,
+      specs: `${newSample.originalSize}${procPart}`,
+      statusDetails: `【${now}】Sample record created manually.`
+    };
+
+    setSamples(prev => [...prev, sampleRecord]);
+    syncSampleToCatalog(sampleRecord);
+    setIsAddModalOpen(false);
+    navigate(`/samples/${newId}`);
   };
 
   return (
@@ -102,7 +165,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              <Button variant={viewMode === 'list' ? 'primary' : 'ghost'} onClick={() => setViewMode('list')} className="py-1 px-4">{t('list')}</Button>
              <Button variant={viewMode === 'board' ? 'primary' : 'ghost'} onClick={() => setViewMode('board')} className="py-1 px-4">{t('board')}</Button>
           </div>
-          <Button className="flex items-center gap-2" onClick={() => navigate('/data-management')}><Plus size={18} /> {t('newSample')}</Button>
+          <Button className="flex items-center gap-2 shadow-md" onClick={() => setIsAddModalOpen(true)}><Plus size={18} /> {t('newSample')}</Button>
         </div>
       </div>
 
@@ -247,6 +310,123 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
           </div>
         )}
       </div>
+
+      {/* Create Sample Modal */}
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={t('createSample')}>
+         <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-1 md:col-span-2">
+                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('selectCustomer')} *</label>
+                 <select 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    value={newSample.customerId}
+                    onChange={(e) => setNewSample({...newSample, customerId: e.target.value})}
+                 >
+                    <option value="">-- Choose Customer --</option>
+                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                 </select>
+              </div>
+              
+              <div>
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('crystal')}</label>
+                 <select 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    value={newSample.crystalType}
+                    onChange={(e) => setNewSample({...newSample, crystalType: e.target.value})}
+                 >
+                    {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any)}</option>)}
+                 </select>
+              </div>
+
+              <div>
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('form')}</label>
+                 <select 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    value={newSample.productForm}
+                    onChange={(e) => setNewSample({...newSample, productForm: e.target.value})}
+                 >
+                    {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any)}</option>)}
+                 </select>
+              </div>
+
+              <div className="col-span-1 md:col-span-2">
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('category')}</label>
+                 <div className="flex flex-wrap gap-2 p-3 border-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                    {tagOptions.productCategory.map(cat => (
+                      <button 
+                        key={cat}
+                        onClick={() => {
+                          const updated = newSample.productCategory.includes(cat)
+                            ? newSample.productCategory.filter(c => c !== cat)
+                            : [...newSample.productCategory, cat];
+                          setNewSample({...newSample, productCategory: updated});
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-black transition-all ${newSample.productCategory.includes(cat) ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200'}`}
+                      >
+                        {t(cat as any)}
+                      </button>
+                    ))}
+                 </div>
+              </div>
+
+              <div>
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('original')}</label>
+                 <input 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    value={newSample.originalSize}
+                    onChange={(e) => setNewSample({...newSample, originalSize: e.target.value})}
+                    placeholder="e.g. 10um"
+                 />
+              </div>
+
+              <div>
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('processed')}</label>
+                 <input 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    value={newSample.processedSize}
+                    onChange={(e) => setNewSample({...newSample, processedSize: e.target.value})}
+                    placeholder="e.g. 5um"
+                 />
+              </div>
+
+              <div>
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('quantity')}</label>
+                 <input 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    value={newSample.quantity}
+                    onChange={(e) => setNewSample({...newSample, quantity: e.target.value})}
+                    placeholder="e.g. 500g"
+                 />
+              </div>
+
+              <div>
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('sampleSku')}</label>
+                 <input 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-mono text-sm"
+                    value={newSample.sampleSKU}
+                    onChange={(e) => setNewSample({...newSample, sampleSKU: e.target.value})}
+                    placeholder="Internal SKU..."
+                 />
+              </div>
+
+              <div className="col-span-1 md:col-span-2">
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('currentStatus')}</label>
+                 <select 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    value={newSample.status}
+                    onChange={(e) => setNewSample({...newSample, status: e.target.value})}
+                 >
+                    {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any)}</option>)}
+                 </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
+               <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+               <Button onClick={handleCreateSample} className="px-8 shadow-xl bg-blue-600">Create Sample</Button>
+            </div>
+         </div>
+      </Modal>
     </div>
   );
 };
