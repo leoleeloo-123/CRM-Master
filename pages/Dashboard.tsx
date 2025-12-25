@@ -422,18 +422,24 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
 const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const navigate = useNavigate();
   const { t, tagOptions } = useApp();
-  const [priorityFilter, setPriorityFilter] = useState<'1' | '1-2'>('1');
+  const [priorityType, setPriorityType] = useState<'customers' | 'samples'>('customers');
 
-  const criticalCustomers = customers.filter(c => {
-    const rankCondition = priorityFilter === '1' ? c.rank === 1 : c.rank <= 2;
-    if (!rankCondition) return false;
+  // Logic for Priority Attention
+  // 1. Customers: Tier 1 Only (rank 1)
+  const priorityCustomers = customers.filter(c => c.rank === 1).sort((a, b) => {
+    const dateA = a.nextActionDate ? new Date(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
+    const dateB = b.nextActionDate ? new Date(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
+    return dateA - dateB;
+  });
+
+  // 2. Samples: DDL within next 7 days (including overdue)
+  const prioritySamples = samples.filter(s => {
+    if (!s.nextActionDate) return false;
+    const actionDate = new Date(s.nextActionDate);
     const now = new Date();
-    const actionDate = c.nextActionDate ? new Date(c.nextActionDate) : null;
-    const isOverdue = actionDate && actionDate < now;
-    const isUpcoming = actionDate && actionDate < addDays(now, 7) && !isOverdue;
-    return isOverdue || isUpcoming;
+    const limit = addDays(now, 7);
+    return actionDate <= limit;
   }).sort((a, b) => {
-    if (a.rank !== b.rank) return a.rank - b.rank;
     const dateA = a.nextActionDate ? new Date(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
     const dateB = b.nextActionDate ? new Date(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
     return dateA - dateB;
@@ -510,7 +516,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           </div>
           <div>
             <p className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Critical Actions</p>
-            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{criticalCustomers.length}</p>
+            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{priorityCustomers.length + prioritySamples.length}</p>
           </div>
         </Card>
       </div>
@@ -527,55 +533,100 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 <AlertTriangle className="w-6 h-6 text-amber-500" />
                 {t('priorityAttention')}
               </h3>
-              <button onClick={() => navigate('/customers')} className="text-xs xl:text-sm font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center gap-1.5 group transition-colors">
+              <button 
+                onClick={() => navigate(priorityType === 'customers' ? '/customers' : '/samples')} 
+                className="text-xs xl:text-sm font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center gap-1.5 group transition-colors"
+              >
                 View All <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
             
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl self-start shadow-inner">
-               <button onClick={() => setPriorityFilter('1')} className={`px-5 py-2 text-xs font-black rounded-lg transition-all ${priorityFilter === '1' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>Tier 1 Only</button>
-               <button onClick={() => setPriorityFilter('1-2')} className={`px-5 py-2 text-xs font-black rounded-lg transition-all ${priorityFilter === '1-2' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>Tier 1 & 2</button>
+               <button onClick={() => setPriorityType('customers')} className={`px-5 py-2 text-xs font-black rounded-lg transition-all ${priorityType === 'customers' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>Customers</button>
+               <button onClick={() => setPriorityType('samples')} className={`px-5 py-2 text-xs font-black rounded-lg transition-all ${priorityType === 'samples' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>Samples</button>
             </div>
           </div>
           
           <div className="space-y-4 overflow-y-auto max-h-[600px] pr-2 scrollbar-hide">
-            {criticalCustomers.length === 0 ? (
-              <Card className="p-12 text-center text-slate-400 italic font-medium border-2">
-                <p>No critical actions pending. Great job!</p>
-              </Card>
-            ) : (
-              criticalCustomers.map(c => { 
-                const urgency = getUrgencyLevel(c.nextActionDate);
-                let dateColor = "text-slate-400";
-                if (urgency === 'urgent') dateColor = "text-red-600 dark:text-red-500 font-black";
-                if (urgency === 'warning') dateColor = "text-amber-600 dark:text-amber-500 font-black";
+            {priorityType === 'customers' ? (
+              priorityCustomers.length === 0 ? (
+                <Card className="p-12 text-center text-slate-400 italic font-medium border-2">
+                  <p>No rank 1 customers found.</p>
+                </Card>
+              ) : (
+                priorityCustomers.map(c => { 
+                  const urgency = getUrgencyLevel(c.nextActionDate);
+                  let dateColor = "text-slate-400";
+                  if (urgency === 'urgent') dateColor = "text-red-600 dark:text-red-500 font-black";
+                  if (urgency === 'warning') dateColor = "text-amber-600 dark:text-amber-500 font-black";
 
-                return (
-                  <Card key={c.id} className="p-5 hover:shadow-xl transition-all cursor-pointer border-2 border-slate-100 dark:border-slate-800 group" onClick={() => navigate(`/customers/${c.id}`)}>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-start">
-                         <div className="flex gap-4">
-                             <div className={`w-1.5 self-stretch rounded-full ${urgency === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
-                             <div>
-                                <h4 className="font-black text-slate-900 dark:text-white text-base group-hover:text-blue-600 transition-colors tracking-tight leading-tight">{c.name}</h4>
-                                <div className="mt-2 text-[0.85em]"><RankStars rank={c.rank} /></div>
-                             </div>
-                         </div>
-                         <div className={`flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest ${dateColor}`}>
-                           <CalendarIcon className="w-3.5 h-3.5" />
-                           <span>{c.nextActionDate ? format(new Date(c.nextActionDate), 'MMM d') : 'N/A'}</span>
-                         </div>
+                  return (
+                    <Card key={c.id} className="p-5 hover:shadow-xl transition-all cursor-pointer border-2 border-slate-100 dark:border-slate-800 group" onClick={() => navigate(`/customers/${c.id}`)}>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-start">
+                           <div className="flex gap-4">
+                               <div className={`w-1.5 self-stretch rounded-full ${urgency === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
+                               <div>
+                                  <h4 className="font-black text-slate-900 dark:text-white text-base group-hover:text-blue-600 transition-colors tracking-tight leading-tight">{c.name}</h4>
+                                  <div className="mt-2 text-[0.85em]"><RankStars rank={c.rank} /></div>
+                               </div>
+                           </div>
+                           <div className={`flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest ${dateColor}`}>
+                             <CalendarIcon className="w-3.5 h-3.5" />
+                             <span>{c.nextActionDate ? format(new Date(c.nextActionDate), 'MMM d') : 'N/A'}</span>
+                           </div>
+                        </div>
+                        <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 pl-5 leading-relaxed italic">
+                           {c.upcomingPlan || "Update required"}
+                        </p>
+                        <div className="flex justify-between items-center pl-5">
+                           <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
+                        </div>
                       </div>
-                      <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 pl-5 leading-relaxed italic">
-                         {c.upcomingPlan || "Update required"}
-                      </p>
-                      <div className="flex justify-between items-center pl-5">
-                         <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
+                    </Card>
+                  );
+                })
+              )
+            ) : (
+              prioritySamples.length === 0 ? (
+                <Card className="p-12 text-center text-slate-400 italic font-medium border-2">
+                  <p>No samples due within 7 days.</p>
+                </Card>
+              ) : (
+                prioritySamples.map(s => { 
+                  const urgency = getUrgencyLevel(s.nextActionDate);
+                  let dateColor = urgency === 'urgent' ? "text-red-600 dark:text-red-500 font-black" : urgency === 'warning' ? "text-amber-600 dark:text-amber-500 font-black" : "text-slate-400";
+
+                  return (
+                    <Card key={s.id} className="p-5 hover:shadow-xl transition-all cursor-pointer border-2 border-slate-100 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-start">
+                           <div className="flex gap-4">
+                               <div className="p-2 bg-blue-50 dark:bg-blue-900/40 rounded-lg">
+                                 <FlaskConical className="w-4 h-4 text-blue-600" />
+                               </div>
+                               <div>
+                                  <h4 className="font-black text-slate-900 dark:text-white text-base group-hover:text-blue-600 transition-colors tracking-tight leading-tight">{s.sampleName}</h4>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{s.customerName}</p>
+                               </div>
+                           </div>
+                           <div className={`flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest ${dateColor}`}>
+                             <CalendarIcon className="w-3.5 h-3.5" />
+                             <span>{s.nextActionDate ? format(new Date(s.nextActionDate), 'MMM d') : 'N/A'}</span>
+                           </div>
+                        </div>
+                        <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 pl-12 leading-relaxed italic">
+                           {s.upcomingPlan || "No specific action logged"}
+                        </p>
+                        <div className="flex justify-between items-center pl-12">
+                           <Badge color="blue">{s.status}</Badge>
+                           <Badge color={s.testStatus === 'Ongoing' ? 'yellow' : 'green'}>{s.testStatus}</Badge>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                );
-              })
+                    </Card>
+                  );
+                })
+              )
             )}
           </div>
         </div>
