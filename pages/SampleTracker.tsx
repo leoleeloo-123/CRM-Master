@@ -41,28 +41,54 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     sampleSKU: ''
   });
 
-  const filteredSamples = samples.filter(s => {
-    const matchesSearch = (s.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (s.sampleName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (s.sampleSKU || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    let matchesTest = true;
-    if (filterTestFinished === 'finished') {
-       matchesTest = s.testStatus === 'Finished';
-    } else if (filterTestFinished === 'ongoing') {
-       matchesTest = s.testStatus === 'Ongoing';
-    } else if (filterTestFinished === 'terminated') {
-       matchesTest = s.testStatus === 'Terminated';
-    }
+  // Helper to detect Chinese characters
+  const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str);
 
-    const matchesStatus = filterStatus ? s.status === filterStatus : true;
-    const matchesCrystal = filterCrystal ? s.crystalType === filterCrystal : true;
-    const matchesForm = filterForm ? s.productForm === filterForm : true;
-    const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
-    const matchesGrading = filterGrading ? s.isGraded === filterGrading : true;
+  const filteredSamples = samples
+    .filter(s => {
+      const matchesSearch = (s.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (s.sampleName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (s.sampleSKU || '').toLowerCase().includes(searchTerm.toLowerCase());
+      
+      let matchesTest = true;
+      if (filterTestFinished === 'finished') {
+         matchesTest = s.testStatus === 'Finished';
+      } else if (filterTestFinished === 'ongoing') {
+         matchesTest = s.testStatus === 'Ongoing';
+      } else if (filterTestFinished === 'terminated') {
+         matchesTest = s.testStatus === 'Terminated';
+      }
 
-    return matchesSearch && matchesTest && matchesStatus && matchesCrystal && matchesForm && matchesCustomer && matchesGrading;
-  });
+      const matchesStatus = filterStatus ? s.status === filterStatus : true;
+      const matchesCrystal = filterCrystal ? s.crystalType === filterCrystal : true;
+      const matchesForm = filterForm ? s.productForm === filterForm : true;
+      const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
+      const matchesGrading = filterGrading ? s.isGraded === filterGrading : true;
+
+      return matchesSearch && matchesTest && matchesStatus && matchesCrystal && matchesForm && matchesCustomer && matchesGrading;
+    })
+    .sort((a, b) => {
+      // 1. Primary: Customer Rank (Highest first: 1 -> 5)
+      const custA = customers.find(c => c.id === a.customerId);
+      const custB = customers.find(c => c.id === b.customerId);
+      const rankA = custA?.rank ?? 5;
+      const rankB = custB?.rank ?? 5;
+      if (rankA !== rankB) return rankA - rankB;
+
+      // 2. Secondary: Customer Name (Ensures Adjacency & Alphabetical: Eng first)
+      const aIsZh = hasChinese(a.customerName);
+      const bIsZh = hasChinese(b.customerName);
+      if (a.customerName !== b.customerName) {
+        if (!aIsZh && bIsZh) return -1;
+        if (aIsZh && !bIsZh) return 1;
+        return a.customerName.localeCompare(b.customerName, 'zh-Hans-CN');
+      }
+
+      // 3. Tertiary: Key Date (Soonest first) - within the same customer group
+      const dateA = a.nextActionDate || '9999-12-31';
+      const dateB = b.nextActionDate || '9999-12-31';
+      return dateA.localeCompare(dateB);
+    });
 
   const getUrgencyColor = (dateStr: string) => {
     if (!dateStr || !isValid(new Date(dateStr))) return "bg-white dark:bg-slate-800";
@@ -112,12 +138,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     const targetCustomer = customers.find(c => c.id === newSample.customerId);
     if (!targetCustomer) return;
 
-    // Calculate sample index for this specific customer
     const existingForCustomer = samples.filter(s => s.customerId === newSample.customerId);
     const maxIndex = existingForCustomer.reduce((max, s) => Math.max(max, s.sampleIndex || 0), 0);
     const newIndex = maxIndex + 1;
 
-    // Generate Name: Crystal + Category + Form - Orig > Processed
     const catStr = newSample.productCategory.join(', ');
     const procPart = newSample.processedSize ? ` > ${newSample.processedSize}` : '';
     const generatedName = `${newSample.crystalType} ${catStr} ${newSample.productForm} - ${newSample.originalSize}${procPart}`;

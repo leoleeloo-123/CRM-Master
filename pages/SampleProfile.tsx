@@ -62,16 +62,20 @@ const SampleProfile: React.FC = () => {
     const items = parts.map((part, idx) => {
       const match = part.match(/【(.*?)】(.*)/);
       return {
-        id: `hist_${idx}`,
+        id: `hist_${idx}_${Date.now()}`,
         date: match ? match[1] : format(new Date(), 'yyyy-MM-dd'),
         text: match ? match[2].trim() : part
       };
     });
+    // Sort descending: Newest at the top
+    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setHistoryItems(items);
   };
 
   const serializeHistory = (items: typeof historyItems): string => {
-    return items.map(item => `【${item.date}】${item.text}`).join(' ||| ');
+    // Keep consistent order in string storage
+    const sorted = [...items].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return sorted.map(item => `【${item.date}】${item.text}`).join(' ||| ');
   };
 
   const saveSampleUpdate = (fields: Partial<Sample>) => {
@@ -127,8 +131,9 @@ const SampleProfile: React.FC = () => {
 
   const handleSaveHistoryItem = (item: {id: string, date: string, text: string}) => {
     const updatedHistory = historyItems.map(i => i.id === item.id ? item : i);
+    updatedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setHistoryItems(updatedHistory);
-    saveSampleUpdate({ statusDetails: serializeHistory(updatedHistory), lastStatusDate: item.date });
+    saveSampleUpdate({ statusDetails: serializeHistory(updatedHistory), lastStatusDate: updatedHistory[0]?.date });
     setEditingHistoryId(null);
   };
 
@@ -136,8 +141,9 @@ const SampleProfile: React.FC = () => {
     if (!newHistoryText) return;
     const newItem = { id: `new_${Date.now()}`, date: newHistoryDate || format(new Date(), 'yyyy-MM-dd'), text: newHistoryText };
     const updatedHistory = [newItem, ...historyItems];
+    updatedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setHistoryItems(updatedHistory);
-    saveSampleUpdate({ statusDetails: serializeHistory(updatedHistory), lastStatusDate: newItem.date });
+    saveSampleUpdate({ statusDetails: serializeHistory(updatedHistory), lastStatusDate: updatedHistory[0]?.date });
     setIsAddingHistory(false);
     setNewHistoryText('');
     setNewHistoryDate('');
@@ -392,7 +398,7 @@ const SampleProfile: React.FC = () => {
                      </button>
                   </div>
                   <div className="relative border-l-4 border-slate-50 dark:border-slate-800 ml-5 space-y-10 pl-10 py-4">
-                     {historyItems.length > 0 ? historyItems.slice(0, 3).map((item) => (
+                     {historyItems.length > 0 ? historyItems.map((item) => (
                        <div key={item.id} className="relative group">
                           {/* Dot aligned to border-l-4 */}
                           <div className="absolute -left-[50px] top-1.5 w-5 h-5 rounded-full bg-white dark:bg-slate-900 border-4 border-slate-100 dark:border-slate-800 group-hover:border-blue-500 group-hover:scale-125 transition-all"></div>
