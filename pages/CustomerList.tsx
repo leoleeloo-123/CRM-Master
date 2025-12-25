@@ -5,6 +5,7 @@ import { Card, Button, RankStars, StatusIcon, Modal } from '../components/Common
 import { Search, Plus, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { differenceInDays, isValid } from 'date-fns';
 
 interface CustomerListProps {
   customers: Customer[];
@@ -52,7 +53,14 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
         return dateA.localeCompare(dateB);
       }
 
-      // 3. Tertiary sort: Alphabetical (Pure English first, then Chinese)
+      // 3. Tertiary sort: Days Since Update (Near to far / Most recent first)
+      const daysA = a.lastStatusUpdate ? differenceInDays(new Date(), new Date(a.lastStatusUpdate)) : 9999;
+      const daysB = b.lastStatusUpdate ? differenceInDays(new Date(), new Date(b.lastStatusUpdate)) : 9999;
+      if (daysA !== daysB) {
+        return daysA - daysB;
+      }
+
+      // 4. Quaternary sort: Alphabetical (Pure English first, then Chinese)
       const aIsZh = hasChinese(a.name);
       const bIsZh = hasChinese(b.name);
 
@@ -69,6 +77,14 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     if (s === 'Waiting for Customer' || s === '等待对方') return t('statusWaiting');
     if (s === 'No Action' || s === '暂无') return t('statusNoAction');
     return s;
+  };
+
+  const getDaysSinceColor = (dateStr: string) => {
+    if (!dateStr || !isValid(new Date(dateStr))) return 'text-slate-400';
+    const diff = differenceInDays(new Date(), new Date(dateStr));
+    if (diff < 7) return 'text-emerald-500 font-black';
+    if (diff <= 21) return 'text-amber-500 font-black';
+    return 'text-red-500 font-black';
   };
 
   const handleCreateCustomer = () => {
@@ -154,7 +170,8 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm xl:text-base uppercase tracking-wider">
                 <th className="p-4 xl:p-6 font-semibold w-1/4">Customer</th>
-                <th className="p-4 xl:p-6 font-semibold w-1/12">{t('rank')}</th>
+                <th className="p-4 xl:p-6 font-semibold w-1/12 text-center">{t('rank')}</th>
+                <th className="p-4 xl:p-6 font-semibold w-1/12 text-center">Aging</th>
                 <th className="p-4 xl:p-6 font-semibold w-1/12">{t('status')}</th>
                 <th className="p-4 xl:p-6 font-semibold w-1/6">Next Action</th>
                 <th className="p-4 xl:p-6 font-semibold w-1/3">Upcoming Plan</th>
@@ -162,53 +179,61 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
               </tr>
             </thead>
             <tbody className="text-slate-700 dark:text-slate-300 text-sm xl:text-base">
-              {filteredCustomers.map(customer => (
-                <tr 
-                  key={customer.id} 
-                  className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer group"
-                  onClick={() => navigate(`/customers/${customer.id}`)}
-                >
-                  <td className="p-4 xl:p-6 align-top">
-                    <div className="font-bold text-slate-900 dark:text-white text-lg xl:text-2xl mb-1">{customer.name}</div>
-                    <div className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 mb-2">
-                       {Array.isArray(customer.region) ? customer.region.join(', ') : customer.region}
-                    </div>
-                    <div className="flex gap-1 flex-wrap">
-                      {customer.tags.slice(0, 3).map(t => (
-                        <span key={t} className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-xs xl:text-sm">{t}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="p-4 xl:p-6 align-top">
-                    <RankStars 
-                      rank={customer.rank} 
-                      editable={false} 
-                    />
-                  </td>
-                  <td className="p-4 xl:p-6 align-top">
-                    <div className="flex items-center gap-2">
-                      <StatusIcon status={customer.followUpStatus || customer.status} />
-                      <span className="font-medium text-xs xl:text-sm whitespace-nowrap">
-                        {getStatusLabel(customer.followUpStatus || customer.status)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-4 xl:p-6 align-top font-medium">
-                     <div className="text-slate-800 dark:text-white text-sm xl:text-lg">{customer.nextActionDate || "-"}</div>
-                  </td>
-                  <td className="p-4 xl:p-6 align-top">
-                    <div className="text-slate-600 dark:text-slate-300 line-clamp-3 text-sm xl:text-lg leading-relaxed">
-                      {customer.upcomingPlan || <span className="text-slate-400 italic font-medium">No upcoming plan logged.</span>}
-                    </div>
-                  </td>
-                  <td className="p-4 xl:p-6 align-top text-right">
-                    <ChevronRight className="w-5 h-5 xl:w-7 xl:h-7 text-slate-300 group-hover:text-blue-500" />
-                  </td>
-                </tr>
-              ))}
+              {filteredCustomers.map(customer => {
+                const daysDiff = customer.lastStatusUpdate ? differenceInDays(new Date(), new Date(customer.lastStatusUpdate)) : null;
+                return (
+                  <tr 
+                    key={customer.id} 
+                    className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer group"
+                    onClick={() => navigate(`/customers/${customer.id}`)}
+                  >
+                    <td className="p-4 xl:p-6 align-top">
+                      <div className="font-bold text-slate-900 dark:text-white text-lg xl:text-2xl mb-1">{customer.name}</div>
+                      <div className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 mb-2">
+                         {Array.isArray(customer.region) ? customer.region.join(', ') : customer.region}
+                      </div>
+                      <div className="flex gap-1 flex-wrap">
+                        {customer.tags.slice(0, 3).map(t => (
+                          <span key={t} className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-xs xl:text-sm">{t}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="p-4 xl:p-6 align-top text-center">
+                      <RankStars 
+                        rank={customer.rank} 
+                        editable={false} 
+                      />
+                    </td>
+                    <td className="p-4 xl:p-6 align-top text-center">
+                      <div className={`text-base xl:text-lg ${getDaysSinceColor(customer.lastStatusUpdate)}`}>
+                        {daysDiff !== null ? `${daysDiff}d` : '-'}
+                      </div>
+                    </td>
+                    <td className="p-4 xl:p-6 align-top">
+                      <div className="flex items-center gap-2">
+                        <StatusIcon status={customer.followUpStatus || customer.status} />
+                        <span className="font-medium text-xs xl:text-sm whitespace-nowrap">
+                          {getStatusLabel(customer.followUpStatus || customer.status)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4 xl:p-6 align-top font-medium">
+                       <div className="text-slate-800 dark:text-white text-sm xl:text-lg">{customer.nextActionDate || "-"}</div>
+                    </td>
+                    <td className="p-4 xl:p-6 align-top">
+                      <div className="text-slate-600 dark:text-slate-300 line-clamp-3 text-sm xl:text-lg leading-relaxed">
+                        {customer.upcomingPlan || <span className="text-slate-400 italic font-medium">No upcoming plan logged.</span>}
+                      </div>
+                    </td>
+                    <td className="p-4 xl:p-6 align-top text-right">
+                      <ChevronRight className="w-5 h-5 xl:w-7 xl:h-7 text-slate-300 group-hover:text-blue-500" />
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredCustomers.length === 0 && (
                  <tr>
-                   <td colSpan={6} className="p-8 xl:p-12 text-center text-slate-500 dark:text-slate-400 text-lg">
+                   <td colSpan={7} className="p-8 xl:p-12 text-center text-slate-500 dark:text-slate-400 text-lg">
                      {t('noCustomersFound')}
                    </td>
                  </tr>
