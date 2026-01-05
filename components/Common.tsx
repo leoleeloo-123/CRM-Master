@@ -2,7 +2,21 @@
 import React from 'react';
 import { Rank } from '../types';
 import { Star, AlertCircle, CheckCircle2, Clock, CalendarDays, Timer, X, Edit2, PencilLine } from 'lucide-react';
-import { differenceInDays, isValid } from 'date-fns';
+import { differenceInDays, isValid, startOfDay } from 'date-fns';
+
+/**
+ * Parses a YYYY-MM-DD string into a local Date object.
+ * Standard new Date("YYYY-MM-DD") treats it as UTC, causing 1-day offsets in Western timezones.
+ */
+export const parseLocalDate = (dateStr: string): Date => {
+  if (!dateStr) return new Date();
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return new Date(dateStr);
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // 0-indexed
+  const day = parseInt(parts[2], 10);
+  return new Date(year, month, day);
+};
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = '', onClick }) => (
   <div onClick={onClick} className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 ${className}`}>
@@ -101,11 +115,13 @@ export const DaysCounter: React.FC<{
   };
 
   const isInteractive = !!onDateChange;
-  const daysDiff = date && isValid(new Date(date)) ? differenceInDays(new Date(), new Date(date)) : 0;
+  // Fix: Use parseLocalDate for consistent timezone handling
+  const targetDate = date ? parseLocalDate(date) : null;
+  const daysDiff = targetDate && isValid(targetDate) ? differenceInDays(startOfDay(new Date()), startOfDay(targetDate)) : 0;
   const displayDays = type === 'elapsed' ? daysDiff : -daysDiff; 
   
   let colorClass = "text-slate-700 dark:text-slate-200";
-  if (date && isValid(new Date(date))) {
+  if (targetDate && isValid(targetDate)) {
     if (type === 'elapsed') {
       if (displayDays < 7) colorClass = "text-emerald-500";
       else if (displayDays < 30) colorClass = "text-amber-500";
@@ -120,7 +136,7 @@ export const DaysCounter: React.FC<{
   return (
     <div className={`flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[120px] h-32 xl:h-40 shadow-sm relative group transition-all hover:shadow-md ${isInteractive ? 'hover:border-blue-400' : ''}`}>
       <div className={`font-black text-3xl xl:text-5xl mb-1 ${colorClass}`}>
-        {!date || !isValid(new Date(date)) ? '-' : Math.abs(displayDays)}
+        {!date ? '-' : Math.abs(displayDays)}
       </div>
       <span className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest text-center px-2 leading-tight">{label}</span>
       
@@ -160,9 +176,10 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
 
 export const getUrgencyLevel = (dateStr?: string): 'urgent' | 'warning' | 'safe' | 'none' => {
   if (!dateStr) return 'none';
-  const target = new Date(dateStr);
+  // Fix: Use parseLocalDate
+  const target = parseLocalDate(dateStr);
   if (!isValid(target)) return 'none';
-  const diff = differenceInDays(target, new Date());
+  const diff = differenceInDays(startOfDay(target), startOfDay(new Date()));
   if (diff < 7) return 'urgent';
   if (diff <= 14) return 'warning';
   return 'safe';

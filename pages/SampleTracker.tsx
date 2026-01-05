@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
-import { Card, Badge, Button, Modal } from '../components/Common';
+import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
 import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { format, differenceInDays, isValid } from 'date-fns';
+import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 interface SampleTrackerProps {
@@ -91,8 +91,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     });
 
   const getUrgencyColor = (dateStr: string) => {
-    if (!dateStr || !isValid(new Date(dateStr))) return "bg-white dark:bg-slate-800";
-    const diff = differenceInDays(new Date(), new Date(dateStr));
+    if (!dateStr) return "bg-white dark:bg-slate-800";
+    // Fix: Use parseLocalDate
+    const targetDate = parseLocalDate(dateStr);
+    if (!isValid(targetDate)) return "bg-white dark:bg-slate-800";
+    const diff = differenceInDays(startOfDay(new Date()), startOfDay(targetDate));
     
     if (diff < 7) return "bg-emerald-50/40 border-l-emerald-500 dark:bg-emerald-900/10";
     if (diff < 30) return "bg-amber-50/40 border-l-amber-500 dark:bg-amber-900/10";
@@ -100,8 +103,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   };
 
   const renderDaysSinceUpdate = (dateStr: string) => {
-    if (!dateStr || !isValid(new Date(dateStr))) return <span className="text-slate-400">-</span>;
-    const diff = differenceInDays(new Date(), new Date(dateStr));
+    if (!dateStr) return <span className="text-slate-400">-</span>;
+    // Fix: Use parseLocalDate
+    const targetDate = parseLocalDate(dateStr);
+    if (!isValid(targetDate)) return <span className="text-slate-400">-</span>;
+    const diff = differenceInDays(startOfDay(new Date()), startOfDay(targetDate));
     let colorClass = diff < 7 ? "text-emerald-600" : diff < 30 ? "text-amber-500" : "text-red-500";
     return <span className={`font-bold ${colorClass}`}>{diff}d</span>;
   };

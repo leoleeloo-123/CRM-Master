@@ -1,14 +1,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { Customer, Sample } from '../types';
-import { Card, Badge, RankStars, getUrgencyLevel, Button } from '../components/Common';
+import { Card, Badge, RankStars, getUrgencyLevel, Button, parseLocalDate } from '../components/Common';
 import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { 
   format, isBefore, addDays, 
   endOfMonth, endOfWeek, eachDayOfInterval, 
   isSameMonth, isSameDay, addMonths, addWeeks, 
-  isToday 
+  isToday, startOfDay
 } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
@@ -106,11 +106,14 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
   const [selectedHolidayRegions, setSelectedHolidayRegions] = useState<string[]>(['China', 'USA', 'Japan']);
   const [isHolidayMenuOpen, setIsHolidayMenuOpen] = useState(false);
 
-  const customerEvents = customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
-    ...c,
-    dateObj: new Date(c.nextActionDate!),
-    type: 'customer' as const
-  }));
+  // Fix: Use parseLocalDate to ensure DDLs don't shift by 1 day
+  const customerEvents = useMemo(() => 
+    customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
+      ...c,
+      dateObj: parseLocalDate(c.nextActionDate!),
+      type: 'customer' as const
+    })), [customers]
+  );
 
   const sampleGroups = useMemo(() => {
     // Explicitly define groups type to avoid 'unknown' when using Object.values
@@ -121,7 +124,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
         const cid = s.customerId;
         if (!groups[dateStr]) groups[dateStr] = {};
         if (!groups[dateStr][cid]) {
-          groups[dateStr][cid] = { customerId: cid, customerName: s.customerName, count: 0, dateObj: new Date(dateStr) };
+          groups[dateStr][cid] = { customerId: cid, customerName: s.customerName, count: 0, dateObj: parseLocalDate(dateStr) };
         }
         groups[dateStr][cid].count++;
       }
@@ -426,24 +429,28 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
   // Logic for Priority Attention
   // 1. Customers: Tier 1 Only (rank 1)
-  const priorityCustomers = customers.filter(c => c.rank === 1).sort((a, b) => {
-    const dateA = a.nextActionDate ? new Date(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
-    const dateB = b.nextActionDate ? new Date(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
-    return dateA - dateB;
-  });
+  const priorityCustomers = useMemo(() => 
+    customers.filter(c => c.rank === 1).sort((a, b) => {
+      const dateA = a.nextActionDate || '9999-12-31';
+      const dateB = b.nextActionDate || '9999-12-31';
+      return dateA.localeCompare(dateB);
+    }), [customers]
+  );
 
   // 2. Samples: DDL within next 7 days (including overdue)
-  const prioritySamples = samples.filter(s => {
-    if (!s.nextActionDate) return false;
-    const actionDate = new Date(s.nextActionDate);
-    const now = new Date();
-    const limit = addDays(now, 7);
-    return actionDate <= limit;
-  }).sort((a, b) => {
-    const dateA = a.nextActionDate ? new Date(a.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
-    const dateB = b.nextActionDate ? new Date(b.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
-    return dateA - dateB;
-  });
+  const prioritySamples = useMemo(() => 
+    samples.filter(s => {
+      if (!s.nextActionDate) return false;
+      const actionDate = parseLocalDate(s.nextActionDate);
+      const now = startOfDay(new Date());
+      const limit = addDays(now, 7);
+      return actionDate <= limit;
+    }).sort((a, b) => {
+      const dateA = a.nextActionDate || '9999-12-31';
+      const dateB = b.nextActionDate || '9999-12-31';
+      return dateA.localeCompare(dateB);
+    }), [samples]
+  );
 
   const activeSamples = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received', '已送达', '已关闭', '已反馈'].includes(s.status)).length;
   const pendingFeedback = samples.filter(s => ['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status)).length;
@@ -573,7 +580,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                            </div>
                            <div className={`flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest ${dateColor}`}>
                              <CalendarIcon className="w-3.5 h-3.5" />
-                             <span>{c.nextActionDate ? format(new Date(c.nextActionDate), 'MMM d') : 'N/A'}</span>
+                             <span>{c.nextActionDate ? format(parseLocalDate(c.nextActionDate), 'MMM d') : 'N/A'}</span>
                            </div>
                         </div>
                         <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 pl-5 leading-relaxed italic">
@@ -612,7 +619,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                            </div>
                            <div className={`flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest ${dateColor}`}>
                              <CalendarIcon className="w-3.5 h-3.5" />
-                             <span>{s.nextActionDate ? format(new Date(s.nextActionDate), 'MMM d') : 'N/A'}</span>
+                             <span>{s.nextActionDate ? format(parseLocalDate(s.nextActionDate), 'MMM d') : 'N/A'}</span>
                            </div>
                         </div>
                         <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 pl-12 leading-relaxed italic">
