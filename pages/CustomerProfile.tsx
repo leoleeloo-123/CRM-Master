@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank } from '../types';
-import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle } from 'lucide-react';
+import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
 interface CustomerProfileProps {
@@ -19,7 +19,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [searchParams] = useSearchParams();
   const { t } = useApp();
   
-  // Initialize tab from query param if present
   const [activeTab, setActiveTab] = useState<'overview' | 'samples'>(
     searchParams.get('tab') === 'samples' ? 'samples' : 'overview'
   );
@@ -39,7 +38,15 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
 
-  // Sync tab state if search params change
+  // Sort samples by DDL (Soonest first)
+  const sortedCustomerSamples = useMemo(() => {
+    return [...customerSamples].sort((a, b) => {
+      const dateA = a.nextActionDate || '9999-12-31';
+      const dateB = b.nextActionDate || '9999-12-31';
+      return dateA.localeCompare(dateB);
+    });
+  }, [customerSamples]);
+
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'samples') setActiveTab('samples');
@@ -326,22 +333,97 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             )}
 
             {activeTab === 'samples' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4 duration-500">
-                 {customerSamples.map(sample => (
-                   <Card key={sample.id} className="p-6 xl:p-8 hover:shadow-2xl transition-all cursor-pointer border-2 hover:border-blue-500 group bg-white dark:bg-slate-900/40" onClick={() => navigate(`/samples/${sample.id}`)}>
-                      <div className="flex justify-between items-start mb-6">
-                         <div className="p-3 bg-blue-50 dark:bg-blue-900/40 rounded-xl shadow-sm"><Box className="text-blue-600 w-6 h-6 xl:w-8 xl:h-8" /></div>
-                         <Badge color="blue">{sample.status.toUpperCase()}</Badge>
-                      </div>
-                      <h4 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 tracking-tight leading-tight">{sample.sampleName}</h4>
-                      <div className="text-[10px] xl:text-xs font-black text-slate-400 flex items-center gap-4 uppercase tracking-widest mt-4">
-                         <span>SKU: {sample.sampleSKU || '-'}</span>
-                         <span>QTY: {sample.quantity}</span>
-                      </div>
-                   </Card>
-                 ))}
+              <div className="grid grid-cols-1 gap-6 animate-in slide-in-from-right-4 duration-500">
+                 {sortedCustomerSamples.map(sample => {
+                   const sampleUrgency = getUrgencyLevel(sample.nextActionDate);
+                   const isSampleTestFinished = sample.testStatus === 'Finished' || sample.testStatus === 'Terminated';
+                   
+                   // Calc countdown for DDL
+                   let countdownText = '-';
+                   if (sample.nextActionDate && !isSampleTestFinished) {
+                      const diff = differenceInDays(parseLocalDate(sample.nextActionDate), startOfDay(new Date()));
+                      countdownText = diff === 0 ? 'Today' : diff > 0 ? `${diff}d left` : `${Math.abs(diff)}d overdue`;
+                   }
+
+                   // Calc aging
+                   let agingText = '-';
+                   if (sample.lastStatusDate) {
+                      const diff = differenceInDays(startOfDay(new Date()), parseLocalDate(sample.lastStatusDate));
+                      agingText = `${diff}d aging`;
+                   }
+
+                   return (
+                     <Card 
+                        key={sample.id} 
+                        className="p-6 xl:p-8 hover:shadow-xl transition-all cursor-pointer border-2 hover:border-blue-500 group bg-white dark:bg-slate-900/40 relative overflow-hidden" 
+                        onClick={() => navigate(`/samples/${sample.id}`)}
+                     >
+                        <div className="flex flex-col md:flex-row gap-6 items-start">
+                           {/* Left side: Icon & Main Titles */}
+                           <div className="flex items-start gap-5 flex-1 min-w-0">
+                              <div className="p-4 bg-blue-50 dark:bg-blue-900/40 rounded-2xl shadow-sm shrink-0 group-hover:scale-110 transition-transform">
+                                 <FlaskConical className="text-blue-600 w-8 h-8 xl:w-10 xl:h-10" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                 <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <h4 className="font-black text-lg xl:text-2xl text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors tracking-tight truncate leading-tight">
+                                       {sample.sampleName}
+                                    </h4>
+                                 </div>
+                                 <div className="flex items-center gap-3 text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
+                                    <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">SKU: {sample.sampleSKU || 'N/A'}</span>
+                                    <span className="flex items-center gap-1"><Ruler className="w-3 h-3" /> {sample.originalSize} {sample.processedSize ? `> ${sample.processedSize}` : ''}</span>
+                                    <span className="flex items-center gap-1">{sample.crystalType} / {sample.productForm}</span>
+                                 </div>
+                                 
+                                 {/* Upcoming Plan snippet */}
+                                 {sample.upcomingPlan && (
+                                   <div className="flex items-start gap-2 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                      <AlertCircle className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                                      <p className="text-xs xl:text-sm font-bold text-slate-600 dark:text-slate-300 italic truncate max-w-full" title={sample.upcomingPlan}>
+                                         {sample.upcomingPlan}
+                                      </p>
+                                   </div>
+                                 )}
+                              </div>
+                           </div>
+
+                           {/* Right side: Status & DDL info */}
+                           <div className="flex flex-col items-end gap-3 shrink-0 self-stretch justify-between">
+                              <div className="flex flex-wrap justify-end gap-2">
+                                 <Badge color="blue">{t(sample.status as any)}</Badge>
+                                 <Badge color={sample.testStatus === 'Finished' ? 'green' : sample.testStatus === 'Terminated' ? 'red' : 'yellow'}>
+                                    {t(sample.testStatus as any)}
+                                 </Badge>
+                              </div>
+
+                              <div className="flex flex-col items-end gap-1">
+                                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 font-black text-[10px] xl:text-xs uppercase tracking-widest ${
+                                    isSampleTestFinished ? 'bg-slate-50 text-slate-400 border-slate-100' :
+                                    sampleUrgency === 'urgent' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                                    sampleUrgency === 'warning' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                 }`}>
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>DDL: {isSampleTestFinished ? 'N/A' : (sample.nextActionDate || 'TBD')}</span>
+                                    {!isSampleTestFinished && sample.nextActionDate && <span className="ml-1 opacity-60">({countdownText})</span>}
+                                 </div>
+                                 
+                                 <div className="flex items-center gap-4 mt-1">
+                                    <span className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest">{agingText}</span>
+                                    <div className="flex items-center gap-1 text-slate-900 dark:text-white font-black">
+                                       <span className="text-xs xl:text-sm uppercase text-slate-400 mr-1">Qty:</span>
+                                       <span className="text-lg xl:text-xl">{sample.quantity}</span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </Card>
+                   );
+                 })}
+                 
                  {customerSamples.length === 0 && (
-                   <div className="col-span-2 py-20 text-center border-4 border-dashed rounded-[2.5rem] text-slate-200 dark:border-slate-800">
+                   <div className="col-span-1 py-20 text-center border-4 border-dashed rounded-[2.5rem] text-slate-200 dark:border-slate-800">
                       <Box className="w-16 h-16 xl:w-24 xl:h-24 mx-auto mb-6 opacity-10" />
                       <p className="text-sm xl:text-lg font-black uppercase tracking-[0.2em] text-slate-300">No Samples Tracked</p>
                    </div>
