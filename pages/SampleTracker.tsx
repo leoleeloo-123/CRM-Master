@@ -297,11 +297,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
          </div>
       </Card>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0">
         {viewMode === 'list' ? (
-          <Card className="border-0 shadow-xl overflow-hidden">
+          <Card className="h-full border-0 shadow-xl overflow-auto">
              <table className="w-full text-left">
-                <thead className="bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase text-xs font-bold">
+                <thead className="bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase text-xs font-bold sticky top-0 z-10">
                   <tr>
                      <th className="p-4 w-64">Customer</th>
                      <th className="p-4">Generated Product Spec</th>
@@ -384,7 +384,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              </table>
           </Card>
         ) : (
-          <div className="flex h-full gap-6 overflow-x-auto pb-4">
+          <div className="flex h-full gap-6 overflow-x-auto pb-4 scrollbar-hide">
              {tagOptions.sampleStatus.map((status) => {
                 const colSamples = filteredSamples.filter(s => s.status === status);
                 
@@ -400,54 +400,54 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                 });
 
                 return (
-                  <div key={status} className="w-80 shrink-0 bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-4 flex flex-col shadow-inner">
-                     <div className="flex justify-between items-center mb-4 px-1">
-                        <h4 className="font-extrabold uppercase text-[10px] text-slate-500 flex items-center gap-2">
-                           <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <div key={status} className="flex-1 min-w-[320px] max-w-[480px] bg-slate-100 dark:bg-slate-900/50 rounded-3xl p-5 flex flex-col shadow-inner">
+                     <div className="flex justify-between items-center mb-5 px-1">
+                        <h4 className="font-extrabold uppercase text-[11px] text-slate-500 flex items-center gap-2 tracking-widest">
+                           <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
                            {t(status as any)} ({colSamples.length})
                         </h4>
                      </div>
-                     <div className="space-y-4 overflow-y-auto flex-1 pr-1 scrollbar-hide">
+                     <div className="space-y-5 overflow-y-auto flex-1 pr-1 scrollbar-hide">
                         {colGroups.map(group => {
                           const isExpanded = expandedCustomers.has(group.customerId);
                           return (
-                            <div key={`${status}-${group.customerId}`} className="space-y-2">
+                            <div key={`${status}-${group.customerId}`} className="space-y-3">
                                {/* Board Customer Header */}
                                <div 
                                  onClick={() => toggleCustomerExpansion(group.customerId)}
-                                 className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                                 className="flex items-center justify-between p-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-[0.99]"
                                >
-                                 <div className="flex items-center gap-2 min-w-0">
-                                    {isExpanded ? <ChevronDown size={14} className="text-slate-400 shrink-0" /> : <ChevronRight size={14} className="text-slate-400 shrink-0" />}
-                                    <span className="font-black text-[11px] text-slate-900 dark:text-white uppercase truncate">{group.customerName}</span>
+                                 <div className="flex items-center gap-3 min-w-0">
+                                    {isExpanded ? <ChevronDown size={16} className="text-slate-400 shrink-0" /> : <ChevronRight size={16} className="text-slate-400 shrink-0" />}
+                                    <span className="font-black text-xs text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
                                  </div>
                                  <Badge color="gray">{group.samples.length}</Badge>
                                </div>
 
                                {/* Indented Sample Cards */}
                                {isExpanded && (
-                                 <div className="pl-3 space-y-2 border-l-2 border-slate-200 dark:border-slate-800 ml-2">
+                                 <div className="pl-4 space-y-3 border-l-2 border-slate-200 dark:border-slate-800 ml-2">
                                    {group.samples.map(s => (
                                      <Card 
                                        key={s.id} 
                                        onClick={() => navigate(`/samples/${s.id}`)} 
-                                       className={`p-3 cursor-pointer hover:shadow-lg border-l-4 transition-all hover:-translate-y-0.5 ${getUrgencyColor(s.lastStatusDate)}`}
+                                       className={`p-4 cursor-pointer hover:shadow-xl border-l-4 transition-all hover:-translate-y-1 ${getUrgencyColor(s.lastStatusDate)}`}
                                      >
-                                        <div className="flex justify-between items-start mb-1.5">
-                                          <span className="text-[9px] font-bold text-slate-400">#{s.sampleIndex}</span>
+                                        <div className="flex justify-between items-start mb-2">
+                                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample #{s.sampleIndex}</span>
                                           {renderDaysSinceUpdate(s.lastStatusDate)}
                                         </div>
-                                        <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-tight mb-2 line-clamp-2">{s.sampleName}</p>
+                                        <p className="text-sm font-black text-blue-600 dark:text-blue-400 leading-snug mb-3 line-clamp-2 uppercase tracking-tight">{s.sampleName}</p>
                                         
-                                        <div className="flex gap-1 flex-wrap">
+                                        <div className="flex gap-1.5 flex-wrap">
                                           <div className="scale-90 origin-left">
                                             {getTestStatusBadge(s.testStatus)}
                                           </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50 dark:border-slate-800">
-                                          <span className="text-[8px] font-mono text-slate-400 truncate max-w-[100px]">{s.sampleSKU || 'N/A'}</span>
-                                          <span className="text-[9px] font-black text-slate-700 dark:text-slate-300">{s.quantity}</span>
+                                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 dark:border-slate-800">
+                                          <span className="text-[10px] font-mono text-slate-400 truncate max-w-[120px] uppercase">{s.sampleSKU || 'NO SKU'}</span>
+                                          <span className="text-xs font-black text-slate-700 dark:text-slate-300">{s.quantity}</span>
                                         </div>
                                      </Card>
                                    ))}
@@ -456,6 +456,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                             </div>
                           );
                         })}
+                        {colGroups.length === 0 && (
+                           <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl opacity-30">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Empty</span>
+                           </div>
+                        )}
                      </div>
                   </div>
                 );
