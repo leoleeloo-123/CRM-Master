@@ -222,6 +222,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const nextStep = safeCol(17) || '';
     // Use Key Date if provided, else default to today
     const keyDate = normalizeDate(safeCol(18)) || new Date().toISOString().split('T')[0];
+    const docLinks = splitByDelimiter(safeCol(19));
 
     return {
       id: `new_s_${tempIdPrefix}`,
@@ -252,7 +253,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
       requestDate: new Date().toISOString().split('T')[0],
 
       upcomingPlan: nextStep,
-      nextActionDate: keyDate
+      nextActionDate: keyDate,
+      docLinks: docLinks
     } as Sample;
   };
 
@@ -297,7 +299,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       "1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", 
       "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", 
       "11.Details", "12.Quantity", "13.Customer Application", "14.Status Date", 
-      "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date"
+      "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Links"
     ];
 
     const sampRows = samples.map(s => {
@@ -310,6 +312,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
        let exportTestVal = "No";
        if (s.testStatus === 'Finished') exportTestVal = "Yes";
        else if (s.testStatus === 'Terminated') exportTestVal = "Terminated";
+
+       const docLinksStr = s.docLinks ? s.docLinks.join(' ||| ') : '';
 
        return [
          s.customerName,
@@ -330,7 +334,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
          safeDetails,
          s.trackingNumber,
          s.upcomingPlan || '',
-         s.nextActionDate || ''
+         s.nextActionDate || '',
+         docLinksStr
        ];
     });
 
@@ -683,7 +688,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
                         {activeTab === 'customers' 
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
-                          : "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date"
+                          : "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.File Links"
                         }
                       </p>
                    </div>

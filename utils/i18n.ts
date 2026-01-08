@@ -110,6 +110,8 @@ export const translations = {
     test: 'Test',
     deleteSample: 'Delete Sample',
     confirmDeleteSample: 'Are you sure you want to delete this sample record? This action cannot be undone.',
+    fileLinks: 'File Links',
+    addFileLink: 'Add Link',
     
     // Sample Columns & Statuses (UI Labels)
     colRequested: 'Requested',
@@ -315,6 +317,8 @@ export const translations = {
     test: '测试',
     deleteSample: '删除样品',
     confirmDeleteSample: '您确定要删除此样品记录吗？此操作无法撤销。',
+    fileLinks: '超链接 / 文档',
+    addFileLink: '添加链接',
 
     // Sample Columns & Statuses (UI Labels)
     colRequested: '已申请',

@@ -116,6 +116,9 @@ export interface Sample {
   // Sync with Customer features
   upcomingPlan?: string;
   nextActionDate?: string;
+
+  // New multi-link support
+  docLinks?: string[];
 }
 
 export interface DashboardStats {

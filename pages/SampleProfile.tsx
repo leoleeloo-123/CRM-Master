@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal, getUrgencyLevel } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2 } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
 
@@ -32,6 +32,8 @@ const SampleProfile: React.FC = () => {
   const [editCategoryText, setEditCategoryText] = useState('');
   const [editPlanText, setEditPlanText] = useState('');
   const [editPlanDate, setEditPlanDate] = useState('');
+
+  const [newLinkText, setNewLinkText] = useState('');
 
   const [historyItems, setHistoryItems] = useState<{id: string, date: string, text: string}[]>([]);
   const [isAddingHistory, setIsAddingHistory] = useState(false);
@@ -123,6 +125,24 @@ const SampleProfile: React.FC = () => {
     setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
     syncSampleToCatalog(updatedSample);
     setIsEditingSpecs(false);
+  };
+
+  const handleAddLink = () => {
+    if (!newLinkText.trim() || !sample) return;
+    let url = newLinkText.trim();
+    if (!url.startsWith('http')) url = 'https://' + url;
+    
+    const currentLinks = sample.docLinks || [];
+    saveSampleUpdate({ docLinks: [...currentLinks, url] });
+    setNewLinkText('');
+  };
+
+  const handleDeleteLink = (linkToDelete: string) => {
+    if (!sample) return;
+    if (confirm('Delete this link?')) {
+      const updatedLinks = (sample.docLinks || []).filter(l => l !== linkToDelete);
+      saveSampleUpdate({ docLinks: updatedLinks });
+    }
   };
 
   const handleSaveStatus = () => {
@@ -391,7 +411,7 @@ const SampleProfile: React.FC = () => {
              </Card>
           </div>
 
-          {/* Right Column: Upcoming Plan & Application & History */}
+          {/* Right Column: Upcoming Plan & Application & History & Links */}
           <div className="lg:col-span-2 space-y-8">
              {/* Upcoming Plan Section */}
              <div className={`${cardBaseClass} ${urgencyClass} border-2 px-10 py-10 transition-colors`}>
@@ -436,8 +456,48 @@ const SampleProfile: React.FC = () => {
                   )}
                </Card>
 
-               {/* History Card */}
+               {/* File Links Card */}
                <Card className={cardBaseClass}>
+                  <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-50 dark:border-slate-800">
+                     <h3 className={titleClass}><LinkIcon className="w-6 h-6 text-blue-500" /> {t('fileLinks')}</h3>
+                  </div>
+                  <div className="space-y-4">
+                     <div className="flex gap-2">
+                        <input 
+                           className="flex-1 p-3 border-2 border-slate-100 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
+                           placeholder="Paste URL here..."
+                           value={newLinkText}
+                           onChange={(e) => setNewLinkText(e.target.value)}
+                           onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                        />
+                        <button onClick={handleAddLink} className="p-3 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 active:scale-90">
+                           <Plus size={18} />
+                        </button>
+                     </div>
+                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {(sample.docLinks || []).length > 0 ? (sample.docLinks || []).map((link, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 group">
+                             <a 
+                                href={link} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1"
+                             >
+                                <ExternalLink size={14} /> Link {idx + 1}
+                             </a>
+                             <button onClick={() => handleDeleteLink(link)} className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 size={14} />
+                             </button>
+                          </div>
+                        )) : (
+                          <div className="text-center py-6 text-slate-400 italic text-xs xl:text-sm">No links added.</div>
+                        )}
+                     </div>
+                  </div>
+               </Card>
+
+               {/* History Card */}
+               <Card className={`${cardBaseClass} md:col-span-2`}>
                   <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-50 dark:border-slate-800">
                      <h3 className={titleClass}><Activity className="w-6 h-6 text-amber-500" /> STATUS DETAILS / HISTORY</h3>
                      <button onClick={() => { setIsAddingHistory(true); setNewHistoryDate(format(new Date(), 'yyyy-MM-dd')); }} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full font-black text-[10px] tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all">
