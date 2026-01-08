@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
-import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X } from 'lucide-react';
+import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
   
+  // Expansion state for the list view
+  const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
+
   // New Filters
   const [filterCrystal, setFilterCrystal] = useState<string>('');
   const [filterForm, setFilterForm] = useState<string>('');
@@ -44,55 +47,74 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   // Helper to detect Chinese characters
   const hasChinese = (str: string) => /[\u4e00-\u9fa5]/.test(str);
 
-  const filteredSamples = samples
-    .filter(s => {
-      const matchesSearch = (s.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (s.sampleName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (s.sampleSKU || '').toLowerCase().includes(searchTerm.toLowerCase());
-      
-      let matchesTest = true;
-      if (filterTestFinished === 'finished') {
-         matchesTest = s.testStatus === 'Finished';
-      } else if (filterTestFinished === 'ongoing') {
-         matchesTest = s.testStatus === 'Ongoing';
-      } else if (filterTestFinished === 'terminated') {
-         matchesTest = s.testStatus === 'Terminated';
+  const filteredSamples = useMemo(() => {
+    return samples
+      .filter(s => {
+        const matchesSearch = (s.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              (s.sampleName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              (s.sampleSKU || '').toLowerCase().includes(searchTerm.toLowerCase());
+        
+        let matchesTest = true;
+        if (filterTestFinished === 'finished') {
+           matchesTest = s.testStatus === 'Finished';
+        } else if (filterTestFinished === 'ongoing') {
+           matchesTest = s.testStatus === 'Ongoing';
+        } else if (filterTestFinished === 'terminated') {
+           matchesTest = s.testStatus === 'Terminated';
+        }
+
+        const matchesStatus = filterStatus ? s.status === filterStatus : true;
+        const matchesCrystal = filterCrystal ? s.crystalType === filterCrystal : true;
+        const matchesForm = filterForm ? s.productForm === filterForm : true;
+        const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
+        const matchesGrading = filterGrading ? s.isGraded === filterGrading : true;
+
+        return matchesSearch && matchesTest && matchesStatus && matchesCrystal && matchesForm && matchesCustomer && matchesGrading;
+      })
+      .sort((a, b) => {
+        const custA = customers.find(c => c.id === a.customerId);
+        const custB = customers.find(c => c.id === b.customerId);
+        const rankA = custA?.rank ?? 5;
+        const rankB = custB?.rank ?? 5;
+        if (rankA !== rankB) return rankA - rankB;
+
+        const aIsZh = hasChinese(a.customerName);
+        const bIsZh = hasChinese(b.customerName);
+        if (a.customerName !== b.customerName) {
+          if (!aIsZh && bIsZh) return -1;
+          if (aIsZh && !bIsZh) return 1;
+          return a.customerName.localeCompare(b.customerName, 'zh-Hans-CN');
+        }
+
+        const dateA = a.nextActionDate || '9999-12-31';
+        const dateB = b.nextActionDate || '9999-12-31';
+        return dateA.localeCompare(dateB);
+      });
+  }, [samples, searchTerm, filterStatus, filterTestFinished, filterCrystal, filterForm, filterCustomer, filterGrading, customers]);
+
+  // Grouped samples for the List View
+  const groupedSamples = useMemo(() => {
+    const groups: { customerId: string, customerName: string, samples: Sample[] }[] = [];
+    filteredSamples.forEach(s => {
+      let lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.customerId === s.customerId) {
+        lastGroup.samples.push(s);
+      } else {
+        groups.push({ customerId: s.customerId, customerName: s.customerName, samples: [s] });
       }
-
-      const matchesStatus = filterStatus ? s.status === filterStatus : true;
-      const matchesCrystal = filterCrystal ? s.crystalType === filterCrystal : true;
-      const matchesForm = filterForm ? s.productForm === filterForm : true;
-      const matchesCustomer = filterCustomer ? s.customerId === filterCustomer : true;
-      const matchesGrading = filterGrading ? s.isGraded === filterGrading : true;
-
-      return matchesSearch && matchesTest && matchesStatus && matchesCrystal && matchesForm && matchesCustomer && matchesGrading;
-    })
-    .sort((a, b) => {
-      // 1. Primary: Customer Rank (Highest first: 1 -> 5)
-      const custA = customers.find(c => c.id === a.customerId);
-      const custB = customers.find(c => c.id === b.customerId);
-      const rankA = custA?.rank ?? 5;
-      const rankB = custB?.rank ?? 5;
-      if (rankA !== rankB) return rankA - rankB;
-
-      // 2. Secondary: Customer Name (Ensures Adjacency & Alphabetical: Eng first)
-      const aIsZh = hasChinese(a.customerName);
-      const bIsZh = hasChinese(b.customerName);
-      if (a.customerName !== b.customerName) {
-        if (!aIsZh && bIsZh) return -1;
-        if (aIsZh && !bIsZh) return 1;
-        return a.customerName.localeCompare(b.customerName, 'zh-Hans-CN');
-      }
-
-      // 3. Tertiary: Key Date (Soonest first) - within the same customer group
-      const dateA = a.nextActionDate || '9999-12-31';
-      const dateB = b.nextActionDate || '9999-12-31';
-      return dateA.localeCompare(dateB);
     });
+    return groups;
+  }, [filteredSamples]);
+
+  const toggleCustomerExpansion = (cid: string) => {
+    const next = new Set(expandedCustomers);
+    if (next.has(cid)) next.delete(cid);
+    else next.add(cid);
+    setExpandedCustomers(next);
+  };
 
   const getUrgencyColor = (dateStr: string) => {
     if (!dateStr) return "bg-white dark:bg-slate-800";
-    // Fix: Use parseLocalDate
     const targetDate = parseLocalDate(dateStr);
     if (!isValid(targetDate)) return "bg-white dark:bg-slate-800";
     const diff = differenceInDays(startOfDay(new Date()), startOfDay(targetDate));
@@ -104,7 +126,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
 
   const renderDaysSinceUpdate = (dateStr: string) => {
     if (!dateStr) return <span className="text-slate-400">-</span>;
-    // Fix: Use parseLocalDate
     const targetDate = parseLocalDate(dateStr);
     if (!isValid(targetDate)) return <span className="text-slate-400">-</span>;
     const diff = differenceInDays(startOfDay(new Date()), startOfDay(targetDate));
@@ -251,7 +272,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              <table className="w-full text-left">
                 <thead className="bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase text-xs font-bold">
                   <tr>
-                     <th className="p-4">Customer</th>
+                     <th className="p-4 w-64">Customer</th>
                      <th className="p-4">Generated Product Spec</th>
                      <th className="p-4">{t('grading')}</th>
                      <th className="p-4">{t('qtyAbbr')}</th>
@@ -263,36 +284,67 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredSamples.map(s => {
-                    const isTestFinished = s.testStatus === 'Finished' || s.testStatus === 'Terminated';
+                  {groupedSamples.map(group => {
+                    const isExpanded = expandedCustomers.has(group.customerId);
                     return (
-                      <tr key={s.id} onClick={() => navigate(`/samples/${s.id}`)} className={`cursor-pointer hover:bg-slate-100/50 border-l-4 transition-colors ${getUrgencyColor(s.lastStatusDate)}`}>
-                        <td className="p-4 font-bold text-slate-900 dark:text-white">{s.customerName}</td>
-                        <td className="p-4">
-                           <div className="font-bold text-blue-600 dark:text-blue-400">{s.sampleName}</div>
-                           <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
-                        </td>
-                        <td className="p-4">
-                          {getGradingBadge(s.isGraded)}
-                        </td>
-                        <td className="p-4 font-bold text-slate-700 dark:text-slate-300">{s.quantity}</td>
-                        <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
-                        <td className="p-4 max-w-[200px]">
-                           <div className="truncate text-xs text-slate-600 dark:text-slate-300 italic" title={s.upcomingPlan}>
-                             {isTestFinished ? <span className="text-slate-400">N/A</span> : (s.upcomingPlan || '-')}
-                           </div>
-                        </td>
-                        <td className="p-4 whitespace-nowrap text-xs font-bold text-slate-600 dark:text-slate-400">
-                           {isTestFinished ? 'N/A' : (s.nextActionDate || '-')}
-                        </td>
-                        <td className="p-4 text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
-                        <td className="p-4">
-                           {getTestStatusBadge(s.testStatus)}
-                        </td>
-                      </tr>
+                      <React.Fragment key={group.customerId}>
+                        {/* Customer Header Row */}
+                        <tr 
+                          onClick={() => toggleCustomerExpansion(group.customerId)}
+                          className="bg-slate-50 dark:bg-slate-800/40 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-700"
+                        >
+                          <td colSpan={9} className="p-4">
+                            <div className="flex items-center gap-3">
+                              {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
+                              <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-sm xl:text-base">
+                                {group.customerName}
+                              </span>
+                              <Badge color="gray">{group.samples.length} Samples</Badge>
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        {/* Sample Detail Rows */}
+                        {isExpanded && group.samples.map(s => {
+                          const isTestFinished = s.testStatus === 'Finished' || s.testStatus === 'Terminated';
+                          return (
+                            <tr 
+                              key={s.id} 
+                              onClick={() => navigate(`/samples/${s.id}`)} 
+                              className={`cursor-pointer hover:bg-blue-50/30 dark:hover:bg-blue-900/10 border-l-4 transition-colors ${getUrgencyColor(s.lastStatusDate)}`}
+                            >
+                              <td className="p-4 pl-12">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample #{s.sampleIndex}</div>
+                              </td>
+                              <td className="p-4">
+                                 <div className="font-bold text-blue-600 dark:text-blue-400 text-sm">{s.sampleName}</div>
+                                 <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
+                              </td>
+                              <td className="p-4">
+                                {getGradingBadge(s.isGraded)}
+                              </td>
+                              <td className="p-4 font-bold text-slate-700 dark:text-slate-300">{s.quantity}</td>
+                              <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
+                              <td className="p-4 max-w-[200px]">
+                                 <div className="truncate text-xs text-slate-600 dark:text-slate-300 italic" title={s.upcomingPlan}>
+                                   {isTestFinished ? <span className="text-slate-400">N/A</span> : (s.upcomingPlan || '-')}
+                                 </div>
+                              </td>
+                              <td className="p-4 whitespace-nowrap text-xs font-bold text-slate-600 dark:text-slate-400">
+                                 {isTestFinished ? 'N/A' : (s.nextActionDate || '-')}
+                              </td>
+                              <td className="p-4 text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
+                              <td className="p-4">
+                                 {getTestStatusBadge(s.testStatus)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
                     );
                   })}
-                  {filteredSamples.length === 0 && (
+                  
+                  {groupedSamples.length === 0 && (
                     <tr>
                       <td colSpan={9} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
                     </tr>
