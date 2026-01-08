@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal, getUrgencyLevel } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
 
@@ -86,6 +86,14 @@ const SampleProfile: React.FC = () => {
       lastStatusDate: today, // Default to today for any edit
       ...fields              // Manual date changes in fields will override today
     } : s));
+  };
+
+  const handleDeleteSample = () => {
+    if (!sample) return;
+    if (window.confirm(t('confirmDeleteSample'))) {
+      setSamples(prev => prev.filter(s => s.id !== id));
+      navigate('/samples');
+    }
   };
 
   const handleSaveSpecs = () => {
@@ -192,22 +200,28 @@ const SampleProfile: React.FC = () => {
 
   return (
     <div className="space-y-8 xl:space-y-12 animate-in fade-in duration-500 pb-20">
-       <div className="flex items-center gap-6">
-         <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-90">
-           <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
-         </button>
-         <div>
-            <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">{sample.sampleName}</h1>
-            <div className="flex items-center gap-4">
-               <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">Customer</span>
-               <div 
-                  onClick={() => navigate(`/customers/${sample.customerId}`)}
-                  className="px-6 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-black text-sm xl:text-lg cursor-pointer hover:bg-blue-100 transition-all border border-blue-100 dark:border-blue-800 shadow-sm"
-                >
-                  {sample.customerName}
-                </div>
-            </div>
+       <div className="flex items-center justify-between">
+         <div className="flex items-center gap-6">
+           <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-90">
+             <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+           </button>
+           <div>
+              <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">{sample.sampleName}</h1>
+              <div className="flex items-center gap-4">
+                 <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">Customer</span>
+                 <div 
+                    onClick={() => navigate(`/customers/${sample.customerId}`)}
+                    className="px-6 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-black text-sm xl:text-lg cursor-pointer hover:bg-blue-100 transition-all border border-blue-100 dark:border-blue-800 shadow-sm"
+                  >
+                    {sample.customerName}
+                  </div>
+              </div>
+           </div>
          </div>
+         <Button variant="danger" onClick={handleDeleteSample} className="flex items-center gap-2 px-6 py-3 rounded-2xl shadow-lg active:scale-95">
+           <Trash2 size={20} />
+           <span className="font-black uppercase tracking-widest text-sm">{t('deleteSample')}</span>
+         </Button>
        </div>
 
        {/* Top Metric Cards */}

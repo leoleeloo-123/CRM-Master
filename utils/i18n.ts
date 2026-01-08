@@ -108,6 +108,8 @@ export const translations = {
     statusInfo: 'Status Info',
     sinceUpdate: 'Since Update',
     test: 'Test',
+    deleteSample: 'Delete Sample',
+    confirmDeleteSample: 'Are you sure you want to delete this sample record? This action cannot be undone.',
     
     // Sample Columns & Statuses (UI Labels)
     colRequested: 'Requested',
@@ -115,7 +117,7 @@ export const translations = {
     colSent: 'Sent / Testing',
     colFeedback: 'Feedback',
 
-    // DATA KEYS: Map Chinese System Keys -> English Display
+    // DATA KEYS: Map Non-Standard/English terms to CANONICAL CHINESE KEYS
     '单晶': 'Single Crystal',
     '多晶': 'Polycrystalline',
     '微粉': 'Powder',
@@ -311,6 +313,8 @@ export const translations = {
     statusInfo: '状态详情',
     sinceUpdate: '距更新',
     test: '测试',
+    deleteSample: '删除样品',
+    confirmDeleteSample: '您确定要删除此样品记录吗？此操作无法撤销。',
 
     // Sample Columns & Statuses (UI Labels)
     colRequested: '已申请',
