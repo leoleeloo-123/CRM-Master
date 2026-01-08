@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2 } from 'lucide-react';
+import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation } from 'lucide-react';
 import { TagOptions } from '../types';
 import { getCanonicalTag } from '../utils/i18n';
 
@@ -53,7 +53,7 @@ const Settings: React.FC = () => {
        <div className="flex flex-wrap gap-2.5 mb-5">
          {tagOptions[category].map(tag => (
            <div key={tag} className="flex items-center gap-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl text-xs xl:text-sm font-black shadow-sm group hover:border-blue-300 transition-all">
-              <span className="text-slate-800 dark:text-slate-200">{t(tag as any)}</span>
+              <span className="text-slate-800 dark:text-slate-200">{t(tag as any) || tag}</span>
               <button 
                 onClick={() => handleDeleteTag(category, tag)}
                 className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -124,9 +124,6 @@ const Settings: React.FC = () => {
               <Button onClick={handleSaveProfile} className="px-10 py-3.5 shadow-xl bg-blue-600 hover:bg-blue-700">
                 <Save className="w-5 h-5 xl:w-6 xl:h-6" /> {isSaved ? 'Updated Successfully!' : t('save')}
               </Button>
-              <span className="text-xs xl:text-sm text-slate-400 font-bold italic">
-                Names are used for sidebar display and report filenames.
-              </span>
             </div>
           </div>
         </Card>
@@ -135,13 +132,18 @@ const Settings: React.FC = () => {
           <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
             <Tags className="text-indigo-600 w-7 h-7 xl:w-9 xl:h-9" /> {t('tagManagement')}
           </h3>
-          <p className="text-sm xl:text-lg text-slate-500 dark:text-slate-400 mb-10 font-bold tracking-tight">{t('tagDesc')}</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {renderTagEditor(t('tagsSampleStatus'), 'sampleStatus')}
             {renderTagEditor(t('tagsCrystalType'), 'crystalType')}
             {renderTagEditor(t('tagsProductCategory'), 'productCategory')}
             {renderTagEditor(t('tagsProductForm'), 'productForm')}
+            <div className="md:col-span-2 pt-6 border-t dark:border-slate-800">
+               <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-3 mb-6 uppercase tracking-wider">
+                  <Presentation size={24} className="text-indigo-500" /> Exhibition Metadata
+               </h3>
+               {renderTagEditor('Event Series (展会系列)', 'eventSeries')}
+            </div>
           </div>
         </Card>
 
@@ -193,7 +195,6 @@ const Settings: React.FC = () => {
                  }`}
               >
                  <span className="font-black text-base xl:text-xl uppercase tracking-[0.1em]">{t('english')}</span>
-                 {language === 'en' && <div className="w-3.5 h-3.5 rounded-full bg-blue-600 shadow-sm animate-pulse"></div>}
               </button>
 
               <button
@@ -205,65 +206,8 @@ const Settings: React.FC = () => {
                  }`}
               >
                  <span className="font-black text-base xl:text-xl uppercase tracking-[0.1em]">{t('chinese')}</span>
-                 {language === 'zh' && <div className="w-3.5 h-3.5 rounded-full bg-blue-600 shadow-sm animate-pulse"></div>}
               </button>
             </div>
-          </Card>
-          
-          <Card className="p-8 xl:p-12 md:col-span-2 shadow-sm border-2">
-            <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-10 uppercase tracking-wider">
-              <Type className="text-emerald-600 w-7 h-7 xl:w-9 xl:h-9" /> {t('fontSize')}
-            </h3>
-            
-            <div className="flex flex-col md:flex-row gap-6">
-               <button
-                  onClick={() => setFontSize('small')}
-                  className={`flex-1 p-8 rounded-3xl border-4 flex flex-col items-center gap-5 transition-all active:scale-95 ${
-                    fontSize === 'small' 
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-xl' 
-                      : 'border-slate-100 dark:border-slate-800 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-               >
-                  <span className="text-sm xl:text-base font-black uppercase tracking-widest">{t('fontSmall')}</span>
-                  <div className="space-y-1.5 w-full opacity-60">
-                    <div className="h-2 bg-current rounded-full w-3/4 mx-auto"></div>
-                    <div className="h-2 bg-current rounded-full w-1/2 mx-auto"></div>
-                  </div>
-               </button>
-
-               <button
-                  onClick={() => setFontSize('medium')}
-                  className={`flex-1 p-8 rounded-3xl border-4 flex flex-col items-center gap-5 transition-all active:scale-95 ${
-                    fontSize === 'medium' 
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-xl' 
-                      : 'border-slate-100 dark:border-slate-800 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-               >
-                  <span className="text-lg xl:text-xl font-black uppercase tracking-widest">{t('fontMedium')}</span>
-                  <div className="space-y-2 w-full opacity-60">
-                    <div className="h-2.5 bg-current rounded-full w-3/4 mx-auto"></div>
-                    <div className="h-2.5 bg-current rounded-full w-1/2 mx-auto"></div>
-                  </div>
-               </button>
-
-               <button
-                  onClick={() => setFontSize('large')}
-                  className={`flex-1 p-8 rounded-3xl border-4 flex flex-col items-center gap-5 transition-all active:scale-95 ${
-                    fontSize === 'large' 
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-xl' 
-                      : 'border-slate-100 dark:border-slate-800 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-               >
-                  <span className="text-2xl xl:text-3xl font-black uppercase tracking-widest">{t('fontLarge')}</span>
-                  <div className="space-y-2.5 w-full opacity-60">
-                    <div className="h-3.5 bg-current rounded-full w-3/4 mx-auto"></div>
-                    <div className="h-3.5 bg-current rounded-full w-1/2 mx-auto"></div>
-                  </div>
-               </button>
-            </div>
-            <p className="mt-10 text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-[0.3em] text-center bg-slate-50 dark:bg-slate-800/50 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800">
-               Scaling factor: {fontSize === 'small' ? '80%' : fontSize === 'medium' ? '90%' : '100%'}
-            </p>
           </Card>
         </div>
       </div>

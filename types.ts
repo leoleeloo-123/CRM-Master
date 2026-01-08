@@ -28,6 +28,7 @@ export interface Exhibition {
   date: string;
   location: string;
   link: string;
+  eventSeries?: string[]; // New: List of series tags this exhibition belongs to
 }
 
 export interface Customer {
@@ -146,4 +147,5 @@ export interface TagOptions {
   crystalType: string[];
   productCategory: string[];
   productForm: string[];
+  eventSeries: string[]; // New: Globally manageable exhibition series options
 }

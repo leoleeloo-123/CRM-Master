@@ -2,18 +2,24 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Button, Modal, Badge } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Activity } from 'lucide-react';
+import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Activity, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Exhibition } from '../types';
 
 const ExhibitionList: React.FC = () => {
-  const { exhibitions, setExhibitions, customers, t } = useApp();
+  const { exhibitions, setExhibitions, customers, tagOptions, t } = useApp();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingExhibition, setEditingExhibition] = useState<Exhibition | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
-  const [editFields, setEditFields] = useState<Partial<Exhibition>>({});
+  const [formData, setFormData] = useState<Partial<Exhibition>>({
+    name: '',
+    date: '',
+    location: '',
+    link: '',
+    eventSeries: []
+  });
 
   // Count active usages of exhibitions
   const exhibitionStats = useMemo(() => {
@@ -30,7 +36,6 @@ const ExhibitionList: React.FC = () => {
     e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.location.toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => {
-    // Sort by usage count first, then by date
     const countA = exhibitionStats[a.name] || 0;
     const countB = exhibitionStats[b.name] || 0;
     if (countA !== countB) return countB - countA;
@@ -38,27 +43,42 @@ const ExhibitionList: React.FC = () => {
   });
 
   const handleSave = () => {
-    if (!editingExhibition) return;
-    setExhibitions(prev => prev.map(e => e.id === editingExhibition.id ? { ...editingExhibition, ...editFields } as Exhibition : e));
-    setIsEditModalOpen(false);
+    if (!formData.name) return;
+    
+    if (editingExhibition) {
+      setExhibitions(prev => prev.map(e => e.id === editingExhibition.id ? { ...editingExhibition, ...formData } as Exhibition : e));
+    } else {
+      const newExh: Exhibition = {
+        id: `exh_${Date.now()}`,
+        name: formData.name,
+        date: formData.date || 'TBD',
+        location: formData.location || 'TBD',
+        link: formData.link || '#',
+        eventSeries: formData.eventSeries || []
+      };
+      setExhibitions(prev => [...prev, newExh]);
+    }
+    
+    setIsAddModalOpen(false);
     setEditingExhibition(null);
+    setFormData({ name: '', date: '', location: '', link: '', eventSeries: [] });
   };
 
   const handleEdit = (exh: Exhibition, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingExhibition(exh);
-    setEditFields(exh);
-    setIsEditModalOpen(true);
+    setFormData(exh);
+    setIsAddModalOpen(true);
   };
 
   const handleDelete = (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const count = exhibitionStats[name] || 0;
-    if (count > 0) {
-      alert(`Cannot delete "${name}" because it is currently linked to ${count} customer(s). Remove the tag from customers first.`);
-      return;
-    }
-    if (confirm('Are you sure you want to delete this exhibition entry?')) {
+    const message = count > 0 
+      ? `This exhibition is linked to ${count} customer(s). Are you absolutely sure you want to delete it? This will leave customer tags without metadata.`
+      : `Are you sure you want to delete "${name}"?`;
+
+    if (confirm(message)) {
       setExhibitions(prev => prev.filter(ex => ex.id !== id));
     }
   };
@@ -68,8 +88,12 @@ const ExhibitionList: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight uppercase">{t('exhibitions')}</h2>
-          <p className="text-slate-500 font-bold mt-1 tracking-tight">Managing links and info for all unique customer exhibition tags.</p>
+          <p className="text-slate-500 font-bold mt-1 tracking-tight">Managing links and info for all exhibition entries.</p>
         </div>
+        <Button onClick={() => { setEditingExhibition(null); setFormData({name:'', date:'', location:'', link:'', eventSeries:[]}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-8 py-3 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
+           <Plus size={20} />
+           <span className="font-black uppercase tracking-widest text-sm">Add Exhibition</span>
+        </Button>
       </div>
 
       <Card className="p-6 xl:p-8 border-2">
@@ -98,17 +122,19 @@ const ExhibitionList: React.FC = () => {
                    </div>
                    <div className="flex gap-2">
                       <button onClick={(e) => handleEdit(exh, e)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 opacity-0 group-hover:opacity-100 transition-opacity"><PencilLine size={16} /></button>
-                      {usageCount === 0 && (
-                        <button onClick={(e) => handleDelete(exh.id, exh.name, e)} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
-                      )}
+                      <button onClick={(e) => handleDelete(exh.id, exh.name, e)} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
                    </div>
                 </div>
                 
                 <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 line-clamp-1 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{exh.name}</h3>
                 
-                <div className="flex items-center gap-2 mb-4">
-                   <Activity size={14} className="text-slate-400" />
-                   <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{usageCount} Customers Linked</span>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                   {exh.eventSeries && exh.eventSeries.map(s => (
+                     <span key={s} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase rounded shadow-sm border border-indigo-100 dark:border-indigo-800">{s}</span>
+                   ))}
+                   {(!exh.eventSeries || exh.eventSeries.length === 0) && (
+                      <span className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">No Series</span>
+                   )}
                 </div>
 
                 <div className="space-y-2 mb-6">
@@ -122,17 +148,11 @@ const ExhibitionList: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
                    {exh.link && exh.link !== '#' ? (
-                     <a 
-                       href={exh.link.startsWith('http') ? exh.link : `https://${exh.link}`} 
-                       target="_blank" 
-                       rel="noopener noreferrer" 
-                       onClick={(e) => e.stopPropagation()}
-                       className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-xs font-black uppercase tracking-widest"
-                     >
-                       <ExternalLink size={14} /> Official Link
-                     </a>
+                     <div className="flex items-center gap-2 text-blue-600 text-xs font-black uppercase tracking-widest">
+                       <ExternalLink size={14} /> Link Ready
+                     </div>
                    ) : (
-                     <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">No Link Provided</span>
+                     <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">No Link</span>
                    )}
                    <div className="text-slate-200 group-hover:text-blue-500 transition-colors">
                       <ArrowRight size={18} />
@@ -141,57 +161,76 @@ const ExhibitionList: React.FC = () => {
               </Card>
             );
           })}
-          {filtered.length === 0 && (
-            <div className="col-span-full py-20 text-center text-slate-400 font-bold uppercase tracking-[0.2em] opacity-30">
-               No exhibitions registered. Tags from customers appear here automatically.
-            </div>
-          )}
         </div>
       </Card>
 
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Exhibition Info">
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={editingExhibition ? "Edit Exhibition Entry" : "Register New Exhibition"}>
          <div className="space-y-6">
             <div className="space-y-1.5">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Exhibition Name (Derived from Tag)</label>
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Exhibition Name *</label>
                <input 
-                 className="w-full p-4 border-2 rounded-2xl font-black bg-slate-50 dark:bg-slate-800 text-slate-400 cursor-not-allowed" 
-                 value={editingExhibition?.name}
-                 readOnly
+                 className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all uppercase" 
+                 value={formData.name}
+                 onChange={e => setFormData({...formData, name: e.target.value})}
+                 placeholder="e.g. SEMICON TAIWAN 2024"
                />
-               <p className="text-[10px] text-slate-400 font-bold italic ml-1">* Rename exhibition tags in individual customer profiles to update this name.</p>
             </div>
             <div className="grid grid-cols-2 gap-6">
                <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Date</label>
                   <input 
-                    className="w-full p-4 border-2 rounded-2xl font-black dark:bg-slate-900" 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700" 
                     placeholder="e.g. 2024-05-15"
-                    value={editFields.date}
-                    onChange={e => setEditFields({...editFields, date: e.target.value})}
+                    value={formData.date}
+                    onChange={e => setFormData({...formData, date: e.target.value})}
                   />
                </div>
                <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Location</label>
                   <input 
-                    className="w-full p-4 border-2 rounded-2xl font-black dark:bg-slate-900" 
-                    placeholder="e.g. Las Vegas, NV"
-                    value={editFields.location}
-                    onChange={e => setEditFields({...editFields, location: e.target.value})}
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700" 
+                    placeholder="e.g. Taipei"
+                    value={formData.location}
+                    onChange={e => setFormData({...formData, location: e.target.value})}
                   />
                </div>
             </div>
             <div className="space-y-1.5">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">External Link (Official Resource)</label>
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Resource Link</label>
                <input 
-                 className="w-full p-4 border-2 rounded-2xl font-bold dark:bg-slate-900 outline-none focus:border-blue-500" 
+                 className="w-full p-4 border-2 rounded-2xl font-bold bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500" 
                  placeholder="https://..."
-                 value={editFields.link}
-                 onChange={e => setEditFields({...editFields, link: e.target.value})}
+                 value={formData.link}
+                 onChange={e => setFormData({...formData, link: e.target.value})}
                />
             </div>
+            
+            <div className="space-y-1.5">
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assign Event Series</label>
+               <div className="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700">
+                  {tagOptions.eventSeries.map(s => (
+                    <button 
+                       key={s}
+                       onClick={() => {
+                         const current = formData.eventSeries || [];
+                         const next = current.includes(s) ? current.filter(x => x !== s) : [...current, s];
+                         setFormData({...formData, eventSeries: next});
+                       }}
+                       className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${
+                         formData.eventSeries?.includes(s) 
+                           ? 'bg-blue-600 text-white shadow-md' 
+                           : 'bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700'
+                       }`}
+                    >
+                       {s}
+                    </button>
+                  ))}
+               </div>
+            </div>
+
             <div className="flex justify-end gap-3 pt-6">
-               <Button variant="secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
-               <Button onClick={handleSave} className="bg-blue-600 px-10">Save Changes</Button>
+               <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+               <Button onClick={handleSave} className="bg-blue-600 px-10 shadow-lg shadow-blue-600/30">Save Exhibition</Button>
             </div>
          </div>
       </Modal>

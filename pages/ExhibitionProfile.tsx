@@ -1,87 +1,191 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
-import { Card, Button, Badge, RankStars } from '../components/Common';
-import { ArrowLeft, MapPin, Calendar, ExternalLink, Users, ArrowRight } from 'lucide-react';
+import { Card, Button, Badge, RankStars, Modal } from '../components/Common';
+import { ArrowLeft, MapPin, Calendar, ExternalLink, Users, ArrowRight, PencilLine, Save, Tag, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { Exhibition } from '../types';
 
 const ExhibitionProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { exhibitions, customers, t } = useApp();
+  const { exhibitions, setExhibitions, customers, tagOptions, t } = useApp();
   const navigate = useNavigate();
 
   const exhibition = exhibitions.find(e => e.id === id);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFields, setEditFields] = useState<Partial<Exhibition>>({});
+
+  useEffect(() => {
+    if (exhibition) {
+      setEditFields(exhibition);
+    }
+  }, [exhibition]);
+
   if (!exhibition) return <div className="p-20 text-center font-black uppercase text-slate-400">Exhibition not found.</div>;
 
   const associatedCustomers = customers.filter(c => c.tags.includes(exhibition.name));
 
+  const handleSave = () => {
+    setExhibitions(prev => prev.map(e => e.id === id ? { ...exhibition, ...editFields } as Exhibition : e));
+    setIsEditing(false);
+  };
+
+  const toggleSeries = (seriesName: string) => {
+    const current = editFields.eventSeries || [];
+    const next = current.includes(seriesName) 
+      ? current.filter(s => s !== seriesName) 
+      : [...current, seriesName];
+    setEditFields({ ...editFields, eventSeries: next });
+  };
+
   const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
   const contentClass = "text-xl xl:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight";
+  const inputClass = "w-full p-4 border-2 border-slate-100 dark:border-slate-800 rounded-2xl font-black bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-all";
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-      <div className="flex items-center gap-6">
-         <button onClick={() => navigate('/exhibitions')} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 active:scale-90">
-           <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
-         </button>
-         <div>
-            <h1 className="text-3xl xl:text-5xl font-black text-slate-900 dark:text-white tracking-tight uppercase leading-none">{exhibition.name}</h1>
-            <p className="text-slate-500 font-bold mt-2 uppercase tracking-widest text-sm">Exhibition Event Details</p>
-         </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <button onClick={() => navigate('/exhibitions')} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 active:scale-90">
+            <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+          </button>
+          <div>
+              <h1 className="text-3xl xl:text-5xl font-black text-slate-900 dark:text-white tracking-tight uppercase leading-none">{exhibition.name}</h1>
+              <p className="text-slate-500 font-bold mt-2 uppercase tracking-widest text-sm">Centralized Event Management</p>
+          </div>
+        </div>
+        {!isEditing && (
+          <Button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 px-8 py-3 rounded-2xl shadow-xl shadow-emerald-600/20 active:scale-95 transition-all">
+             <PencilLine size={20} />
+             <span className="font-black uppercase tracking-widest text-sm">Edit Event Info</span>
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          <div className="lg:col-span-1 space-y-8">
-            <Card className="p-8 space-y-8 border-2 border-l-8 border-l-blue-600">
-               <div className="space-y-1">
-                  <span className={labelClass}>Location</span>
-                  <div className="flex items-center gap-3">
-                     <MapPin className="text-blue-500" />
-                     <span className={contentClass}>{exhibition.location}</span>
-                  </div>
-               </div>
-               <div className="space-y-1">
-                  <span className={labelClass}>Date</span>
-                  <div className="flex items-center gap-3">
-                     <Calendar className="text-blue-500" />
-                     <span className={contentClass}>{exhibition.date}</span>
-                  </div>
-               </div>
-               <div className="space-y-1 pt-6 border-t dark:border-slate-800">
-                  <span className={labelClass}>Resource</span>
-                  <a 
-                    href={exhibition.link.startsWith('http') ? exhibition.link : `https://${exhibition.link}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 group mt-2"
-                  >
-                     <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg group-hover:scale-105 transition-transform">
-                        <ExternalLink size={24} />
-                     </div>
-                     <span className="text-lg font-black text-blue-600 hover:underline">Official Documentation</span>
-                  </a>
-               </div>
+            <Card className="p-8 space-y-8 border-2 border-l-8 border-l-blue-600 relative overflow-hidden">
+               {isEditing ? (
+                 <div className="space-y-6">
+                    <div className="space-y-2">
+                       <label className={labelClass}>Location</label>
+                       <div className="relative">
+                          <MapPin className="absolute left-4 top-4 text-slate-400" size={18} />
+                          <input className={inputClass + " pl-12"} value={editFields.location} onChange={e => setEditFields({...editFields, location: e.target.value})} />
+                       </div>
+                    </div>
+                    <div className="space-y-2">
+                       <label className={labelClass}>Date</label>
+                       <div className="relative">
+                          <Calendar className="absolute left-4 top-4 text-slate-400" size={18} />
+                          <input className={inputClass + " pl-12"} value={editFields.date} onChange={e => setEditFields({...editFields, date: e.target.value})} />
+                       </div>
+                    </div>
+                    <div className="space-y-2">
+                       <label className={labelClass}>Official Link</label>
+                       <div className="relative">
+                          <LinkIcon className="absolute left-4 top-4 text-slate-400" size={18} />
+                          <input className={inputClass + " pl-12 font-bold lowercase"} value={editFields.link} onChange={e => setEditFields({...editFields, link: e.target.value})} />
+                       </div>
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                       <Button variant="secondary" className="flex-1 rounded-xl" onClick={() => setIsEditing(false)}>Cancel</Button>
+                       <Button className="flex-1 rounded-xl bg-blue-600" onClick={handleSave}>Save</Button>
+                    </div>
+                 </div>
+               ) : (
+                 <>
+                   <div className="space-y-1">
+                      <span className={labelClass}>Location</span>
+                      <div className="flex items-center gap-3">
+                         <MapPin className="text-blue-500" />
+                         <span className={contentClass}>{exhibition.location}</span>
+                      </div>
+                   </div>
+                   <div className="space-y-1">
+                      <span className={labelClass}>Date</span>
+                      <div className="flex items-center gap-3">
+                         <Calendar className="text-blue-500" />
+                         <span className={contentClass}>{exhibition.date}</span>
+                      </div>
+                   </div>
+                   <div className="space-y-1 pt-6 border-t dark:border-slate-800">
+                      <span className={labelClass}>Resource</span>
+                      <a 
+                        href={exhibition.link.startsWith('http') ? exhibition.link : `https://${exhibition.link}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 group mt-2"
+                      >
+                         <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg group-hover:scale-105 transition-transform">
+                            <ExternalLink size={24} />
+                         </div>
+                         <span className="text-lg font-black text-blue-600 hover:underline">Official Documentation</span>
+                      </a>
+                   </div>
+                 </>
+               )}
             </Card>
 
-            <Card className="p-8 border-2">
+            <Card className="p-8 border-2 relative">
                <h3 className="font-black text-slate-900 dark:text-white mb-6 uppercase tracking-widest flex items-center gap-3">
-                  <Users className="text-indigo-500" /> Stats
+                  <Tag className="text-indigo-500" /> Event Series
                </h3>
-               <div className="text-4xl font-black text-slate-900 dark:text-white mb-1">{associatedCustomers.length}</div>
-               <div className={labelClass}>Participating Customers</div>
+               {isEditing ? (
+                  <div className="space-y-4">
+                     <p className="text-[10px] text-slate-400 font-bold leading-tight uppercase mb-4">Click to add/remove series tags from available options:</p>
+                     <div className="flex flex-wrap gap-2">
+                        {tagOptions.eventSeries.map(s => (
+                           <button 
+                              key={s}
+                              onClick={() => toggleSeries(s)}
+                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all border ${
+                                 editFields.eventSeries?.includes(s) 
+                                 ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' 
+                                 : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50'
+                              }`}
+                           >
+                              {s}
+                           </button>
+                        ))}
+                     </div>
+                     <p className="text-[9px] text-slate-400 font-bold italic mt-4 text-center">Manage options in Settings page</p>
+                  </div>
+               ) : (
+                  <div className="flex flex-wrap gap-2">
+                     {exhibition.eventSeries && exhibition.eventSeries.length > 0 ? exhibition.eventSeries.map(s => (
+                        <Badge key={s} color="purple">{s}</Badge>
+                     )) : (
+                        <span className="text-slate-400 italic font-medium">No series assigned.</span>
+                     )}
+                  </div>
+               )}
             </Card>
          </div>
 
-         <div className="lg:col-span-2">
-            <Card className="p-8 border-2 h-full">
+         <div className="lg:col-span-2 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <Card className="p-8 border-2 text-center flex flex-col items-center justify-center">
+                  <div className="text-5xl font-black text-blue-600 mb-2">{associatedCustomers.length}</div>
+                  <div className={labelClass}>Participating Customers</div>
+               </Card>
+               <Card className="p-8 border-2 text-center flex flex-col items-center justify-center">
+                  <div className="text-5xl font-black text-indigo-600 mb-2">
+                     {associatedCustomers.reduce((acc, c) => acc + customers.find(x => x.id === c.id)!.rank, 0) / (associatedCustomers.length || 1) < 2 ? 'HIGH' : 'MID'}
+                  </div>
+                  <div className={labelClass}>Lead Quality Index</div>
+               </Card>
+            </div>
+
+            <Card className="p-8 border-2">
                <div className="flex justify-between items-center mb-8 pb-4 border-b dark:border-slate-800">
                   <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-3">
                      <Users size={20} className="text-blue-600" /> Associated Customers
                   </h3>
                </div>
                
-               <div className="space-y-4">
+               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-hide">
                   {associatedCustomers.map(c => (
                      <div 
                         key={c.id} 
