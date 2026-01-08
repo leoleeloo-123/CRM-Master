@@ -2,17 +2,26 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Button, Modal, Badge } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Activity, Tag, X } from 'lucide-react';
+import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Tag, X, Filter, User, ChevronDown, ChevronRight, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Exhibition } from '../types';
 
 const ExhibitionList: React.FC = () => {
   const { exhibitions, setExhibitions, customers, tagOptions, setTagOptions, t } = useApp();
   const navigate = useNavigate();
+  
+  // State for Search and Filters
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterSeries, setFilterSeries] = useState('');
+  const [filterYear, setFilterYear] = useState('');
+  const [filterCustomer, setFilterCustomer] = useState('');
+  
+  // Folding state
+  const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set(['NA', ...tagOptions.eventSeries]));
+
+  // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingExhibition, setEditingExhibition] = useState<Exhibition | null>(null);
-  
   const [newSeriesInput, setNewSeriesInput] = useState('');
   const [formData, setFormData] = useState<Partial<Exhibition>>({
     name: '',
@@ -21,6 +30,17 @@ const ExhibitionList: React.FC = () => {
     link: '',
     eventSeries: []
   });
+
+  // Derived: Unique Years from exhibitions for filter
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    exhibitions.forEach(exh => {
+      if (exh.date && exh.date.length >= 4) {
+        years.add(exh.date.substring(0, 4));
+      }
+    });
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [exhibitions]);
 
   // Count active usages of exhibitions
   const exhibitionStats = useMemo(() => {
@@ -35,23 +55,57 @@ const ExhibitionList: React.FC = () => {
     return stats;
   }, [customers]);
 
-  const filtered = useMemo(() => {
+  // Combined Filtering Logic
+  const filteredExhibitions = useMemo(() => {
     return exhibitions.filter(e => {
-      const name = e.name || '';
-      const location = e.location || '';
-      return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             location.toLowerCase().includes(searchTerm.toLowerCase());
-    }).sort((a, b) => {
-      const countA = exhibitionStats[a.name] || 0;
-      const countB = exhibitionStats[b.name] || 0;
-      if (countA !== countB) return countB - countA;
+      // 1. Basic Text Search (Name or Location)
+      const matchesSearch = (e.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (e.location || '').toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Defensive date comparison
-      const dateA = a.date || '';
-      const dateB = b.date || '';
-      return dateB.localeCompare(dateA);
+      // 2. Series Filter (Individual dropdown filter)
+      const matchesSeries = filterSeries === '' || (e.eventSeries && e.eventSeries.includes(filterSeries));
+      
+      // 3. Year Filter
+      const matchesYear = filterYear === '' || (e.date && e.date.startsWith(filterYear));
+      
+      // 4. Customer Filter
+      let matchesCustomer = true;
+      if (filterCustomer !== '') {
+        const targetCustomer = customers.find(c => c.id === filterCustomer);
+        matchesCustomer = targetCustomer ? (targetCustomer.tags || []).includes(e.name) : false;
+      }
+
+      return matchesSearch && matchesSeries && matchesYear && matchesCustomer;
     });
-  }, [exhibitions, searchTerm, exhibitionStats]);
+  }, [exhibitions, searchTerm, filterSeries, filterYear, filterCustomer, customers]);
+
+  // Grouping Logic for List View
+  const groupedExhibitions = useMemo(() => {
+    const groups: { series: string; items: Exhibition[] }[] = [];
+    
+    // Create groups for each defined series tag
+    tagOptions.eventSeries.forEach(s => {
+      const items = filteredExhibitions.filter(e => Array.isArray(e.eventSeries) && e.eventSeries.includes(s));
+      if (items.length > 0) {
+        groups.push({ series: s, items: items.sort((a, b) => (b.date || '').localeCompare(a.date || '')) });
+      }
+    });
+
+    // Handle "NA" group for exhibitions with no series tags
+    const naItems = filteredExhibitions.filter(e => !e.eventSeries || e.eventSeries.length === 0);
+    if (naItems.length > 0) {
+      groups.push({ series: 'NA', items: naItems.sort((a, b) => (b.date || '').localeCompare(a.date || '')) });
+    }
+
+    return groups;
+  }, [filteredExhibitions, tagOptions.eventSeries]);
+
+  const toggleSeriesExpansion = (s: string) => {
+    const next = new Set(expandedSeries);
+    if (next.has(s)) next.delete(s);
+    else next.add(s);
+    setExpandedSeries(next);
+  };
 
   const handleSave = () => {
     if (!formData.name) return;
@@ -101,7 +155,6 @@ const ExhibitionList: React.FC = () => {
     const val = newSeriesInput.trim();
     if (!val) return;
     
-    // Add to global tag options
     if (!tagOptions.eventSeries.includes(val)) {
       setTagOptions(prev => ({
         ...prev,
@@ -109,7 +162,6 @@ const ExhibitionList: React.FC = () => {
       }));
     }
     
-    // Select it for the current form
     const current = Array.isArray(formData.eventSeries) ? formData.eventSeries : [];
     if (!current.includes(val)) {
       setFormData({ ...formData, eventSeries: [...current, val] });
@@ -117,6 +169,15 @@ const ExhibitionList: React.FC = () => {
     
     setNewSeriesInput('');
   };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setFilterSeries('');
+    setFilterYear('');
+    setFilterCustomer('');
+  };
+
+  const hasActiveFilters = searchTerm !== '' || filterSeries !== '' || filterYear !== '' || filterCustomer !== '';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -132,70 +193,191 @@ const ExhibitionList: React.FC = () => {
       </div>
 
       <Card className="p-6 xl:p-8 border-2">
-        <div className="relative mb-8">
-          <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
-          <input 
-            className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all"
-            placeholder="Search exhibitions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="space-y-6">
+          {/* Main Search */}
+          <div className="relative">
+            <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
+            <input 
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all shadow-sm"
+              placeholder="Search by exhibition name or location..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Filter Bar */}
+          <div className="flex flex-wrap items-center gap-3">
+             <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Tag size={16} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-xs font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  value={filterSeries}
+                  onChange={e => setFilterSeries(e.target.value)}
+                >
+                  <option value="">All Series</option>
+                  {tagOptions.eventSeries.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+             </div>
+
+             <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Calendar size={16} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-xs font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  value={filterYear}
+                  onChange={e => setFilterYear(e.target.value)}
+                >
+                  <option value="">All Years</option>
+                  {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+             </div>
+
+             <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <User size={16} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-xs font-black uppercase tracking-widest outline-none dark:text-slate-300 max-w-[150px]"
+                  value={filterCustomer}
+                  onChange={e => setFilterCustomer(e.target.value)}
+                >
+                  <option value="">All Customers</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+             </div>
+
+             {hasActiveFilters && (
+               <button 
+                onClick={resetFilters}
+                className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors ml-2"
+               >
+                 <X size={14} /> Clear
+               </button>
+             )}
+
+             <div className="ml-auto">
+               <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
+                 Results: {filteredExhibitions.length}
+               </span>
+             </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(exh => {
-            const usageCount = exhibitionStats[exh.name] || 0;
-            return (
-              <Card 
-                key={exh.id} 
-                className={`p-6 hover:shadow-xl transition-all cursor-pointer group relative border-2 ${usageCount > 0 ? 'border-slate-100 dark:border-slate-800' : 'border-dashed border-slate-200 opacity-60'}`}
-                onClick={() => navigate(`/exhibitions/${exh.id}`)}
-              >
-                <div className="flex justify-between items-start mb-6">
-                   <div className={`p-3 rounded-2xl transition-transform group-hover:scale-110 ${usageCount > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
-                      <Calendar size={24} />
-                   </div>
-                   <div className="flex gap-2">
-                      <button onClick={(e) => handleEdit(exh, e)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 opacity-0 group-hover:opacity-100 transition-opacity"><PencilLine size={16} /></button>
-                      <button onClick={(e) => handleDelete(exh.id, exh.name, e)} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
-                   </div>
-                </div>
-                
-                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 line-clamp-1 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{exh.name}</h3>
-                
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                   {Array.isArray(exh.eventSeries) && exh.eventSeries.map(s => (
-                     <span key={s} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase rounded shadow-sm border border-indigo-100 dark:border-indigo-800">{s}</span>
-                   ))}
-                   {(!exh.eventSeries || exh.eventSeries.length === 0) && (
-                      <span className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">No Series</span>
-                   )}
-                </div>
-
-                <div className="space-y-2 mb-6">
-                   <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase">
-                      <MapPin size={12} /> <span>{exh.location || 'TBD'}</span>
-                   </div>
-                   <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase">
-                      <Calendar size={12} /> <span>{exh.date || 'TBD'}</span>
-                   </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
-                   {exh.link && exh.link !== '#' ? (
-                     <div className="flex items-center gap-2 text-blue-600 text-xs font-black uppercase tracking-widest">
-                       <ExternalLink size={14} /> Link Ready
-                     </div>
-                   ) : (
-                     <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">No Link</span>
-                   )}
-                   <div className="text-slate-200 group-hover:text-blue-500 transition-colors">
-                      <ArrowRight size={18} />
-                   </div>
-                </div>
-              </Card>
-            );
-          })}
+        {/* Grouped List View */}
+        <div className="mt-10 overflow-hidden border-2 rounded-[2rem] border-slate-100 dark:border-slate-800">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-slate-500 uppercase text-[10px] font-black tracking-widest">
+              <tr>
+                <th className="p-6">Exhibition / Series</th>
+                <th className="p-6">Location</th>
+                <th className="p-6">Date</th>
+                <th className="p-6">Resource</th>
+                <th className="p-6 text-center">Links</th>
+                <th className="p-6 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+              {groupedExhibitions.map(group => {
+                const isExpanded = expandedSeries.has(group.series);
+                return (
+                  <React.Fragment key={group.series}>
+                    {/* Series Header Row */}
+                    <tr 
+                      onClick={() => toggleSeriesExpansion(group.series)}
+                      className="bg-slate-50/50 dark:bg-slate-800/30 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <td colSpan={6} className="p-5 border-y-2 border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            {isExpanded ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
+                            <span className={`font-black uppercase tracking-[0.1em] text-sm ${group.series === 'NA' ? 'text-slate-400 italic' : 'text-blue-600'}`}>
+                              {group.series === 'NA' ? 'Untagged Events' : group.series}
+                            </span>
+                            <Badge color={group.series === 'NA' ? 'gray' : 'blue'}>{group.items.length}</Badge>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    {/* Exhibition Items under this series */}
+                    {isExpanded && group.items.map(exh => {
+                      const usageCount = exhibitionStats[exh.name] || 0;
+                      return (
+                        <tr 
+                          key={`${group.series}-${exh.id}`}
+                          onClick={() => navigate(`/exhibitions/${exh.id}`)}
+                          className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 cursor-pointer transition-colors group"
+                        >
+                          <td className="p-6 pl-14">
+                            <div className="flex flex-col">
+                              <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-base group-hover:text-blue-600 transition-colors leading-tight">
+                                {exh.name}
+                              </span>
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {exh.eventSeries?.filter(s => s !== group.series).map(s => (
+                                  <span key={s} className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded">{s}</span>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex items-center gap-2 text-slate-500 font-bold text-sm">
+                              <MapPin size={14} className="text-slate-400" />
+                              {exh.location || 'TBD'}
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex items-center gap-2 text-slate-500 font-bold text-sm whitespace-nowrap">
+                              <Calendar size={14} className="text-slate-400" />
+                              {exh.date || 'TBD'}
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            {exh.link && exh.link !== '#' ? (
+                              <div className="flex items-center gap-2 text-blue-600 font-black uppercase text-[10px] tracking-widest">
+                                <ExternalLink size={14} /> Link Ready
+                              </div>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">No Link</span>
+                            )}
+                          </td>
+                          <td className="p-6 text-center">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+                              <User size={12} className="text-slate-400" />
+                              <span className="text-xs font-black text-slate-600 dark:text-slate-400">{usageCount}</span>
+                            </div>
+                          </td>
+                          <td className="p-6 text-right" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={(e) => handleEdit(exh, e)} 
+                                className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
+                              >
+                                <PencilLine size={18} />
+                              </button>
+                              <button 
+                                onClick={(e) => handleDelete(exh.id, exh.name, e)} 
+                                className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+              
+              {groupedExhibitions.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-20 text-center">
+                    <Filter className="w-16 h-16 mx-auto mb-6 opacity-10" />
+                    <p className="text-sm xl:text-lg font-black uppercase tracking-[0.2em] text-slate-300">No Exhibitions Found</p>
+                    <button onClick={resetFilters} className="mt-4 text-blue-500 font-bold uppercase text-xs tracking-widest hover:underline">Clear all filters</button>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </Card>
 
