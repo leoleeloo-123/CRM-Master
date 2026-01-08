@@ -80,7 +80,12 @@ const SampleProfile: React.FC = () => {
 
   const saveSampleUpdate = (fields: Partial<Sample>) => {
     if (!sample) return;
-    setSamples(prev => prev.map(s => s.id === id ? { ...s, ...fields } : s));
+    const today = format(new Date(), 'yyyy-MM-dd');
+    setSamples(prev => prev.map(s => s.id === id ? { 
+      ...s, 
+      lastStatusDate: today, // Default to today for any edit
+      ...fields              // Manual date changes in fields will override today
+    } : s));
   };
 
   const handleSaveSpecs = () => {
@@ -96,13 +101,15 @@ const SampleProfile: React.FC = () => {
     const proc = editSample.processedSize || sample.processedSize ? ` > ${editSample.processedSize || sample.processedSize}` : '';
     
     const newName = `${crystal} ${catStr} ${form} - ${orig}${proc}`.trim();
+    const today = format(new Date(), 'yyyy-MM-dd');
 
     const updatedSample = { 
       ...sample, 
       ...editSample, 
       productCategory: categories,
       sampleName: newName,
-      productType: newName // Keep productType in sync for catalog logic
+      productType: newName, // Keep productType in sync for catalog logic
+      lastStatusDate: today // Automatically update aging date on spec changes
     } as Sample;
 
     setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
@@ -112,13 +119,13 @@ const SampleProfile: React.FC = () => {
 
   const handleSaveStatus = () => {
     if (!sample || !editSample) return;
-    saveSampleUpdate({ status: editSample.status || sample.status, lastStatusDate: format(new Date(), 'yyyy-MM-dd') });
+    saveSampleUpdate({ status: editSample.status || sample.status });
     setIsEditingStatus(false);
   };
 
   const handleSaveTest = () => {
     if (!sample || !editSample) return;
-    saveSampleUpdate({ testStatus: editSample.testStatus || sample.testStatus, lastStatusDate: format(new Date(), 'yyyy-MM-dd') });
+    saveSampleUpdate({ testStatus: editSample.testStatus || sample.testStatus });
     setIsEditingTest(false);
   };
 

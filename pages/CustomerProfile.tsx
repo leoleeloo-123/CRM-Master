@@ -58,11 +58,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   }
 
   const saveUpdate = (updatedFields: Partial<Customer>) => {
-    onUpdateCustomer({ ...customer, ...updatedFields });
+    const today = format(new Date(), 'yyyy-MM-dd');
+    onUpdateCustomer({ 
+      ...customer, 
+      lastStatusUpdate: today, // Default to today for any edit
+      ...updatedFields          // Manual date changes in updatedFields will override today
+    });
   };
 
   const handleUpdateSummary = () => {
-    saveUpdate({ productSummary: tempSummary, lastStatusUpdate: format(new Date(), 'yyyy-MM-dd') });
+    saveUpdate({ productSummary: tempSummary });
     setIsEditSummaryOpen(false);
   };
 
@@ -107,8 +112,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     saveUpdate({ 
       interactions: newInteractions,
       lastMyReplyDate: updated.date,
-      lastContactDate: updated.date,
-      lastStatusUpdate: updated.date
+      lastContactDate: updated.date
     });
     setEditingInteraction(null);
   };
