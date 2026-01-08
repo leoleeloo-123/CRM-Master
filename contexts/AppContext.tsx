@@ -99,15 +99,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : MOCK_MASTER_PRODUCTS;
   });
 
+  // CRITICAL FIX: Ensure eventSeries is always an array when loading from storage
   const [exhibitions, setExhibitionsState] = useState<Exhibition[]>(() => {
     const saved = localStorage.getItem('exhibitions');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    try {
+      const parsed: Exhibition[] = JSON.parse(saved);
+      return parsed.map(exh => ({
+        ...exh,
+        eventSeries: Array.isArray(exh.eventSeries) ? exh.eventSeries : []
+      }));
+    } catch (e) {
+      return [];
+    }
   });
   
   // Tag Options State
   const [tagOptions, setTagOptionsState] = useState<TagOptions>(() => {
     const saved = localStorage.getItem('tagOptions');
-    return saved ? JSON.parse(saved) : DEFAULT_TAGS;
+    if (!saved) return DEFAULT_TAGS;
+    try {
+      const parsed: TagOptions = JSON.parse(saved);
+      return {
+        ...DEFAULT_TAGS,
+        ...parsed,
+        eventSeries: Array.isArray(parsed.eventSeries) ? parsed.eventSeries : DEFAULT_TAGS.eventSeries
+      };
+    } catch (e) {
+      return DEFAULT_TAGS;
+    }
   });
 
   // --- Effects for Data Sync ---

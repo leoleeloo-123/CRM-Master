@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Card, Button, Badge, RankStars, Modal } from '../components/Common';
@@ -18,13 +18,27 @@ const ExhibitionProfile: React.FC = () => {
 
   useEffect(() => {
     if (exhibition) {
-      setEditFields(exhibition);
+      setEditFields({
+        ...exhibition,
+        eventSeries: Array.isArray(exhibition.eventSeries) ? exhibition.eventSeries : []
+      });
     }
   }, [exhibition]);
 
-  if (!exhibition) return <div className="p-20 text-center font-black uppercase text-slate-400">Exhibition not found.</div>;
+  const associatedCustomers = useMemo(() => {
+    if (!exhibition) return [];
+    return customers.filter(c => Array.isArray(c.tags) && c.tags.includes(exhibition.name));
+  }, [customers, exhibition]);
 
-  const associatedCustomers = customers.filter(c => c.tags.includes(exhibition.name));
+  // Lead Quality calculation - Safe version
+  const qualityIndex = useMemo(() => {
+    if (associatedCustomers.length === 0) return 'N/A';
+    const totalRank = associatedCustomers.reduce((acc, c) => acc + (c.rank || 3), 0);
+    const avgRank = totalRank / associatedCustomers.length;
+    return avgRank < 2.5 ? 'HIGH' : 'MID';
+  }, [associatedCustomers]);
+
+  if (!exhibition) return <div className="p-20 text-center font-black uppercase text-slate-400">Exhibition not found.</div>;
 
   const handleSave = () => {
     setExhibitions(prev => prev.map(e => e.id === id ? { ...exhibition, ...editFields } as Exhibition : e));
@@ -32,7 +46,7 @@ const ExhibitionProfile: React.FC = () => {
   };
 
   const toggleSeries = (seriesName: string) => {
-    const current = editFields.eventSeries || [];
+    const current = Array.isArray(editFields.eventSeries) ? editFields.eventSeries : [];
     const next = current.includes(seriesName) 
       ? current.filter(s => s !== seriesName) 
       : [...current, seriesName];
@@ -72,21 +86,21 @@ const ExhibitionProfile: React.FC = () => {
                        <label className={labelClass}>Location</label>
                        <div className="relative">
                           <MapPin className="absolute left-4 top-4 text-slate-400" size={18} />
-                          <input className={inputClass + " pl-12"} value={editFields.location} onChange={e => setEditFields({...editFields, location: e.target.value})} />
+                          <input className={inputClass + " pl-12"} value={editFields.location || ''} onChange={e => setEditFields({...editFields, location: e.target.value})} />
                        </div>
                     </div>
                     <div className="space-y-2">
                        <label className={labelClass}>Date</label>
                        <div className="relative">
                           <Calendar className="absolute left-4 top-4 text-slate-400" size={18} />
-                          <input className={inputClass + " pl-12"} value={editFields.date} onChange={e => setEditFields({...editFields, date: e.target.value})} />
+                          <input className={inputClass + " pl-12"} value={editFields.date || ''} onChange={e => setEditFields({...editFields, date: e.target.value})} />
                        </div>
                     </div>
                     <div className="space-y-2">
                        <label className={labelClass}>Official Link</label>
                        <div className="relative">
                           <LinkIcon className="absolute left-4 top-4 text-slate-400" size={18} />
-                          <input className={inputClass + " pl-12 font-bold lowercase"} value={editFields.link} onChange={e => setEditFields({...editFields, link: e.target.value})} />
+                          <input className={inputClass + " pl-12 font-bold lowercase"} value={editFields.link || ''} onChange={e => setEditFields({...editFields, link: e.target.value})} />
                        </div>
                     </div>
                     <div className="flex gap-3 pt-4">
@@ -100,29 +114,33 @@ const ExhibitionProfile: React.FC = () => {
                       <span className={labelClass}>Location</span>
                       <div className="flex items-center gap-3">
                          <MapPin className="text-blue-500" />
-                         <span className={contentClass}>{exhibition.location}</span>
+                         <span className={contentClass}>{exhibition.location || 'TBD'}</span>
                       </div>
                    </div>
                    <div className="space-y-1">
                       <span className={labelClass}>Date</span>
                       <div className="flex items-center gap-3">
                          <Calendar className="text-blue-500" />
-                         <span className={contentClass}>{exhibition.date}</span>
+                         <span className={contentClass}>{exhibition.date || 'TBD'}</span>
                       </div>
                    </div>
                    <div className="space-y-1 pt-6 border-t dark:border-slate-800">
                       <span className={labelClass}>Resource</span>
-                      <a 
-                        href={exhibition.link.startsWith('http') ? exhibition.link : `https://${exhibition.link}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 group mt-2"
-                      >
-                         <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg group-hover:scale-105 transition-transform">
-                            <ExternalLink size={24} />
-                         </div>
-                         <span className="text-lg font-black text-blue-600 hover:underline">Official Documentation</span>
-                      </a>
+                      {exhibition.link && exhibition.link !== '#' ? (
+                        <a 
+                          href={exhibition.link.startsWith('http') ? exhibition.link : `https://${exhibition.link}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 group mt-2"
+                        >
+                           <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg group-hover:scale-105 transition-transform">
+                              <ExternalLink size={24} />
+                           </div>
+                           <span className="text-lg font-black text-blue-600 hover:underline">Official Documentation</span>
+                        </a>
+                      ) : (
+                        <div className="text-slate-400 italic font-bold mt-2">No resource link provided.</div>
+                      )}
                    </div>
                  </>
                )}
@@ -141,7 +159,7 @@ const ExhibitionProfile: React.FC = () => {
                               key={s}
                               onClick={() => toggleSeries(s)}
                               className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                                 editFields.eventSeries?.includes(s) 
+                                 (editFields.eventSeries || []).includes(s) 
                                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' 
                                  : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50'
                               }`}
@@ -154,7 +172,7 @@ const ExhibitionProfile: React.FC = () => {
                   </div>
                ) : (
                   <div className="flex flex-wrap gap-2">
-                     {exhibition.eventSeries && exhibition.eventSeries.length > 0 ? exhibition.eventSeries.map(s => (
+                     {Array.isArray(exhibition.eventSeries) && exhibition.eventSeries.length > 0 ? exhibition.eventSeries.map(s => (
                         <Badge key={s} color="purple">{s}</Badge>
                      )) : (
                         <span className="text-slate-400 italic font-medium">No series assigned.</span>
@@ -172,7 +190,7 @@ const ExhibitionProfile: React.FC = () => {
                </Card>
                <Card className="p-8 border-2 text-center flex flex-col items-center justify-center">
                   <div className="text-5xl font-black text-indigo-600 mb-2">
-                     {associatedCustomers.reduce((acc, c) => acc + customers.find(x => x.id === c.id)!.rank, 0) / (associatedCustomers.length || 1) < 2 ? 'HIGH' : 'MID'}
+                     {qualityIndex}
                   </div>
                   <div className={labelClass}>Lead Quality Index</div>
                </Card>
@@ -194,13 +212,13 @@ const ExhibitionProfile: React.FC = () => {
                      >
                         <div className="flex items-center gap-6">
                            <div className="w-12 h-12 bg-white dark:bg-slate-900 border-2 rounded-xl flex items-center justify-center font-black text-lg text-slate-700 dark:text-slate-300">
-                              {c.name.charAt(0)}
+                              {(c.name || '?').charAt(0)}
                            </div>
                            <div>
                               <h4 className="font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors uppercase tracking-tight">{c.name}</h4>
                               <div className="flex items-center gap-3 mt-1">
                                  <RankStars rank={c.rank} />
-                                 <span className="text-[10px] font-black text-slate-400 uppercase">{c.region.join(', ')}</span>
+                                 <span className="text-[10px] font-black text-slate-400 uppercase">{(c.region || []).join(', ')}</span>
                               </div>
                            </div>
                         </div>

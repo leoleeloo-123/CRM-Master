@@ -25,22 +25,32 @@ const ExhibitionList: React.FC = () => {
   const exhibitionStats = useMemo(() => {
     const stats: Record<string, number> = {};
     customers.forEach(c => {
-      c.tags.forEach(tag => {
-        stats[tag] = (stats[tag] || 0) + 1;
-      });
+      if (Array.isArray(c.tags)) {
+        c.tags.forEach(tag => {
+          stats[tag] = (stats[tag] || 0) + 1;
+        });
+      }
     });
     return stats;
   }, [customers]);
 
-  const filtered = exhibitions.filter(e => 
-    e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.location.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a, b) => {
-    const countA = exhibitionStats[a.name] || 0;
-    const countB = exhibitionStats[b.name] || 0;
-    if (countA !== countB) return countB - countA;
-    return b.date.localeCompare(a.date);
-  });
+  const filtered = useMemo(() => {
+    return exhibitions.filter(e => {
+      const name = e.name || '';
+      const location = e.location || '';
+      return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             location.toLowerCase().includes(searchTerm.toLowerCase());
+    }).sort((a, b) => {
+      const countA = exhibitionStats[a.name] || 0;
+      const countB = exhibitionStats[b.name] || 0;
+      if (countA !== countB) return countB - countA;
+      
+      // Defensive date comparison
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      return dateB.localeCompare(dateA);
+    });
+  }, [exhibitions, searchTerm, exhibitionStats]);
 
   const handleSave = () => {
     if (!formData.name) return;
@@ -67,7 +77,10 @@ const ExhibitionList: React.FC = () => {
   const handleEdit = (exh: Exhibition, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingExhibition(exh);
-    setFormData(exh);
+    setFormData({
+      ...exh,
+      eventSeries: Array.isArray(exh.eventSeries) ? exh.eventSeries : []
+    });
     setIsAddModalOpen(true);
   };
 
@@ -129,7 +142,7 @@ const ExhibitionList: React.FC = () => {
                 <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 line-clamp-1 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{exh.name}</h3>
                 
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                   {exh.eventSeries && exh.eventSeries.map(s => (
+                   {Array.isArray(exh.eventSeries) && exh.eventSeries.map(s => (
                      <span key={s} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase rounded shadow-sm border border-indigo-100 dark:border-indigo-800">{s}</span>
                    ))}
                    {(!exh.eventSeries || exh.eventSeries.length === 0) && (
@@ -139,10 +152,10 @@ const ExhibitionList: React.FC = () => {
 
                 <div className="space-y-2 mb-6">
                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase">
-                      <MapPin size={12} /> <span>{exh.location}</span>
+                      <MapPin size={12} /> <span>{exh.location || 'TBD'}</span>
                    </div>
                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase">
-                      <Calendar size={12} /> <span>{exh.date}</span>
+                      <Calendar size={12} /> <span>{exh.date || 'TBD'}</span>
                    </div>
                 </div>
 
@@ -170,7 +183,7 @@ const ExhibitionList: React.FC = () => {
                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Exhibition Name *</label>
                <input 
                  className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all uppercase" 
-                 value={formData.name}
+                 value={formData.name || ''}
                  onChange={e => setFormData({...formData, name: e.target.value})}
                  placeholder="e.g. SEMICON TAIWAN 2024"
                />
@@ -181,7 +194,7 @@ const ExhibitionList: React.FC = () => {
                   <input 
                     className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700" 
                     placeholder="e.g. 2024-05-15"
-                    value={formData.date}
+                    value={formData.date || ''}
                     onChange={e => setFormData({...formData, date: e.target.value})}
                   />
                </div>
@@ -190,7 +203,7 @@ const ExhibitionList: React.FC = () => {
                   <input 
                     className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700" 
                     placeholder="e.g. Taipei"
-                    value={formData.location}
+                    value={formData.location || ''}
                     onChange={e => setFormData({...formData, location: e.target.value})}
                   />
                </div>
@@ -200,7 +213,7 @@ const ExhibitionList: React.FC = () => {
                <input 
                  className="w-full p-4 border-2 rounded-2xl font-bold bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500" 
                  placeholder="https://..."
-                 value={formData.link}
+                 value={formData.link || ''}
                  onChange={e => setFormData({...formData, link: e.target.value})}
                />
             </div>
@@ -212,7 +225,7 @@ const ExhibitionList: React.FC = () => {
                     <button 
                        key={s}
                        onClick={() => {
-                         const current = formData.eventSeries || [];
+                         const current = Array.isArray(formData.eventSeries) ? formData.eventSeries : [];
                          const next = current.includes(s) ? current.filter(x => x !== s) : [...current, s];
                          setFormData({...formData, eventSeries: next});
                        }}
