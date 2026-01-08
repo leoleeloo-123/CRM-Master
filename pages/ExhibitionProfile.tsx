@@ -3,18 +3,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Card, Button, Badge, RankStars, Modal } from '../components/Common';
-import { ArrowLeft, MapPin, Calendar, ExternalLink, Users, ArrowRight, PencilLine, Save, Tag, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, ExternalLink, Users, ArrowRight, PencilLine, Save, Tag, Plus, Trash2, Link as LinkIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { Exhibition } from '../types';
 
 const ExhibitionProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { exhibitions, setExhibitions, customers, tagOptions, t } = useApp();
+  const { exhibitions, setExhibitions, customers, tagOptions, setTagOptions, t } = useApp();
   const navigate = useNavigate();
 
   const exhibition = exhibitions.find(e => e.id === id);
   const [isEditing, setIsEditing] = useState(false);
   const [editFields, setEditFields] = useState<Partial<Exhibition>>({});
+  const [newSeriesInput, setNewSeriesInput] = useState('');
 
   useEffect(() => {
     if (exhibition) {
@@ -51,6 +52,27 @@ const ExhibitionProfile: React.FC = () => {
       ? current.filter(s => s !== seriesName) 
       : [...current, seriesName];
     setEditFields({ ...editFields, eventSeries: next });
+  };
+
+  const handleAddNewSeries = () => {
+    const val = newSeriesInput.trim();
+    if (!val) return;
+    
+    // Add to global tag options
+    if (!tagOptions.eventSeries.includes(val)) {
+      setTagOptions(prev => ({
+        ...prev,
+        eventSeries: [...prev.eventSeries, val]
+      }));
+    }
+    
+    // Select it for the current profile
+    const current = Array.isArray(editFields.eventSeries) ? editFields.eventSeries : [];
+    if (!current.includes(val)) {
+      setEditFields({ ...editFields, eventSeries: [...current, val] });
+    }
+    
+    setNewSeriesInput('');
   };
 
   const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
@@ -93,7 +115,7 @@ const ExhibitionProfile: React.FC = () => {
                        <label className={labelClass}>Date</label>
                        <div className="relative">
                           <Calendar className="absolute left-4 top-4 text-slate-400" size={18} />
-                          <input className={inputClass + " pl-12"} value={editFields.date || ''} onChange={e => setEditFields({...editFields, date: e.target.value})} />
+                          <input type="date" className={inputClass + " pl-12"} value={editFields.date || ''} onChange={e => setEditFields({...editFields, date: e.target.value})} />
                        </div>
                     </div>
                     <div className="space-y-2">
@@ -152,7 +174,7 @@ const ExhibitionProfile: React.FC = () => {
                </h3>
                {isEditing ? (
                   <div className="space-y-4">
-                     <p className="text-[10px] text-slate-400 font-bold leading-tight uppercase mb-4">Click to add/remove series tags from available options:</p>
+                     <p className={labelClass + " normal-case"}>Available Series Tags:</p>
                      <div className="flex flex-wrap gap-2">
                         {tagOptions.eventSeries.map(s => (
                            <button 
@@ -161,14 +183,29 @@ const ExhibitionProfile: React.FC = () => {
                               className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all border ${
                                  (editFields.eventSeries || []).includes(s) 
                                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' 
-                                 : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50'
+                                 : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50 hover:border-blue-300'
                               }`}
                            >
                               {s}
                            </button>
                         ))}
                      </div>
-                     <p className="text-[9px] text-slate-400 font-bold italic mt-4 text-center">Manage options in Settings page</p>
+                     
+                     <div className="flex gap-2 border-t dark:border-slate-800 pt-4 mt-4">
+                        <input 
+                          className="flex-1 p-2.5 border-2 rounded-xl text-xs font-bold dark:bg-slate-900 dark:border-slate-800 outline-none focus:border-blue-500" 
+                          placeholder="New tag..."
+                          value={newSeriesInput}
+                          onChange={e => setNewSeriesInput(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddNewSeries())}
+                        />
+                        <button 
+                          onClick={handleAddNewSeries}
+                          className="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 active:scale-90 transition-all"
+                        >
+                          <Plus size={18} />
+                        </button>
+                     </div>
                   </div>
                ) : (
                   <div className="flex flex-wrap gap-2">

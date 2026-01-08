@@ -147,7 +147,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           updated.push({
             id: `exh_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             name: tagName,
-            date: 'TBD',
+            date: '',
             location: 'TBD',
             link: '#',
             eventSeries: []
@@ -159,6 +159,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return hasChanged ? updated : prev;
     });
   }, [customers]);
+
+  // 2. Sync Event Series tags from Exhibitions data
+  useEffect(() => {
+    const usedSeries = Array.from(new Set(exhibitions.flatMap(e => e.eventSeries || [])));
+    if (usedSeries.length === 0) return;
+
+    setTagOptionsState(prev => {
+      const existingSeries = new Set(prev.eventSeries);
+      const newFoundSeries = usedSeries.filter(s => s && !existingSeries.has(s));
+      
+      if (newFoundSeries.length === 0) return prev;
+      
+      return {
+        ...prev,
+        eventSeries: [...prev.eventSeries, ...newFoundSeries]
+      };
+    });
+  }, [exhibitions]);
 
   // --- Effects for Persistence ---
 

@@ -2,17 +2,18 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Button, Modal, Badge } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Activity, Tag } from 'lucide-react';
+import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Activity, Tag, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Exhibition } from '../types';
 
 const ExhibitionList: React.FC = () => {
-  const { exhibitions, setExhibitions, customers, tagOptions, t } = useApp();
+  const { exhibitions, setExhibitions, customers, tagOptions, setTagOptions, t } = useApp();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingExhibition, setEditingExhibition] = useState<Exhibition | null>(null);
   
+  const [newSeriesInput, setNewSeriesInput] = useState('');
   const [formData, setFormData] = useState<Partial<Exhibition>>({
     name: '',
     date: '',
@@ -61,7 +62,7 @@ const ExhibitionList: React.FC = () => {
       const newExh: Exhibition = {
         id: `exh_${Date.now()}`,
         name: formData.name,
-        date: formData.date || 'TBD',
+        date: formData.date || '',
         location: formData.location || 'TBD',
         link: formData.link || '#',
         eventSeries: formData.eventSeries || []
@@ -94,6 +95,27 @@ const ExhibitionList: React.FC = () => {
     if (confirm(message)) {
       setExhibitions(prev => prev.filter(ex => ex.id !== id));
     }
+  };
+
+  const handleAddNewSeries = () => {
+    const val = newSeriesInput.trim();
+    if (!val) return;
+    
+    // Add to global tag options
+    if (!tagOptions.eventSeries.includes(val)) {
+      setTagOptions(prev => ({
+        ...prev,
+        eventSeries: [...prev.eventSeries, val]
+      }));
+    }
+    
+    // Select it for the current form
+    const current = Array.isArray(formData.eventSeries) ? formData.eventSeries : [];
+    if (!current.includes(val)) {
+      setFormData({ ...formData, eventSeries: [...current, val] });
+    }
+    
+    setNewSeriesInput('');
   };
 
   return (
@@ -192,8 +214,8 @@ const ExhibitionList: React.FC = () => {
                <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Date</label>
                   <input 
-                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700" 
-                    placeholder="e.g. 2024-05-15"
+                    type="date"
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" 
                     value={formData.date || ''}
                     onChange={e => setFormData({...formData, date: e.target.value})}
                   />
@@ -201,7 +223,7 @@ const ExhibitionList: React.FC = () => {
                <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Location</label>
                   <input 
-                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700" 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" 
                     placeholder="e.g. Taipei"
                     value={formData.location || ''}
                     onChange={e => setFormData({...formData, location: e.target.value})}
@@ -211,7 +233,7 @@ const ExhibitionList: React.FC = () => {
             <div className="space-y-1.5">
                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Resource Link</label>
                <input 
-                 className="w-full p-4 border-2 rounded-2xl font-bold bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500" 
+                 className="w-full p-4 border-2 rounded-2xl font-bold bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all" 
                  placeholder="https://..."
                  value={formData.link || ''}
                  onChange={e => setFormData({...formData, link: e.target.value})}
@@ -220,24 +242,44 @@ const ExhibitionList: React.FC = () => {
             
             <div className="space-y-1.5">
                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assign Event Series</label>
-               <div className="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700">
-                  {tagOptions.eventSeries.map(s => (
+               <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {tagOptions.eventSeries.map(s => (
+                      <button 
+                         key={s}
+                         type="button"
+                         onClick={() => {
+                           const current = Array.isArray(formData.eventSeries) ? formData.eventSeries : [];
+                           const next = current.includes(s) ? current.filter(x => x !== s) : [...current, s];
+                           setFormData({...formData, eventSeries: next});
+                         }}
+                         className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${
+                           formData.eventSeries?.includes(s) 
+                             ? 'bg-blue-600 text-white shadow-md' 
+                             : 'bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700 hover:border-blue-300'
+                         }`}
+                      >
+                         {s}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="flex gap-2 border-t dark:border-slate-700 pt-4">
+                    <input 
+                      className="flex-1 p-2.5 border-2 rounded-xl text-xs font-bold dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500" 
+                      placeholder="Add new series tag..."
+                      value={newSeriesInput}
+                      onChange={e => setNewSeriesInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddNewSeries())}
+                    />
                     <button 
-                       key={s}
-                       onClick={() => {
-                         const current = Array.isArray(formData.eventSeries) ? formData.eventSeries : [];
-                         const next = current.includes(s) ? current.filter(x => x !== s) : [...current, s];
-                         setFormData({...formData, eventSeries: next});
-                       }}
-                       className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${
-                         formData.eventSeries?.includes(s) 
-                           ? 'bg-blue-600 text-white shadow-md' 
-                           : 'bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700'
-                       }`}
+                      type="button"
+                      onClick={handleAddNewSeries}
+                      className="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 active:scale-90 transition-all"
                     >
-                       {s}
+                      <Plus size={18} />
                     </button>
-                  ))}
+                  </div>
                </div>
             </div>
 
