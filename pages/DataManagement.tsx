@@ -290,7 +290,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
       date: normalizeDate(safeCol(1)) || format(new Date(), 'yyyy-MM-dd'),
       location: safeCol(2) || 'TBD',
       link: safeCol(3) || '#',
-      eventSeries: series
+      eventSeries: series,
+      summary: safeCol(5) || ''
     };
   };
 
@@ -382,14 +383,15 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const sampSheet = XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]);
     XLSX.utils.book_append_sheet(wb, sampSheet, "Samples");
 
-    // 3. Exhibitions Tab (Enhanced with Event Series)
-    const exhHeaders = ["Name", "Date", "Location", "Link", "Event Series"];
+    // 3. Exhibitions Tab (Enhanced with Event Series and Summary)
+    const exhHeaders = ["Name", "Date", "Location", "Link", "Event Series", "Summary"];
     const exhRows = exhibitions.map(e => [
       e.name, 
       e.date, 
       e.location, 
       e.link, 
-      (e.eventSeries || []).join(' ||| ')
+      (e.eventSeries || []).join(' ||| '),
+      e.summary || ''
     ]);
     const exhSheet = XLSX.utils.aoa_to_sheet([exhHeaders, ...exhRows]);
     XLSX.utils.book_append_sheet(wb, exhSheet, "Exhibitions");
@@ -644,6 +646,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     <th className="p-3">Location</th>
                     <th className="p-3">Link</th>
                     <th className="p-3">Series</th>
+                    <th className="p-3">Summary</th>
                   </>
                 )}
               </tr>
@@ -692,13 +695,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       <td className="p-3">{row.location}</td>
                       <td className="p-3 truncate max-w-[200px] text-blue-600 underline">{row.link}</td>
                       <td className="p-3">{row.eventSeries?.join(', ')}</td>
+                      <td className="p-3 truncate max-w-[200px]" title={row.summary}>{row.summary}</td>
                     </>
                   )}
                 </tr>
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="p-10 text-center text-slate-400 italic font-bold">No data found in database.</td>
+                  <td colSpan={12} className="p-10 text-center text-slate-400 italic font-bold">No data found in database.</td>
                 </tr>
               )}
             </tbody>
@@ -782,7 +786,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
                           : activeTab === 'samples'
                           ? "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs"
-                          : "1.Name | 2.Date | 3.Location | 4.Link | 5.Event Series"
+                          : "1.Name | 2.Date | 3.Location | 4.Link | 5.Event Series | 6.Summary"
                         }
                       </p>
                    </div>
@@ -885,6 +889,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                 <th className="p-3">Location</th>
                                 <th className="p-3">Link</th>
                                 <th className="p-3">Series</th>
+                                <th className="p-3">Summary</th>
                               </>
                            )}
                          </tr>
@@ -931,6 +936,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                  <td className="p-3">{row.location}</td>
                                  <td className="p-3">{row.link}</td>
                                  <td className="p-3">{row.eventSeries?.join(', ')}</td>
+                                 <td className="p-3 truncate max-w-[150px]" title={row.summary}>{row.summary}</td>
                                </>
                              )}
                            </tr>

@@ -29,6 +29,7 @@ export interface Exhibition {
   location: string;
   link: string;
   eventSeries?: string[]; // New: List of series tags this exhibition belongs to
+  summary?: string; // New: Descriptive summary or notes about the event
 }
 
 export interface Customer {

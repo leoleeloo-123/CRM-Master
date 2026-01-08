@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Card, Button, Badge, RankStars, Modal } from '../components/Common';
-import { ArrowLeft, MapPin, Calendar, ExternalLink, Users, ArrowRight, PencilLine, Save, Tag, Plus, Trash2, Link as LinkIcon, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, ExternalLink, Users, ArrowRight, PencilLine, Save, Tag, Plus, Trash2, Link as LinkIcon, X, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { Exhibition } from '../types';
 
@@ -14,6 +14,7 @@ const ExhibitionProfile: React.FC = () => {
 
   const exhibition = exhibitions.find(e => e.id === id);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editFields, setEditFields] = useState<Partial<Exhibition>>({});
   const [newSeriesInput, setNewSeriesInput] = useState('');
 
@@ -31,19 +32,12 @@ const ExhibitionProfile: React.FC = () => {
     return customers.filter(c => Array.isArray(c.tags) && c.tags.includes(exhibition.name));
   }, [customers, exhibition]);
 
-  // Lead Quality calculation - Safe version
-  const qualityIndex = useMemo(() => {
-    if (associatedCustomers.length === 0) return 'N/A';
-    const totalRank = associatedCustomers.reduce((acc, c) => acc + (c.rank || 3), 0);
-    const avgRank = totalRank / associatedCustomers.length;
-    return avgRank < 2.5 ? 'HIGH' : 'MID';
-  }, [associatedCustomers]);
-
   if (!exhibition) return <div className="p-20 text-center font-black uppercase text-slate-400">Exhibition not found.</div>;
 
   const handleSave = () => {
     setExhibitions(prev => prev.map(e => e.id === id ? { ...exhibition, ...editFields } as Exhibition : e));
     setIsEditing(false);
+    setIsEditingSummary(false);
   };
 
   const toggleSeries = (seriesName: string) => {
@@ -225,11 +219,36 @@ const ExhibitionProfile: React.FC = () => {
                   <div className="text-5xl font-black text-blue-600 mb-2">{associatedCustomers.length}</div>
                   <div className={labelClass}>Participating Customers</div>
                </Card>
-               <Card className="p-8 border-2 text-center flex flex-col items-center justify-center">
-                  <div className="text-5xl font-black text-indigo-600 mb-2">
-                     {qualityIndex}
+               
+               <Card className="p-8 border-2 relative overflow-hidden">
+                  <div className="flex justify-between items-center mb-4">
+                     <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
+                        <FileText className="text-amber-500" size={20} /> Event Summary
+                     </h3>
+                     {!isEditingSummary && (
+                        <button onClick={() => setIsEditingSummary(true)} className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 active:scale-90 transition-all">
+                           <PencilLine size={18} />
+                        </button>
+                     )}
                   </div>
-                  <div className={labelClass}>Lead Quality Index</div>
+                  {isEditingSummary ? (
+                     <div className="space-y-4">
+                        <textarea 
+                           className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold bg-white dark:bg-slate-800 text-sm outline-none focus:border-blue-500 min-h-[120px]"
+                           value={editFields.summary || ''}
+                           onChange={e => setEditFields({...editFields, summary: e.target.value})}
+                           placeholder="Type event summary here..."
+                        />
+                        <div className="flex gap-2">
+                           <Button variant="secondary" size="sm" className="flex-1" onClick={() => { setIsEditingSummary(false); setEditFields({...editFields, summary: exhibition.summary}); }}>Cancel</Button>
+                           <Button size="sm" className="flex-1 bg-blue-600" onClick={handleSave}>Save Summary</Button>
+                        </div>
+                     </div>
+                  ) : (
+                     <div className="text-slate-600 dark:text-slate-300 font-bold italic leading-relaxed text-sm xl:text-base pr-8">
+                        {exhibition.summary || <span className="text-slate-300">No summary information provided for this event. Click edit to add notes.</span>}
+                     </div>
+                  )}
                </Card>
             </div>
 

@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
-import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight, User, ListFilter, Maximize2, Minimize2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +21,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
   
-  // Expansion state for the list view
+  // Expansion state for both list and board view
   const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
 
   // New Filters
@@ -93,7 +93,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   }, [samples, searchTerm, filterStatus, filterTestFinished, filterCrystal, filterForm, filterCustomer, filterGrading, customers]);
 
   // Grouped samples for the List View
-  const groupedSamples = useMemo(() => {
+  const groupedSamplesList = useMemo(() => {
     const groups: { customerId: string, customerName: string, samples: Sample[] }[] = [];
     filteredSamples.forEach(s => {
       let lastGroup = groups[groups.length - 1];
@@ -105,6 +105,20 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     });
     return groups;
   }, [filteredSamples]);
+
+  // Derived: Are all currently filtered groups expanded?
+  const isAllExpanded = useMemo(() => {
+    if (groupedSamplesList.length === 0) return false;
+    return groupedSamplesList.every(g => expandedCustomers.has(g.customerId));
+  }, [groupedSamplesList, expandedCustomers]);
+
+  const toggleAllExpansion = () => {
+    if (isAllExpanded) {
+      setExpandedCustomers(new Set());
+    } else {
+      setExpandedCustomers(new Set(groupedSamplesList.map(g => g.customerId)));
+    }
+  };
 
   const toggleCustomerExpansion = (cid: string) => {
     const next = new Set(expandedCustomers);
@@ -154,6 +168,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     setFilterForm('');
     setFilterCustomer('');
     setFilterGrading('');
+    setExpandedCustomers(new Set());
   };
 
   const handleCreateSample = () => {
@@ -220,17 +235,33 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         </div>
       </div>
 
-      <Card className="p-4 flex flex-col gap-4 bg-slate-50 dark:bg-slate-800/50">
+      <Card className="p-4 flex flex-col gap-4 bg-slate-50 dark:bg-slate-800/50 border-2">
          <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
               <input className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-900" placeholder={t('searchSample')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
-            <div className="flex gap-2">
-               <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900" value={filterCustomer} onChange={e => setFilterCustomer(e.target.value)}>
+            <div className="flex items-center gap-2">
+               <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterCustomer} onChange={e => setFilterCustomer(e.target.value)}>
                   <option value="">{t('customer')}: All</option>
                   {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                </select>
+               
+               <div className="h-full w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+               
+               {/* Global Collapse/Expand Toggle Button */}
+               <button 
+                onClick={toggleAllExpansion}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  isAllExpanded 
+                    ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300'
+                }`}
+               >
+                 {isAllExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                 {isAllExpanded ? 'Collapse All' : 'Expand All'}
+               </button>
+
                <Button variant="ghost" className="text-xs text-slate-500" onClick={resetFilters}>Reset</Button>
             </div>
          </div>
@@ -284,7 +315,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {groupedSamples.map(group => {
+                  {groupedSamplesList.map(group => {
                     const isExpanded = expandedCustomers.has(group.customerId);
                     return (
                       <React.Fragment key={group.customerId}>
@@ -344,7 +375,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                     );
                   })}
                   
-                  {groupedSamples.length === 0 && (
+                  {groupedSamplesList.length === 0 && (
                     <tr>
                       <td colSpan={9} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
                     </tr>
@@ -356,35 +387,75 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
           <div className="flex h-full gap-6 overflow-x-auto pb-4">
              {tagOptions.sampleStatus.map((status) => {
                 const colSamples = filteredSamples.filter(s => s.status === status);
+                
+                // Group column samples by customer for board view
+                const colGroups: { customerId: string, customerName: string, samples: Sample[] }[] = [];
+                colSamples.forEach(s => {
+                  let lastGroup = colGroups[colGroups.length - 1];
+                  if (lastGroup && lastGroup.customerId === s.customerId) {
+                    lastGroup.samples.push(s);
+                  } else {
+                    colGroups.push({ customerId: s.customerId, customerName: s.customerName, samples: [s] });
+                  }
+                });
+
                 return (
                   <div key={status} className="w-80 shrink-0 bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-4 flex flex-col shadow-inner">
                      <div className="flex justify-between items-center mb-4 px-1">
-                        <h4 className="font-extrabold uppercase text-xs text-slate-500 flex items-center gap-2">
+                        <h4 className="font-extrabold uppercase text-[10px] text-slate-500 flex items-center gap-2">
                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                            {t(status as any)} ({colSamples.length})
                         </h4>
                      </div>
-                     <div className="space-y-3 overflow-y-auto flex-1 pr-1">
-                        {colSamples.map(s => (
-                          <Card key={s.id} onClick={() => navigate(`/samples/${s.id}`)} className={`p-4 cursor-pointer hover:shadow-lg border-l-4 transition-all hover:-translate-y-1 ${getUrgencyColor(s.lastStatusDate)}`}>
-                             <div className="flex justify-between items-start mb-2">
-                                <span className="text-[10px] font-bold text-slate-400">#{s.sampleIndex}</span>
-                                {renderDaysSinceUpdate(s.lastStatusDate)}
-                             </div>
-                             <p className="font-bold text-slate-900 dark:text-white mb-0.5">{s.customerName}</p>
-                             <p className="text-sm font-bold text-blue-600 truncate">{s.sampleName}</p>
-                             
-                             <div className="mt-2 flex gap-1.5 flex-wrap">
-                               {getGradingBadge(s.isGraded)}
-                               {getTestStatusBadge(s.testStatus)}
-                             </div>
+                     <div className="space-y-4 overflow-y-auto flex-1 pr-1 scrollbar-hide">
+                        {colGroups.map(group => {
+                          const isExpanded = expandedCustomers.has(group.customerId);
+                          return (
+                            <div key={`${status}-${group.customerId}`} className="space-y-2">
+                               {/* Board Customer Header */}
+                               <div 
+                                 onClick={() => toggleCustomerExpansion(group.customerId)}
+                                 className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                               >
+                                 <div className="flex items-center gap-2 min-w-0">
+                                    {isExpanded ? <ChevronDown size={14} className="text-slate-400 shrink-0" /> : <ChevronRight size={14} className="text-slate-400 shrink-0" />}
+                                    <span className="font-black text-[11px] text-slate-900 dark:text-white uppercase truncate">{group.customerName}</span>
+                                 </div>
+                                 <Badge color="gray">{group.samples.length}</Badge>
+                               </div>
 
-                             <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                                <span className="text-[10px] font-mono text-slate-500">{s.sampleSKU || 'N/A'}</span>
-                                <span className="text-[10px] font-bold text-slate-700">{s.quantity}</span>
-                             </div>
-                          </Card>
-                        ))}
+                               {/* Indented Sample Cards */}
+                               {isExpanded && (
+                                 <div className="pl-3 space-y-2 border-l-2 border-slate-200 dark:border-slate-800 ml-2">
+                                   {group.samples.map(s => (
+                                     <Card 
+                                       key={s.id} 
+                                       onClick={() => navigate(`/samples/${s.id}`)} 
+                                       className={`p-3 cursor-pointer hover:shadow-lg border-l-4 transition-all hover:-translate-y-0.5 ${getUrgencyColor(s.lastStatusDate)}`}
+                                     >
+                                        <div className="flex justify-between items-start mb-1.5">
+                                          <span className="text-[9px] font-bold text-slate-400">#{s.sampleIndex}</span>
+                                          {renderDaysSinceUpdate(s.lastStatusDate)}
+                                        </div>
+                                        <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-tight mb-2 line-clamp-2">{s.sampleName}</p>
+                                        
+                                        <div className="flex gap-1 flex-wrap">
+                                          <div className="scale-90 origin-left">
+                                            {getTestStatusBadge(s.testStatus)}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50 dark:border-slate-800">
+                                          <span className="text-[8px] font-mono text-slate-400 truncate max-w-[100px]">{s.sampleSKU || 'N/A'}</span>
+                                          <span className="text-[9px] font-black text-slate-700 dark:text-slate-300">{s.quantity}</span>
+                                        </div>
+                                     </Card>
+                                   ))}
+                                 </div>
+                               )}
+                            </div>
+                          );
+                        })}
                      </div>
                   </div>
                 );

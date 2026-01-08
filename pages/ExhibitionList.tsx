@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Button, Modal, Badge } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Tag, X, Filter, User, ChevronDown, ChevronRight, Globe } from 'lucide-react';
+import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Tag, X, Filter, User, ChevronDown, ChevronRight, Globe, Maximize2, Minimize2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Exhibition } from '../types';
 
@@ -16,8 +16,54 @@ const ExhibitionList: React.FC = () => {
   const [filterYear, setFilterYear] = useState('');
   const [filterCustomer, setFilterCustomer] = useState('');
   
-  // Folding state
-  const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set(['NA', ...tagOptions.eventSeries]));
+  // Combined Filtering Logic (needed for grouping)
+  const filteredExhibitions = useMemo(() => {
+    return exhibitions.filter(e => {
+      const matchesSearch = (e.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (e.location || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSeries = filterSeries === '' || (e.eventSeries && e.eventSeries.includes(filterSeries));
+      const matchesYear = filterYear === '' || (e.date && e.date.startsWith(filterYear));
+      let matchesCustomer = true;
+      if (filterCustomer !== '') {
+        const targetCustomer = customers.find(c => c.id === filterCustomer);
+        matchesCustomer = targetCustomer ? (targetCustomer.tags || []).includes(e.name) : false;
+      }
+      return matchesSearch && matchesSeries && matchesYear && matchesCustomer;
+    });
+  }, [exhibitions, searchTerm, filterSeries, filterYear, filterCustomer, customers]);
+
+  // Grouping Logic
+  const groupedExhibitions = useMemo(() => {
+    const groups: { series: string; items: Exhibition[] }[] = [];
+    tagOptions.eventSeries.forEach(s => {
+      const items = filteredExhibitions.filter(e => Array.isArray(e.eventSeries) && e.eventSeries.includes(s));
+      if (items.length > 0) {
+        groups.push({ series: s, items: items.sort((a, b) => (b.date || '').localeCompare(a.date || '')) });
+      }
+    });
+    const naItems = filteredExhibitions.filter(e => !e.eventSeries || e.eventSeries.length === 0);
+    if (naItems.length > 0) {
+      groups.push({ series: 'NA', items: naItems.sort((a, b) => (b.date || '').localeCompare(a.date || '')) });
+    }
+    return groups;
+  }, [filteredExhibitions, tagOptions.eventSeries]);
+
+  // Folding state - default to collapsed (empty set)
+  const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
+
+  // Derived: Are all currently visible groups expanded?
+  const isAllExpanded = useMemo(() => {
+    if (groupedExhibitions.length === 0) return false;
+    return groupedExhibitions.every(g => expandedSeries.has(g.series));
+  }, [groupedExhibitions, expandedSeries]);
+
+  const toggleAllExpansion = () => {
+    if (isAllExpanded) {
+      setExpandedSeries(new Set());
+    } else {
+      setExpandedSeries(new Set(groupedExhibitions.map(g => g.series)));
+    }
+  };
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -28,7 +74,8 @@ const ExhibitionList: React.FC = () => {
     date: '',
     location: '',
     link: '',
-    eventSeries: []
+    eventSeries: [],
+    summary: ''
   });
 
   // Derived: Unique Years from exhibitions for filter
@@ -55,51 +102,6 @@ const ExhibitionList: React.FC = () => {
     return stats;
   }, [customers]);
 
-  // Combined Filtering Logic
-  const filteredExhibitions = useMemo(() => {
-    return exhibitions.filter(e => {
-      // 1. Basic Text Search (Name or Location)
-      const matchesSearch = (e.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (e.location || '').toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // 2. Series Filter (Individual dropdown filter)
-      const matchesSeries = filterSeries === '' || (e.eventSeries && e.eventSeries.includes(filterSeries));
-      
-      // 3. Year Filter
-      const matchesYear = filterYear === '' || (e.date && e.date.startsWith(filterYear));
-      
-      // 4. Customer Filter
-      let matchesCustomer = true;
-      if (filterCustomer !== '') {
-        const targetCustomer = customers.find(c => c.id === filterCustomer);
-        matchesCustomer = targetCustomer ? (targetCustomer.tags || []).includes(e.name) : false;
-      }
-
-      return matchesSearch && matchesSeries && matchesYear && matchesCustomer;
-    });
-  }, [exhibitions, searchTerm, filterSeries, filterYear, filterCustomer, customers]);
-
-  // Grouping Logic for List View
-  const groupedExhibitions = useMemo(() => {
-    const groups: { series: string; items: Exhibition[] }[] = [];
-    
-    // Create groups for each defined series tag
-    tagOptions.eventSeries.forEach(s => {
-      const items = filteredExhibitions.filter(e => Array.isArray(e.eventSeries) && e.eventSeries.includes(s));
-      if (items.length > 0) {
-        groups.push({ series: s, items: items.sort((a, b) => (b.date || '').localeCompare(a.date || '')) });
-      }
-    });
-
-    // Handle "NA" group for exhibitions with no series tags
-    const naItems = filteredExhibitions.filter(e => !e.eventSeries || e.eventSeries.length === 0);
-    if (naItems.length > 0) {
-      groups.push({ series: 'NA', items: naItems.sort((a, b) => (b.date || '').localeCompare(a.date || '')) });
-    }
-
-    return groups;
-  }, [filteredExhibitions, tagOptions.eventSeries]);
-
   const toggleSeriesExpansion = (s: string) => {
     const next = new Set(expandedSeries);
     if (next.has(s)) next.delete(s);
@@ -109,7 +111,6 @@ const ExhibitionList: React.FC = () => {
 
   const handleSave = () => {
     if (!formData.name) return;
-    
     if (editingExhibition) {
       setExhibitions(prev => prev.map(e => e.id === editingExhibition.id ? { ...editingExhibition, ...formData } as Exhibition : e));
     } else {
@@ -119,14 +120,14 @@ const ExhibitionList: React.FC = () => {
         date: formData.date || '',
         location: formData.location || 'TBD',
         link: formData.link || '#',
-        eventSeries: formData.eventSeries || []
+        eventSeries: formData.eventSeries || [],
+        summary: formData.summary || ''
       };
       setExhibitions(prev => [...prev, newExh]);
     }
-    
     setIsAddModalOpen(false);
     setEditingExhibition(null);
-    setFormData({ name: '', date: '', location: '', link: '', eventSeries: [] });
+    setFormData({ name: '', date: '', location: '', link: '', eventSeries: [], summary: '' });
   };
 
   const handleEdit = (exh: Exhibition, e: React.MouseEvent) => {
@@ -143,9 +144,8 @@ const ExhibitionList: React.FC = () => {
     e.stopPropagation();
     const count = exhibitionStats[name] || 0;
     const message = count > 0 
-      ? `This exhibition is linked to ${count} customer(s). Are you absolutely sure you want to delete it? This will leave customer tags without metadata.`
+      ? `This exhibition is linked to ${count} customer(s). Are you absolutely sure you want to delete it?`
       : `Are you sure you want to delete "${name}"?`;
-
     if (confirm(message)) {
       setExhibitions(prev => prev.filter(ex => ex.id !== id));
     }
@@ -154,19 +154,16 @@ const ExhibitionList: React.FC = () => {
   const handleAddNewSeries = () => {
     const val = newSeriesInput.trim();
     if (!val) return;
-    
     if (!tagOptions.eventSeries.includes(val)) {
       setTagOptions(prev => ({
         ...prev,
         eventSeries: [...prev.eventSeries, val]
       }));
     }
-    
     const current = Array.isArray(formData.eventSeries) ? formData.eventSeries : [];
     if (!current.includes(val)) {
       setFormData({ ...formData, eventSeries: [...current, val] });
     }
-    
     setNewSeriesInput('');
   };
 
@@ -175,6 +172,7 @@ const ExhibitionList: React.FC = () => {
     setFilterSeries('');
     setFilterYear('');
     setFilterCustomer('');
+    setExpandedSeries(new Set());
   };
 
   const hasActiveFilters = searchTerm !== '' || filterSeries !== '' || filterYear !== '' || filterCustomer !== '';
@@ -186,7 +184,7 @@ const ExhibitionList: React.FC = () => {
           <h2 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight uppercase">{t('exhibitions')}</h2>
           <p className="text-slate-500 font-bold mt-1 tracking-tight">Managing links and info for all exhibition entries.</p>
         </div>
-        <Button onClick={() => { setEditingExhibition(null); setFormData({name:'', date:'', location:'', link:'', eventSeries:[]}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-8 py-3 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
+        <Button onClick={() => { setEditingExhibition(null); setFormData({name:'', date:'', location:'', link:'', eventSeries:[], summary: ''}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-8 py-3 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
            <Plus size={20} />
            <span className="font-black uppercase tracking-widest text-sm">Add Exhibition</span>
         </Button>
@@ -243,6 +241,21 @@ const ExhibitionList: React.FC = () => {
                 </select>
              </div>
 
+             <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+
+             {/* Global Collapse/Expand Toggle Button */}
+             <button 
+              onClick={toggleAllExpansion}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                isAllExpanded 
+                  ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300'
+              }`}
+             >
+               {isAllExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+               {isAllExpanded ? 'Collapse All' : 'Expand All'}
+             </button>
+
              {hasActiveFilters && (
                <button 
                 onClick={resetFilters}
@@ -268,9 +281,9 @@ const ExhibitionList: React.FC = () => {
                 <th className="p-6">Exhibition / Series</th>
                 <th className="p-6">Location</th>
                 <th className="p-6">Date</th>
-                <th className="p-6">Resource</th>
-                <th className="p-6 text-center">Links</th>
-                <th className="p-6 text-right">Actions</th>
+                <th className="p-6">Official Link</th>
+                <th className="p-6 text-center">Linked Customers</th>
+                <th className="p-6">Event Summary</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -344,19 +357,22 @@ const ExhibitionList: React.FC = () => {
                               <span className="text-xs font-black text-slate-600 dark:text-slate-400">{usageCount}</span>
                             </div>
                           </td>
-                          <td className="p-6 text-right" onClick={e => e.stopPropagation()}>
-                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <td className="p-6 relative">
+                            <div className="text-xs text-slate-600 dark:text-slate-300 font-bold line-clamp-2 max-w-[200px]">
+                               {exh.summary || <span className="text-slate-300 italic">No summary.</span>}
+                            </div>
+                            <div className="absolute inset-y-0 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-white dark:from-slate-900 pl-4" onClick={e => e.stopPropagation()}>
                               <button 
                                 onClick={(e) => handleEdit(exh, e)} 
-                                className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
+                                className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
                               >
-                                <PencilLine size={18} />
+                                <PencilLine size={16} />
                               </button>
                               <button 
                                 onClick={(e) => handleDelete(exh.id, exh.name, e)} 
-                                className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90"
+                                className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90"
                               >
-                                <Trash2 size={18} />
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </td>
@@ -419,6 +435,16 @@ const ExhibitionList: React.FC = () => {
                  placeholder="https://..."
                  value={formData.link || ''}
                  onChange={e => setFormData({...formData, link: e.target.value})}
+               />
+            </div>
+
+            <div className="space-y-1.5">
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Summary</label>
+               <textarea 
+                 className="w-full p-4 border-2 rounded-2xl font-bold bg-white dark:bg-slate-900 dark:border-slate-700 outline-none focus:border-blue-500 transition-all min-h-[100px]" 
+                 placeholder="Enter event notes or summary..."
+                 value={formData.summary || ''}
+                 onChange={e => setFormData({...formData, summary: e.target.value})}
                />
             </div>
             
