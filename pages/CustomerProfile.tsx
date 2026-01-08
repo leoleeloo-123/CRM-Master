@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank } from '../types';
+import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -17,7 +17,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t } = useApp();
+  const { t, exhibitions, setExhibitions } = useApp();
   
   const [activeTab, setActiveTab] = useState<'overview' | 'samples'>(
     searchParams.get('tab') === 'samples' ? 'samples' : 'overview'
@@ -142,6 +142,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
   const secondaryTextClass = "text-sm xl:text-base text-slate-500 dark:text-slate-400 font-bold tracking-tight";
 
+  // Helper to find exhibition link from master list
+  const getExhibitionLink = (name: string) => {
+    const exh = exhibitions.find(e => e.name === name);
+    return exh?.link || '#';
+  };
+
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
        <div className="flex items-center gap-6">
@@ -229,10 +235,25 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
              <div className="space-y-3">
                {customer.tags.length > 0 ? customer.tags.map((tag, i) => (
-                 <div key={i} className="px-5 py-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs xl:text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest border border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-400 mr-2">{i + 1}.</span> {tag}
+                 <div key={i} className="flex items-center justify-between px-5 py-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-700 group transition-all hover:border-blue-200">
+                    <div className="text-xs xl:text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest truncate flex-1 mr-4">
+                       <span className="text-slate-400 mr-2">{i + 1}.</span> {tag}
+                    </div>
+                    {/* Pull link from master list, not from local docLinks */}
+                    <a 
+                      href={getExhibitionLink(tag).startsWith('http') ? getExhibitionLink(tag) : `https://${getExhibitionLink(tag)}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-500 hover:text-blue-700 transition-colors bg-white dark:bg-slate-900 p-1.5 rounded-lg shadow-sm group-hover:scale-110"
+                      title="View Centralized Document / Site"
+                    >
+                       <ExternalLink className="w-4 h-4" />
+                    </a>
                  </div>
                )) : <span className={secondaryTextClass + " italic"}>No exhibition history logged.</span>}
+               <p className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                 Links are managed centrally in Exhibitions tab.
+               </p>
              </div>
            </Card>
          </div>
@@ -509,38 +530,55 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
        <Modal isOpen={isEditTagsOpen} onClose={() => setIsEditTagsOpen(false)} title={t('exhibitions').toUpperCase()}>
           <div className="space-y-8">
-             <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
+             <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
                 {tempTags.map((tag, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div className="flex-1 relative">
-                       <input 
-                         className="w-full p-4 pl-6 border-2 rounded-xl font-black uppercase text-blue-600 dark:text-blue-400 dark:bg-slate-800 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm xl:text-base transition-all" 
-                         value={tag} 
-                         onChange={(e) => {
-                           const newTags = [...tempTags];
-                           newTags[idx] = e.target.value;
-                           setTempTags(newTags);
-                         }} 
-                       />
+                  <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border-2 border-slate-100 dark:border-slate-700 space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Exhibition #{idx + 1}</span>
+                       <button 
+                         onClick={() => {
+                           setTempTags(tempTags.filter((_, i) => i !== idx));
+                         }}
+                         className="p-1.5 text-slate-300 hover:text-red-500 transition-colors active:scale-90"
+                       >
+                         <Trash2 className="w-5 h-5" />
+                       </button>
                     </div>
-                    <button 
-                      onClick={() => setTempTags(tempTags.filter((_, i) => i !== idx))}
-                      className="p-3 text-slate-300 hover:text-red-500 transition-colors active:scale-90"
-                    >
-                      <Trash2 className="w-6 h-6" />
-                    </button>
+                    <div className="space-y-3">
+                       <div className="relative">
+                          <List className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                          <select 
+                            className="w-full p-3.5 pl-12 border-2 rounded-xl font-black uppercase text-blue-600 dark:text-blue-400 dark:bg-slate-800 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm xl:text-base transition-all appearance-none"
+                            value={tag} 
+                            onChange={(e) => {
+                              const newTags = [...tempTags];
+                              newTags[idx] = e.target.value;
+                              setTempTags(newTags);
+                            }} 
+                          >
+                             <option value="">Select or type name...</option>
+                             {exhibitions.map(ex => <option key={ex.id} value={ex.name}>{ex.name}</option>)}
+                             {!exhibitions.find(ex => ex.name === tag) && tag && <option value={tag}>{tag}</option>}
+                          </select>
+                       </div>
+                       <div className="p-3 bg-slate-100 dark:bg-slate-900 rounded-xl text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center italic">
+                          Links are locked. Managed in master list.
+                       </div>
+                    </div>
                   </div>
                 ))}
                 <button 
                   className="w-full py-5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3"
-                  onClick={() => setTempTags([...tempTags, ''])}
+                  onClick={() => {
+                    setTempTags([...tempTags, '']);
+                  }}
                 >
                   <Plus className="w-5 h-5" /> {t('addExhibition')}
                 </button>
              </div>
              <div className="flex justify-end gap-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                 <Button variant="secondary" onClick={() => setIsEditTagsOpen(false)} className="px-8 font-black uppercase tracking-widest">Cancel</Button>
-                <Button onClick={handleUpdateTags} className="px-8 font-black uppercase tracking-widest">Save Exhibitions</Button>
+                <Button onClick={handleUpdateTags} className="px-8 font-black uppercase tracking-widest">Save Selection</Button>
              </div>
           </div>
        </Modal>

@@ -22,6 +22,14 @@ export interface Interaction {
   docLinks?: string[]; // Hyperlinks to docs
 }
 
+export interface Exhibition {
+  id: string;
+  name: string;
+  date: string;
+  location: string;
+  link: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -43,10 +51,10 @@ export interface Customer {
   lastCustomerReplyDate?: string; // For "Unreplied" calculation
   lastMyReplyDate?: string; // For "Unfollowed" calculation
   
-  tags: string[]; // Exhibitions
+  tags: string[]; // Exhibition Names (matches Exhibition.name)
   interactions: Interaction[]; // "Connection Process Summary"
   
-  docLinks?: string[]; // General document links for the company
+  docLinks?: string[]; // General document links for the company (Maintained for backward sync if needed)
 
   // New independent field for upcoming plans
   upcomingPlan?: string;

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Language, translations } from '../utils/i18n';
-import { Customer, Sample, MasterProduct, TagOptions } from '../types';
+import { Customer, Sample, MasterProduct, TagOptions, Exhibition } from '../types';
 import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
@@ -23,8 +23,10 @@ interface AppContextType {
   customers: Customer[];
   samples: Sample[];
   masterProducts: MasterProduct[];
+  exhibitions: Exhibition[];
   setCustomers: (customers: Customer[] | ((prev: Customer[]) => Customer[])) => void;
   setSamples: (samples: Sample[] | ((prev: Sample[]) => Sample[])) => void;
+  setExhibitions: (exhibitions: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => void;
   syncSampleToCatalog: (sample: Partial<Sample>) => void;
   
   // Tag Management
@@ -95,12 +97,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem('masterProducts');
     return saved ? JSON.parse(saved) : MOCK_MASTER_PRODUCTS;
   });
+
+  const [exhibitions, setExhibitionsState] = useState<Exhibition[]>(() => {
+    const saved = localStorage.getItem('exhibitions');
+    return saved ? JSON.parse(saved) : [];
+  });
   
   // Tag Options State
   const [tagOptions, setTagOptionsState] = useState<TagOptions>(() => {
     const saved = localStorage.getItem('tagOptions');
     return saved ? JSON.parse(saved) : DEFAULT_TAGS;
   });
+
+  // --- Effects for Data Sync ---
+
+  // 1. Sync Exhibitions from Customers' Tags
+  useEffect(() => {
+    const uniqueTags = Array.from(new Set(customers.flatMap(c => c.tags || [])));
+    if (uniqueTags.length === 0) return;
+
+    setExhibitionsState(prev => {
+      let hasChanged = false;
+      const updated = [...prev];
+      
+      uniqueTags.forEach(tagName => {
+        const exists = updated.find(e => e.name === tagName);
+        if (!exists) {
+          updated.push({
+            id: `exh_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            name: tagName,
+            date: 'TBD',
+            location: 'TBD',
+            link: '#'
+          });
+          hasChanged = true;
+        }
+      });
+
+      return hasChanged ? updated : prev;
+    });
+  }, [customers]);
 
   // --- Effects for Persistence ---
 
@@ -147,6 +183,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [masterProducts]);
 
   useEffect(() => {
+    localStorage.setItem('exhibitions', JSON.stringify(exhibitions));
+  }, [exhibitions]);
+
+  useEffect(() => {
     localStorage.setItem('isDemoData', String(isDemoData));
   }, [isDemoData]);
 
@@ -163,6 +203,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setUserName = (name: string) => setUserNameState(name);
   const setCustomers = (val: Customer[] | ((prev: Customer[]) => Customer[])) => setCustomersState(val);
   const setSamples = (val: Sample[] | ((prev: Sample[]) => Sample[])) => setSamplesState(val);
+  const setExhibitions = (val: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => setExhibitionsState(val);
   const setTagOptions = (val: TagOptions | ((prev: TagOptions) => TagOptions)) => setTagOptionsState(val);
 
   // --- Logic ---
@@ -230,11 +271,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCustomersState([]);
     setSamplesState([]);
     setMasterProducts([]);
+    setExhibitionsState([]);
     setIsDemoData(false);
     setTagOptionsState(DEFAULT_TAGS); 
     localStorage.removeItem('customers');
     localStorage.removeItem('samples');
     localStorage.removeItem('masterProducts');
+    localStorage.removeItem('exhibitions');
     localStorage.setItem('isDemoData', 'false');
     localStorage.setItem('tagOptions', JSON.stringify(DEFAULT_TAGS));
   };
@@ -253,6 +296,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       t,
       customers, setCustomers,
       samples, setSamples,
+      exhibitions, setExhibitions,
       masterProducts, syncSampleToCatalog,
       clearDatabase,
       isDemoData, setIsDemoData,

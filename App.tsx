@@ -7,6 +7,8 @@ import CustomerList from './pages/CustomerList';
 import CustomerProfile from './pages/CustomerProfile';
 import SampleTracker from './pages/SampleTracker';
 import SampleProfile from './pages/SampleProfile';
+import ExhibitionList from './pages/ExhibitionList';
+import ExhibitionProfile from './pages/ExhibitionProfile';
 import DataManagement from './pages/DataManagement';
 import Settings from './pages/Settings';
 import { Customer, Sample } from './types';
@@ -118,6 +120,8 @@ const AppContent: React.FC = () => {
               } />
               <Route path="/samples" element={<SampleTracker samples={samples} customers={customers} />} />
               <Route path="/samples/:id" element={<SampleProfile />} />
+              <Route path="/exhibitions" element={<ExhibitionList />} />
+              <Route path="/exhibitions/:id" element={<ExhibitionProfile />} />
               <Route path="/data-management" element={
                 <DataManagement 
                   onImportCustomers={handleImportCustomers}

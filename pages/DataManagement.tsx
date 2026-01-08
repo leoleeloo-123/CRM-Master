@@ -1,11 +1,12 @@
 
 import React, { useState, useRef } from 'react';
-import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink } from '../types';
+import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink, Exhibition } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
-import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet, Eye, ClipboardList } from 'lucide-react';
+import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet, Eye, ClipboardList, Presentation } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 // Use native Date instead of parseISO to avoid missing export error
-import { differenceInDays, isValid } from 'date-fns';
+// Fixed: Added 'format' to imports from date-fns
+import { differenceInDays, isValid, format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { getCanonicalTag } from '../utils/i18n';
 
@@ -18,8 +19,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
   onImportCustomers, 
   onImportSamples
 }) => {
-  const { t, clearDatabase, customers, samples, syncSampleToCatalog, companyName, userName, refreshTagsFromSamples } = useApp();
-  const [activeTab, setActiveTab] = useState<'customers' | 'samples'>('customers');
+  const { t, clearDatabase, customers, samples, exhibitions, setExhibitions, syncSampleToCatalog, companyName, userName, refreshTagsFromSamples } = useApp();
+  const [activeTab, setActiveTab] = useState<'customers' | 'samples' | 'exhibitions'>('customers');
   const [viewMode, setViewMode] = useState<'import' | 'review'>('import');
   
   // Text Import State
@@ -27,7 +28,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   
   // Excel Import State
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [excelPreview, setExcelPreview] = useState<{ customers: Customer[], samples: Sample[] } | null>(null);
+  const [excelPreview, setExcelPreview] = useState<{ customers: Customer[], samples: Sample[], exhibitions: Exhibition[] } | null>(null);
 
   // Common Preview State (Points to either text result or excel result)
   const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
@@ -279,9 +280,21 @@ const DataManagement: React.FC<DataManagementProps> = ({
     } as Sample;
   };
 
+  const rowToExhibition = (cols: any[], tempIdPrefix: string): Exhibition => {
+    const safeCol = (i: number) => cols[i] !== undefined && cols[i] !== null ? String(cols[i]).trim() : '';
+    return {
+      id: `new_ex_${tempIdPrefix}`,
+      name: safeCol(0) || 'Unnamed Event',
+      date: normalizeDate(safeCol(1)) || format(new Date(), 'yyyy-MM-dd'),
+      location: safeCol(2) || 'TBD',
+      link: safeCol(3) || '#'
+    };
+  };
+
   const handleExportExcel = () => {
     const wb = XLSX.utils.book_new();
 
+    // 1. Customers Tab
     const custHeaders = [
       "客户", "地区", "展会", "展会官网", "等级", "状态与产品总结", "状态更新", "未更新", 
       "对接人员", "状态", "下一步", "关键日期", "DDL", "对接流程总结", "对方回复", 
@@ -316,6 +329,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const custSheet = XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]);
     XLSX.utils.book_append_sheet(wb, custSheet, "Customers");
 
+    // 2. Samples Tab
     const sampHeaders = [
       "1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", 
       "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", 
@@ -365,6 +379,12 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const sampSheet = XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]);
     XLSX.utils.book_append_sheet(wb, sampSheet, "Samples");
 
+    // 3. Exhibitions Tab
+    const exhHeaders = ["Name", "Date", "Location", "Link"];
+    const exhRows = exhibitions.map(e => [e.name, e.date, e.location, e.link]);
+    const exhSheet = XLSX.utils.aoa_to_sheet([exhHeaders, ...exhRows]);
+    XLSX.utils.book_append_sheet(wb, exhSheet, "Exhibitions");
+
     const now = new Date();
     const etDate = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
     
@@ -405,7 +425,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
         if (activeTab === 'customers') {
           return rowToCustomer(cols, tempId);
-        } else {
+        } else if (activeTab === 'samples') {
           const indexMap = new Map<string, number>(); 
           if (importMode === 'merge') {
               samples.forEach(s => {
@@ -415,6 +435,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
               });
           }
           return rowToSample(cols, tempId, indexMap, customers);
+        } else {
+          return rowToExhibition(cols, tempId);
         }
       });
 
@@ -465,25 +487,34 @@ const DataManagement: React.FC<DataManagementProps> = ({
            );
         }
 
-        if (parsedCustomers.length === 0 && parsedSamples.length === 0) {
-           setImportStatus({ type: 'error', message: 'No valid data found in "Customers" or "Samples" sheets.' });
+        let parsedExhibitions: Exhibition[] = [];
+        if (wb.Sheets['Exhibitions']) {
+           const rawRows = XLSX.utils.sheet_to_json(wb.Sheets['Exhibitions'], { header: 1 });
+           parsedExhibitions = rawRows.slice(1).filter((r: any) => r.length > 0).map((row: any) => 
+             rowToExhibition(row, Math.random().toString(36).substr(2, 9))
+           );
+        }
+
+        if (parsedCustomers.length === 0 && parsedSamples.length === 0 && parsedExhibitions.length === 0) {
+           setImportStatus({ type: 'error', message: 'No valid data found in sheets.' });
            return;
         }
 
-        setExcelPreview({ customers: parsedCustomers, samples: parsedSamples });
+        setExcelPreview({ customers: parsedCustomers, samples: parsedSamples, exhibitions: parsedExhibitions });
         
         if (activeTab === 'customers' && parsedCustomers.length > 0) {
             setParsedPreview(parsedCustomers);
-        } else if (parsedSamples.length > 0) {
-            setActiveTab('samples');
+        } else if (activeTab === 'samples' && parsedSamples.length > 0) {
             setParsedPreview(parsedSamples);
+        } else if (activeTab === 'exhibitions' && parsedExhibitions.length > 0) {
+            setParsedPreview(parsedExhibitions);
         } else {
             setParsedPreview(parsedCustomers);
         }
 
         setImportStatus({ 
           type: 'info', 
-          message: `File Loaded. Found: ${parsedCustomers.length} Customers, ${parsedSamples.length} Samples.` 
+          message: `File Loaded. Found: ${parsedCustomers.length} Customers, ${parsedSamples.length} Samples, ${parsedExhibitions.length} Events.` 
         });
 
       } catch (err) {
@@ -507,14 +538,19 @@ const DataManagement: React.FC<DataManagementProps> = ({
          importedSamples.forEach(s => syncSampleToCatalog(s));
          onImportSamples(importedSamples, override);
        }
-       setImportStatus({ type: 'success', message: `Imported ${excelPreview.customers.length} Customers and ${excelPreview.samples.length} Samples.` });
+       if (excelPreview.exhibitions.length > 0) {
+         setExhibitions(prev => override ? excelPreview.exhibitions : [...prev, ...excelPreview.exhibitions]);
+       }
+       setImportStatus({ type: 'success', message: 'Excel import complete.' });
     } else if (parsedPreview) {
        if (activeTab === 'customers') {
          onImportCustomers(parsedPreview as Customer[], override);
-       } else {
+       } else if (activeTab === 'samples') {
          importedSamples = parsedPreview as Sample[];
          importedSamples.forEach(x => syncSampleToCatalog(x));
          onImportSamples(importedSamples, override);
+       } else if (activeTab === 'exhibitions') {
+         setExhibitions(prev => override ? (parsedPreview as Exhibition[]) : [...prev, ...parsedPreview as Exhibition[]]);
        }
        setImportStatus({ type: 'success', message: `Imported ${parsedPreview.length} records.` });
     }
@@ -529,13 +565,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const switchTab = (tab: 'customers' | 'samples') => {
+  const switchTab = (tab: 'customers' | 'samples' | 'exhibitions') => {
     setActiveTab(tab);
     if (viewMode === 'import') {
       setParsedPreview(null);
       if (excelPreview) {
         if (tab === 'customers') setParsedPreview(excelPreview.customers);
-        else setParsedPreview(excelPreview.samples);
+        else if (tab === 'samples') setParsedPreview(excelPreview.samples);
+        else setParsedPreview(excelPreview.exhibitions);
       } else {
         setImportData('');
       }
@@ -554,7 +591,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   };
 
   const renderCurrentDataTable = () => {
-    const data = activeTab === 'customers' ? customers : samples;
+    const data = activeTab === 'customers' ? customers : activeTab === 'samples' ? samples : exhibitions;
     
     return (
       <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
@@ -577,7 +614,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     <th className="p-3 whitespace-nowrap">Contacts</th>
                     <th className="p-3 whitespace-nowrap">Last Update</th>
                   </>
-                ) : (
+                ) : activeTab === 'samples' ? (
                   <>
                     <th className="p-3 whitespace-nowrap">Customer</th>
                     <th className="p-3 whitespace-nowrap">Idx</th>
@@ -590,6 +627,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     <th className="p-3 whitespace-nowrap">Next Step</th>
                     <th className="p-3 whitespace-nowrap">Key Date</th>
                     <th className="p-3 whitespace-nowrap">History</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="p-3">Name</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Location</th>
+                    <th className="p-3">Link</th>
                   </>
                 )}
               </tr>
@@ -610,7 +654,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       </td>
                       <td className="p-3 align-top">{row.lastStatusUpdate}</td>
                     </>
-                  ) : (
+                  ) : activeTab === 'samples' ? (
                     <>
                       <td className="p-3 font-medium align-top">{row.customerName}</td>
                       <td className="p-3 align-top">{row.sampleIndex}</td>
@@ -630,6 +674,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       <td className="p-3 align-top truncate max-w-[150px]" title={row.upcomingPlan}>{row.upcomingPlan || '-'}</td>
                       <td className="p-3 align-top whitespace-nowrap">{row.nextActionDate || '-'}</td>
                       <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-3 font-bold">{row.name}</td>
+                      <td className="p-3">{row.date}</td>
+                      <td className="p-3">{row.location}</td>
+                      <td className="p-3 truncate max-w-[200px] text-blue-600 underline">{row.link}</td>
                     </>
                   )}
                 </tr>
@@ -695,6 +746,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
              <FlaskConical size={20} /> 
              {viewMode === 'review' ? 'Review Samples' : `Import Samples ${excelPreview ? `(${excelPreview.samples.length})` : ''}`}
            </button>
+           <button 
+             onClick={() => switchTab('exhibitions')}
+             className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-colors ${activeTab === 'exhibitions' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-t-4 border-t-indigo-600' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+           >
+             <Presentation size={20} /> 
+             {viewMode === 'review' ? 'Review Exhibitions' : `Import Exhibitions ${excelPreview ? `(${excelPreview.exhibitions.length})` : ''}`}
+           </button>
         </div>
 
         <div className="p-6">
@@ -711,7 +769,9 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
                         {activeTab === 'customers' 
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
-                          : "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs"
+                          : activeTab === 'samples'
+                          ? "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs"
+                          : "1.Name | 2.Date | 3.Location | 4.Link"
                         }
                       </p>
                    </div>
@@ -737,18 +797,12 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
                      {!parsedPreview ? (
                        <div className="flex gap-2">
-                         <Button onClick={parsePasteData} className={activeTab === 'customers' ? 'bg-blue-600' : 'bg-amber-600 hover:bg-amber-700'}>
+                         <Button onClick={parsePasteData} className={activeTab === 'customers' ? 'bg-blue-600' : activeTab === 'samples' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-indigo-600 hover:bg-indigo-700'}>
                            {t('parseImport')} (Text Paste)
                          </Button>
                        </div>
                      ) : (
                        <>
-                         {activeTab === 'samples' && (
-                           <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                             <RefreshCcw size={14} />
-                             {importMode === 'replace' ? 'Mode: Replace All' : 'Mode: Append New'}
-                           </div>
-                         )}
                          <div className="flex gap-2">
                             <Button onClick={clearPreview} variant="secondary">Cancel</Button>
                             <Button onClick={confirmImport} className="bg-emerald-600 hover:bg-emerald-700 text-white flex gap-2">
@@ -774,7 +828,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
               {!parsedPreview && (
                 <textarea 
                   className="w-full h-64 border border-slate-300 dark:border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                  placeholder={`Optionally paste ${activeTab === 'customers' ? 'Customer' : 'Sample'} Excel data here...`}
+                  placeholder={`Optionally paste ${activeTab === 'customers' ? 'Customer' : activeTab === 'samples' ? 'Sample' : 'Exhibition'} Excel data here...`}
                   value={importData}
                   onChange={(e) => setImportData(e.target.value)}
                 />
@@ -801,7 +855,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                <th className="p-3 whitespace-nowrap">Contacts</th>
                                <th className="p-3 whitespace-nowrap">Last Update</th>
                              </>
-                           ) : (
+                           ) : activeTab === 'samples' ? (
                              <>
                                <th className="p-3 whitespace-nowrap">Customer</th>
                                <th className="p-3 whitespace-nowrap">Idx</th>
@@ -813,6 +867,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                <th className="p-3 whitespace-nowrap">Date</th>
                                <th className="p-3 whitespace-nowrap">History</th>
                              </>
+                           ) : (
+                              <>
+                                <th className="p-3">Name</th>
+                                <th className="p-3">Date</th>
+                                <th className="p-3">Location</th>
+                                <th className="p-3">Link</th>
+                              </>
                            )}
                          </tr>
                        </thead>
@@ -832,7 +893,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                  </td>
                                  <td className="p-3 align-top">{row.lastStatusUpdate}</td>
                                </>
-                             ) : (
+                             ) : activeTab === 'samples' ? (
                                <>
                                  <td className="p-3 font-medium align-top">{row.customerName}</td>
                                  <td className="p-3 align-top">{row.sampleIndex}</td>
@@ -850,6 +911,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                  </td>
                                  <td className="p-3 align-top">{row.lastStatusDate}</td>
                                  <td className="p-3 align-top truncate max-w-[150px]" title={row.statusDetails}>{row.statusDetails}</td>
+                               </>
+                             ) : (
+                               <>
+                                 <td className="p-3 font-bold">{row.name}</td>
+                                 <td className="p-3">{row.date}</td>
+                                 <td className="p-3">{row.location}</td>
+                                 <td className="p-3">{row.link}</td>
                                </>
                              )}
                            </tr>
@@ -870,13 +938,13 @@ const DataManagement: React.FC<DataManagementProps> = ({
               <AlertCircle className="w-6 h-6 shrink-0" />
               <div>
                 <h4 className="font-bold">Warning: Irreversible Action</h4>
-                <p className="text-sm mt-1">This will permanently delete all customers, samples, and interaction records. This cannot be undone.</p>
+                <p className="text-sm mt-1">This will permanently delete all customers, samples, exhibitions and interaction records. This cannot be undone.</p>
               </div>
            </div>
            <p className="text-slate-700 dark:text-slate-300">Are you sure you want to completely wipe the database?</p>
            <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setIsClearModalOpen(false)}>Cancel</Button>
-              <Button variant="danger" onClick={() => { clearDatabase(); setIsClearModalOpen(false); }}>Yes, Clear Everything</Button>
+              <Button variant="danger" onClick={async () => { await clearDatabase(); setIsClearModalOpen(false); }}>Yes, Clear Everything</Button>
            </div>
         </div>
       </Modal>
