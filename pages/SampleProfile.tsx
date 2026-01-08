@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory } from '../types';
+import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal, getUrgencyLevel } from '../components/Common';
 import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
@@ -85,8 +85,26 @@ const SampleProfile: React.FC = () => {
 
   const handleSaveSpecs = () => {
     if (!sample || !editSample) return;
+    
     const categories = editCategoryText.split(',').map(c => c.trim() as ProductCategory).filter(c => c);
-    const updatedSample = { ...sample, ...editSample, productCategory: categories } as Sample;
+    
+    // Recalculate Name based on new specs
+    const crystal = editSample.crystalType || sample.crystalType || '';
+    const catStr = categories.join(' ');
+    const form = editSample.productForm || sample.productForm || '';
+    const orig = editSample.originalSize || sample.originalSize || '';
+    const proc = editSample.processedSize || sample.processedSize ? ` > ${editSample.processedSize || sample.processedSize}` : '';
+    
+    const newName = `${crystal} ${catStr} ${form} - ${orig}${proc}`.trim();
+
+    const updatedSample = { 
+      ...sample, 
+      ...editSample, 
+      productCategory: categories,
+      sampleName: newName,
+      productType: newName // Keep productType in sync for catalog logic
+    } as Sample;
+
     setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
     syncSampleToCatalog(updatedSample);
     setIsEditingSpecs(false);
@@ -262,29 +280,37 @@ const SampleProfile: React.FC = () => {
                 <div className="space-y-6">
                    {isEditingSpecs ? (
                      <div className="space-y-4">
-                        {['crystalType', 'productForm', 'isGraded'].map(field => (
-                          <div key={field} className="space-y-1">
-                             <label className={labelClass}>{t(field as any)}</label>
-                             <select className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={(editSample as any)[field]} onChange={e => setEditSample({...editSample, [field]: e.target.value})}>
-                                {field === 'isGraded' ? <>
-                                   <option value="Graded">{t('graded')}</option>
-                                   <option value="Ungraded">{t('ungraded')}</option>
-                                </> : tagOptions[field === 'crystalType' ? 'crystalType' : 'productForm'].map(opt => <option key={opt} value={opt}>{t(opt as any)}</option>)}
-                             </select>
-                          </div>
-                        ))}
+                        <div className="space-y-1">
+                           <label className={labelClass}>{t('crystal')}</label>
+                           <select className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.crystalType} onChange={e => setEditSample({...editSample, crystalType: e.target.value as CrystalType})}>
+                              {tagOptions.crystalType.map(opt => <option key={opt} value={opt}>{t(opt as any)}</option>)}
+                           </select>
+                        </div>
+                        <div className="space-y-1">
+                           <label className={labelClass}>{t('form')}</label>
+                           <select className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.productForm} onChange={e => setEditSample({...editSample, productForm: e.target.value as ProductForm})}>
+                              {tagOptions.productForm.map(opt => <option key={opt} value={opt}>{t(opt as any)}</option>)}
+                           </select>
+                        </div>
+                        <div className="space-y-1">
+                           <label className={labelClass}>{t('grading')}</label>
+                           <select className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.isGraded} onChange={e => setEditSample({...editSample, isGraded: e.target.value as GradingStatus})}>
+                               <option value="Graded">{t('graded')}</option>
+                               <option value="Ungraded">{t('ungraded')}</option>
+                           </select>
+                        </div>
                         <div className="space-y-1">
                            <label className={labelClass}>{t('category')}</label>
-                           <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editCategoryText} onChange={e => setEditCategoryText(e.target.value)} />
+                           <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editCategoryText} onChange={e => setEditCategoryText(e.target.value)} placeholder="e.g. 纳米级, 团聚" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-1">
                               <label className={labelClass}>{t('origLabel')}</label>
-                              <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.originalSize} onChange={e => setEditSample({...editSample, originalSize: e.target.value})} />
+                              <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.originalSize} onChange={e => setEditSample({...editSample, originalSize: e.target.value})} placeholder="e.g. 125 nm" />
                            </div>
                            <div className="space-y-1">
                               <label className={labelClass}>{t('procLabel')}</label>
-                              <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.processedSize} onChange={e => setEditSample({...editSample, processedSize: e.target.value})} />
+                              <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.processedSize} onChange={e => setEditSample({...editSample, processedSize: e.target.value})} placeholder="e.g. 100 nm" />
                            </div>
                         </div>
                         <Button onClick={handleSaveSpecs} className="w-full mt-4 bg-blue-600">Save Changes</Button>
