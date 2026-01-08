@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm } from '../types';
-import { Card, Button, Badge, StatusIcon, DaysCounter, Modal, getUrgencyLevel } from '../components/Common';
+import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink } from '../types';
+import { Card, Button, Badge, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
 import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
@@ -33,7 +33,8 @@ const SampleProfile: React.FC = () => {
   const [editPlanText, setEditPlanText] = useState('');
   const [editPlanDate, setEditPlanDate] = useState('');
 
-  const [newLinkText, setNewLinkText] = useState('');
+  const [newLinkTitle, setNewLinkTitle] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
 
   const [historyItems, setHistoryItems] = useState<{id: string, date: string, text: string}[]>([]);
   const [isAddingHistory, setIsAddingHistory] = useState(false);
@@ -128,19 +129,23 @@ const SampleProfile: React.FC = () => {
   };
 
   const handleAddLink = () => {
-    if (!newLinkText.trim() || !sample) return;
-    let url = newLinkText.trim();
+    if (!newLinkUrl.trim() || !sample) return;
+    let url = newLinkUrl.trim();
     if (!url.startsWith('http')) url = 'https://' + url;
     
+    const title = newLinkTitle.trim() || `Link ${ (sample.docLinks || []).length + 1 }`;
+    const newLink: SampleDocLink = { title, url };
+    
     const currentLinks = sample.docLinks || [];
-    saveSampleUpdate({ docLinks: [...currentLinks, url] });
-    setNewLinkText('');
+    saveSampleUpdate({ docLinks: [...currentLinks, newLink] });
+    setNewLinkUrl('');
+    setNewLinkTitle('');
   };
 
-  const handleDeleteLink = (linkToDelete: string) => {
+  const handleDeleteLink = (linkToDelete: SampleDocLink) => {
     if (!sample) return;
     if (confirm('Delete this link?')) {
-      const updatedLinks = (sample.docLinks || []).filter(l => l !== linkToDelete);
+      const updatedLinks = (sample.docLinks || []).filter(l => l.url !== linkToDelete.url || l.title !== linkToDelete.title);
       saveSampleUpdate({ docLinks: updatedLinks });
     }
   };
@@ -462,28 +467,36 @@ const SampleProfile: React.FC = () => {
                      <h3 className={titleClass}><LinkIcon className="w-6 h-6 text-blue-500" /> {t('fileLinks')}</h3>
                   </div>
                   <div className="space-y-4">
-                     <div className="flex gap-2">
+                     <div className="space-y-2">
                         <input 
-                           className="flex-1 p-3 border-2 border-slate-100 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
-                           placeholder="Paste URL here..."
-                           value={newLinkText}
-                           onChange={(e) => setNewLinkText(e.target.value)}
-                           onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                           className="w-full p-2.5 border-2 border-slate-100 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
+                           placeholder="Link Title (e.g. Test Report)..."
+                           value={newLinkTitle}
+                           onChange={(e) => setNewLinkTitle(e.target.value)}
                         />
-                        <button onClick={handleAddLink} className="p-3 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 active:scale-90">
-                           <Plus size={18} />
-                        </button>
+                        <div className="flex gap-2">
+                           <input 
+                              className="flex-1 p-2.5 border-2 border-slate-100 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
+                              placeholder="Paste URL here..."
+                              value={newLinkUrl}
+                              onChange={(e) => setNewLinkUrl(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                           />
+                           <button onClick={handleAddLink} className="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 active:scale-90">
+                              <Plus size={18} />
+                           </button>
+                        </div>
                      </div>
                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {(sample.docLinks || []).length > 0 ? (sample.docLinks || []).map((link, idx) => (
                           <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 group">
                              <a 
-                                href={link} 
+                                href={link.url} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1"
+                                className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1 pr-2"
                              >
-                                <ExternalLink size={14} /> Link {idx + 1}
+                                <ExternalLink size={14} className="shrink-0" /> <span className="truncate">{link.title}</span>
                              </a>
                              <button onClick={() => handleDeleteLink(link)} className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Trash2 size={14} />

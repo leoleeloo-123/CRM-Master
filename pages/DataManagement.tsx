@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus } from '../types';
+import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
 import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet, Eye, ClipboardList } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
@@ -222,7 +222,28 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const nextStep = safeCol(17) || '';
     // Use Key Date if provided, else default to today
     const keyDate = normalizeDate(safeCol(18)) || new Date().toISOString().split('T')[0];
-    const docLinks = splitByDelimiter(safeCol(19));
+    
+    // New Named Link Parsing (Col 20 for Titles, Col 21 for URLs if present, otherwise fallback to Col 20)
+    const titles = splitByDelimiter(safeCol(19));
+    const urls = splitByDelimiter(safeCol(20));
+    
+    let docLinks: SampleDocLink[] = [];
+    if (urls.length > 0) {
+      // Modern format: 2 separate columns
+      docLinks = titles.map((t, idx) => ({
+        title: t || `Link ${idx + 1}`,
+        url: urls[idx] || '#'
+      }));
+    } else {
+      // Legacy or fallback: parse Titles column for combined info "Title: URL" or just URL
+      docLinks = titles.map((entry, idx) => {
+        if (entry.includes(': ')) {
+          const [t, u] = entry.split(': ');
+          return { title: t, url: u };
+        }
+        return { title: `Link ${idx + 1}`, url: entry };
+      });
+    }
 
     return {
       id: `new_s_${tempIdPrefix}`,
@@ -299,7 +320,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       "1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", 
       "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", 
       "11.Details", "12.Quantity", "13.Customer Application", "14.Status Date", 
-      "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Links"
+      "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Link Titles", "21.File Link URLs"
     ];
 
     const sampRows = samples.map(s => {
@@ -313,7 +334,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
        if (s.testStatus === 'Finished') exportTestVal = "Yes";
        else if (s.testStatus === 'Terminated') exportTestVal = "Terminated";
 
-       const docLinksStr = s.docLinks ? s.docLinks.join(' ||| ') : '';
+       const docLinkTitlesStr = (s.docLinks || []).map(l => l.title).join(' ||| ');
+       const docLinkUrlsStr = (s.docLinks || []).map(l => l.url).join(' ||| ');
 
        return [
          s.customerName,
@@ -335,7 +357,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
          s.trackingNumber,
          s.upcomingPlan || '',
          s.nextActionDate || '',
-         docLinksStr
+         docLinkTitlesStr,
+         docLinkUrlsStr
        ];
     });
 
@@ -688,7 +711,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
                         {activeTab === 'customers' 
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
-                          : "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.File Links"
+                          : "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs"
                         }
                       </p>
                    </div>

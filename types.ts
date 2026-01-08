@@ -71,6 +71,11 @@ export interface MasterProduct {
   processedSize?: string;
 }
 
+export interface SampleDocLink {
+  title: string;
+  url: string;
+}
+
 export interface Sample {
   id: string;
   customerId: string;
@@ -117,8 +122,8 @@ export interface Sample {
   upcomingPlan?: string;
   nextActionDate?: string;
 
-  // New multi-link support
-  docLinks?: string[];
+  // New multi-link support with titles
+  docLinks?: SampleDocLink[];
 }
 
 export interface DashboardStats {
