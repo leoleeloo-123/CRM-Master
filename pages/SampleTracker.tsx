@@ -19,7 +19,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
   
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
@@ -425,6 +425,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                <div 
                                  onClick={() => toggleCustomerExpansion(group.customerId)}
                                  className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-[0.99]"
+                                Lark Grouping
                                >
                                  <div className="flex items-center gap-3 min-w-0">
                                     {isExpanded ? <ChevronDown size={18} className="text-slate-400 shrink-0" /> : <ChevronRight size={18} className="text-slate-400 shrink-0" />}
