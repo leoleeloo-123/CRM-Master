@@ -7,7 +7,7 @@ import {
   format, isBefore, addDays, 
   endOfMonth, endOfWeek, eachDayOfInterval, 
   isSameMonth, isSameDay, addMonths, addWeeks, 
-  isToday, startOfDay, isValid
+  isToday, startOfDay, isValid, startOfWeek
 } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
@@ -45,7 +45,7 @@ interface DashboardProps {
   samples: Sample[];
 }
 
-type CalendarView = 'day' | 'week' | 'month';
+type CalendarView = 'week' | 'month';
 
 interface SampleGroupInfo {
   customerId: string;
@@ -108,13 +108,11 @@ const DashboardCalendar: React.FC<{
   const handlePrev = () => {
     if (view === 'month') setCurrentDate(addMonths(currentDate, -1));
     if (view === 'week') setCurrentDate(addWeeks(currentDate, -1));
-    if (view === 'day') setCurrentDate(addDays(currentDate, -1));
   };
 
   const handleNext = () => {
     if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
     if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
-    if (view === 'day') setCurrentDate(addDays(currentDate, 1));
   };
 
   const handleToday = () => {
@@ -208,6 +206,82 @@ const DashboardCalendar: React.FC<{
     );
   };
 
+  const renderWeekView = () => {
+    const startDate = startOfWeek(currentDate);
+    const endDate = addDays(startDate, 6);
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+    return (
+      <div className="w-full flex flex-col animate-in fade-in duration-300">
+         <div className="grid grid-cols-7 mb-3">
+            {weekDays.map(d => (
+              <div key={d} className="text-center text-[10px] xl:text-[11px] font-black text-slate-400 uppercase tracking-widest">{d}</div>
+            ))}
+         </div>
+         <div className="grid grid-cols-7 gap-3">
+            {days.map(day => {
+               const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
+               const dayStr = format(day, 'yyyy-MM-dd');
+               const daySampleGroups = sampleGroups[dayStr] ? (Object.values(dayStr ? sampleGroups[dayStr] : {}) as SampleGroupInfo[]) : [];
+               const dayHolidays = checkHolidays(day);
+               const isDayToday = isToday(day);
+               const isDaySelected = isSameDay(day, selectedDate);
+               
+               return (
+                 <div 
+                   key={day.toISOString()} 
+                   onClick={() => onSelectDate(startOfDay(day))}
+                   className={`p-3 border rounded-2xl flex flex-col gap-1 cursor-pointer transition-all min-h-[300px] xl:min-h-[450px] ${
+                     isDaySelected 
+                       ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/20 z-10 shadow-md' 
+                       : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800'
+                   } ${isDayToday && !isDaySelected ? 'border-amber-400' : ''}`}
+                 >
+                    <div className="flex justify-between items-start h-5 pr-0.5">
+                      <div className="flex-1 overflow-hidden">
+                        {dayHolidays.map((h, idx) => (
+                           <div key={idx} className="text-[8px] font-black text-slate-500/80 dark:text-slate-400 uppercase leading-none truncate bg-slate-100 dark:bg-slate-700/50 px-1.5 py-1 rounded-md mb-1">
+                              {h.name}
+                           </div>
+                        ))}
+                      </div>
+                      <span className={`text-xs font-black px-2 py-0.5 rounded-full ${isDayToday ? 'bg-amber-500 text-white shadow-sm' : isDaySelected ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
+                        {format(day, 'd')}
+                      </span>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2 overflow-y-auto mt-3 scrollbar-hide">
+                       {dayCustEvents.map(e => {
+                          const urgency = getUrgencyLevel(e.nextActionDate!);
+                          const urgencyBg = urgency === 'urgent' ? 'bg-rose-50 text-rose-800 border-rose-100' : urgency === 'warning' ? 'bg-amber-50 text-amber-800 border-amber-100' : 'bg-emerald-50 text-emerald-800 border-emerald-100';
+                          return (
+                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded-xl p-3 text-[0.7rem] xl:text-[0.75rem] font-black border transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
+                               <div className="flex justify-between items-center mb-1">
+                                  <span className="truncate pr-1">{e.name}</span>
+                                  <div className="scale-75 origin-right shrink-0 opacity-60"><RankStars rank={e.rank} /></div>
+                               </div>
+                               <p className="text-[9px] text-slate-500/80 line-clamp-3 italic leading-relaxed">{e.upcomingPlan || "Action needed"}</p>
+                            </div>
+                          );
+                       })}
+                       {daySampleGroups.map(g => (
+                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded-xl p-3 text-[0.7rem] xl:text-[0.75rem] font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 transition-all hover:scale-[1.02] hover:shadow-sm">
+                             <div className="flex justify-between items-center">
+                                <span className="truncate">{g.customerName}</span>
+                                <span className="px-2 bg-blue-600 text-white rounded-md text-[9px] font-black">{g.count}</span>
+                             </div>
+                             <p className="text-[9px] text-blue-500/70 mt-1 uppercase tracking-widest">Active Samples</p>
+                          </div>
+                       ))}
+                    </div>
+                 </div>
+               );
+            })}
+         </div>
+      </div>
+    );
+  };
+
   return (
     <Card className="p-4 xl:p-8 flex flex-col shadow-sm border-2 h-full">
        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
@@ -215,7 +289,7 @@ const DashboardCalendar: React.FC<{
              <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
              <h3 className="font-black text-slate-800 dark:text-white text-sm xl:text-lg uppercase tracking-wider">{t('calendar')}</h3>
              <span className="text-xs xl:text-base font-black text-slate-400 ml-2">
-                {format(currentDate, 'MMMM yyyy')}
+                {view === 'month' ? format(currentDate, 'MMMM yyyy') : `Week of ${format(startOfWeek(currentDate), 'MMM do')}`}
              </span>
              
              <div className="relative ml-4">
@@ -253,9 +327,8 @@ const DashboardCalendar: React.FC<{
           
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner">
-                <button onClick={() => setView('day')} className={`px-4 py-1.5 text-[10px] xl:text-[11px] font-black rounded-lg transition-all ${view === 'day' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewDay')}</button>
-                <button onClick={() => setView('week')} className={`px-4 py-1.5 text-[10px] xl:text-[11px] font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewWeek')}</button>
-                <button onClick={() => setView('month')} className={`px-4 py-1.5 text-[10px] xl:text-[11px] font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
+                <button onClick={() => setView('week')} className={`px-6 py-1.5 text-[10px] xl:text-[11px] font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewWeek')}</button>
+                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-[10px] xl:text-[11px] font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
              </div>
 
              <div className="flex items-center gap-2">
@@ -268,6 +341,7 @@ const DashboardCalendar: React.FC<{
        
        <div className="animate-in fade-in duration-500 overflow-hidden">
           {view === 'month' && renderMonthView()}
+          {view === 'week' && renderWeekView()}
        </div>
     </Card>
   );
