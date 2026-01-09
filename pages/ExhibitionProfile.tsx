@@ -73,6 +73,8 @@ const ExhibitionProfile: React.FC = () => {
   const contentClass = "text-xl xl:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight";
   const inputClass = "w-full p-4 border-2 border-slate-100 dark:border-slate-800 rounded-2xl font-black bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-all";
 
+  const hasValidLink = exhibition.link && exhibition.link !== '#' && exhibition.link.trim() !== '';
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between">
@@ -140,11 +142,11 @@ const ExhibitionProfile: React.FC = () => {
                          <span className={contentClass}>{exhibition.date || 'TBD'}</span>
                       </div>
                    </div>
-                   <div className="space-y-1 pt-6 border-t dark:border-slate-800">
-                      <span className={labelClass}>Resource</span>
-                      {exhibition.link && exhibition.link !== '#' ? (
+                   {hasValidLink && (
+                    <div className="space-y-1 pt-6 border-t dark:border-slate-800">
+                        <span className={labelClass}>Resource</span>
                         <a 
-                          href={exhibition.link.startsWith('http') ? exhibition.link : `https://${exhibition.link}`} 
+                          href={exhibition.link!.startsWith('http') ? exhibition.link : `https://${exhibition.link}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 group mt-2"
@@ -154,10 +156,8 @@ const ExhibitionProfile: React.FC = () => {
                            </div>
                            <span className="text-lg font-black text-blue-600 hover:underline">Official Documentation</span>
                         </a>
-                      ) : (
-                        <div className="text-slate-400 italic font-bold mt-2">No resource link provided.</div>
-                      )}
-                   </div>
+                    </div>
+                   )}
                  </>
                )}
             </Card>

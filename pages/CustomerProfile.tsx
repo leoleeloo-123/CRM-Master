@@ -142,12 +142,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
   const secondaryTextClass = "text-sm xl:text-base text-slate-500 dark:text-slate-400 font-bold tracking-tight";
 
-  // Helper to find exhibition link from master list
-  const getExhibitionLink = (name: string) => {
-    const exh = exhibitions.find(e => e.name === name);
-    return exh?.link || '#';
-  };
-
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
        <div className="flex items-center gap-6">
@@ -234,23 +228,36 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </button>
              </div>
              <div className="space-y-3">
-               {customer.tags.length > 0 ? customer.tags.map((tag, i) => (
-                 <div key={i} className="flex items-center justify-between px-5 py-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-700 group transition-all hover:border-blue-200">
-                    <div className="text-xs xl:text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest truncate flex-1 mr-4">
-                       <span className="text-slate-400 mr-2">{i + 1}.</span> {tag}
-                    </div>
-                    {/* Pull link from master list, not from local docLinks */}
-                    <a 
-                      href={getExhibitionLink(tag).startsWith('http') ? getExhibitionLink(tag) : `https://${getExhibitionLink(tag)}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-blue-500 hover:text-blue-700 transition-colors bg-white dark:bg-slate-900 p-1.5 rounded-lg shadow-sm group-hover:scale-110"
-                      title="View Centralized Document / Site"
-                    >
-                       <ExternalLink className="w-4 h-4" />
-                    </a>
-                 </div>
-               )) : <span className={secondaryTextClass + " italic"}>No exhibition history logged.</span>}
+               {customer.tags.length > 0 ? customer.tags.map((tag, i) => {
+                 const exh = exhibitions.find(e => e.name === tag);
+                 const exhibitionLink = exh?.link || '#';
+                 const hasValidLink = exhibitionLink !== '#' && exhibitionLink.trim() !== '';
+                 
+                 return (
+                   <div 
+                     key={i} 
+                     onClick={() => exh && navigate(`/exhibitions/${exh.id}`)}
+                     className={`flex items-center justify-between px-5 py-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-700 group transition-all hover:border-blue-200 ${exh ? 'cursor-pointer hover:bg-blue-50/20 dark:hover:bg-blue-900/10' : ''}`}
+                   >
+                      <div className="text-xs xl:text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest truncate flex-1 mr-4">
+                         <span className="text-slate-400 mr-2">{i + 1}.</span> {tag}
+                      </div>
+                      {hasValidLink && (
+                        <a 
+                          href={exhibitionLink.startsWith('http') ? exhibitionLink : `https://${exhibitionLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-lg shadow-sm hover:bg-blue-50 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-all active:scale-95"
+                          title="View Official Website / Resource"
+                        >
+                           <span className="text-[10px] font-black uppercase tracking-widest">Link</span>
+                           <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                   </div>
+                 );
+               }) : <span className={secondaryTextClass + " italic"}>No exhibition history logged.</span>}
                <p className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
                  Links are managed centrally in Exhibitions tab.
                </p>
@@ -429,6 +436,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                     sampleUrgency === 'warning' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'
                                  }`}>
                                     <Clock className="w-3.5 h-3.5" />
+                                    {/* Fix: Use isSampleTestFinished instead of undefined isTestFinished */}
                                     <span>DDL: {isSampleTestFinished ? 'N/A' : (sample.nextActionDate || 'TBD')}</span>
                                     {!isSampleTestFinished && sample.nextActionDate && <span className="ml-1 opacity-60">({countdownText})</span>}
                                  </div>
