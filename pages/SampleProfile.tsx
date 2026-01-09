@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink } from '../types';
 import { Card, Button, Badge, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
 
@@ -19,13 +19,14 @@ const SampleProfile: React.FC = () => {
   const [editSample, setEditSample] = useState<Partial<Sample>>({});
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isEditingTest, setIsEditingTest] = useState(false);
-  const [isEditingApp, setIsEditingApp] = useState(false);
+  const [isEditingContext, setIsEditingContext] = useState(false);
   const [isEditingTracking, setIsEditingTracking] = useState(false);
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
   const [isEditingSKU, setIsEditingSKU] = useState(false);
   const [isEditingPlan, setIsEditingPlan] = useState(false);
   
   const [editAppText, setEditAppText] = useState('');
+  const [editDetailsText, setEditDetailsText] = useState('');
   const [editTrackingText, setEditTrackingText] = useState('');
   const [editQuantityText, setEditQuantityText] = useState('');
   const [editSKUText, setEditSKUText] = useState('');
@@ -46,6 +47,7 @@ const SampleProfile: React.FC = () => {
     if (sample) {
       setEditSample(sample);
       setEditAppText(sample.application || '');
+      setEditDetailsText(sample.sampleDetails || '');
       setEditTrackingText(sample.trackingNumber || '');
       setEditQuantityText(sample.quantity || '');
       setEditSKUText(sample.sampleSKU || '');
@@ -70,13 +72,11 @@ const SampleProfile: React.FC = () => {
         text: match ? match[2].trim() : part
       };
     });
-    // Sort descending: Newest at the top
     items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setHistoryItems(items);
   };
 
   const serializeHistory = (items: typeof historyItems): string => {
-    // Keep consistent order in string storage
     const sorted = [...items].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return sorted.map(item => `【${item.date}】${item.text}`).join(' ||| ');
   };
@@ -86,8 +86,8 @@ const SampleProfile: React.FC = () => {
     const today = format(new Date(), 'yyyy-MM-dd');
     setSamples(prev => prev.map(s => s.id === id ? { 
       ...s, 
-      lastStatusDate: today, // Default to today for any edit
-      ...fields              // Manual date changes in fields will override today
+      lastStatusUpdate: today,
+      ...fields
     } : s));
   };
 
@@ -101,16 +101,12 @@ const SampleProfile: React.FC = () => {
 
   const handleSaveSpecs = () => {
     if (!sample || !editSample) return;
-    
     const categories = editCategoryText.split(',').map(c => c.trim() as ProductCategory).filter(c => c);
-    
-    // Recalculate Name based on new specs
     const crystal = editSample.crystalType || sample.crystalType || '';
     const catStr = categories.join(' ');
     const form = editSample.productForm || sample.productForm || '';
     const orig = editSample.originalSize || sample.originalSize || '';
     const proc = editSample.processedSize || sample.processedSize ? ` > ${editSample.processedSize || sample.processedSize}` : '';
-    
     const newName = `${crystal} ${catStr} ${form} - ${orig}${proc}`.trim();
     const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -119,8 +115,8 @@ const SampleProfile: React.FC = () => {
       ...editSample, 
       productCategory: categories,
       sampleName: newName,
-      productType: newName, // Keep productType in sync for catalog logic
-      lastStatusDate: today // Automatically update aging date on spec changes
+      productType: newName,
+      lastStatusDate: today
     } as Sample;
 
     setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
@@ -132,10 +128,8 @@ const SampleProfile: React.FC = () => {
     if (!newLinkUrl.trim() || !sample) return;
     let url = newLinkUrl.trim();
     if (!url.startsWith('http')) url = 'https://' + url;
-    
     const title = newLinkTitle.trim() || `Link ${ (sample.docLinks || []).length + 1 }`;
     const newLink: SampleDocLink = { title, url };
-    
     const currentLinks = sample.docLinks || [];
     saveSampleUpdate({ docLinks: [...currentLinks, newLink] });
     setNewLinkUrl('');
@@ -162,9 +156,9 @@ const SampleProfile: React.FC = () => {
     setIsEditingTest(false);
   };
 
-  const handleSaveApplication = () => {
-    saveSampleUpdate({ application: editAppText });
-    setIsEditingApp(false);
+  const handleSaveContext = () => {
+    saveSampleUpdate({ application: editAppText, sampleDetails: editDetailsText });
+    setIsEditingContext(false);
   };
 
   const handleSaveTracking = () => {
@@ -217,7 +211,6 @@ const SampleProfile: React.FC = () => {
     : urgency === 'warning' ? "bg-amber-50 border-amber-200" 
     : "bg-slate-50 border-slate-200";
 
-  // Common styles
   const cardBaseClass = "p-8 xl:p-10 shadow-sm border border-slate-100 dark:border-slate-800 rounded-[2rem] bg-white dark:bg-slate-900/40 relative overflow-hidden transition-all";
   const titleClass = "font-black text-sm xl:text-base flex items-center gap-3 uppercase tracking-widest text-slate-900 dark:text-white";
   const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
@@ -249,7 +242,6 @@ const SampleProfile: React.FC = () => {
          </Button>
        </div>
 
-       {/* Top Metric Cards */}
        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 xl:gap-8">
           <Card className={`p-6 xl:p-8 border-l-4 border-l-blue-600 flex flex-col justify-center shadow-sm rounded-[1.5rem] transition-all ${isEditingStatus ? 'ring-4 ring-blue-500/20' : ''}`}>
              <div className="flex justify-between items-center mb-3">
@@ -272,9 +264,7 @@ const SampleProfile: React.FC = () => {
                 </div>
              )}
           </Card>
-
           <DaysCounter date={sample.lastStatusDate} label={t('daysSinceUpdate')} type="elapsed" onDateChange={(d) => saveSampleUpdate({ lastStatusDate: d })} />
-
           <Card className={`p-6 xl:p-8 flex flex-col justify-center shadow-sm rounded-[1.5rem] transition-all ${isEditingTest ? 'ring-4 ring-blue-500/20' : ''}`}>
              <div className="flex justify-between items-center mb-3">
                <span className={labelClass}>{t('testFinished')}</span>
@@ -295,7 +285,6 @@ const SampleProfile: React.FC = () => {
                </div>
              )}
           </Card>
-
           <Card className={`p-6 xl:p-8 flex flex-col justify-center shadow-sm rounded-[1.5rem] transition-all ${isEditingTracking ? 'ring-4 ring-blue-500/20' : ''}`}>
              <div className="flex justify-between items-center mb-3">
                <span className={labelClass}>{t('tracking')}</span>
@@ -314,9 +303,7 @@ const SampleProfile: React.FC = () => {
           </Card>
        </div>
 
-       {/* Main Grid Content */}
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
-          {/* Left Column: Specs & Quantity & SKU */}
           <div className="space-y-8">
              <Card className={cardBaseClass}>
                 <div className="flex justify-between items-center mb-10">
@@ -380,7 +367,6 @@ const SampleProfile: React.FC = () => {
                    )}
                 </div>
              </Card>
-
              <Card className={cardBaseClass}>
                 <div className="flex justify-between items-center mb-8">
                    <h3 className={titleClass}><Ruler className="w-6 h-6 text-indigo-600" /> {t('quantity')}</h3>
@@ -397,7 +383,6 @@ const SampleProfile: React.FC = () => {
                    </div>
                 )}
              </Card>
-
              <Card className={cardBaseClass}>
                 <div className="flex justify-between items-center mb-8">
                    <h3 className={titleClass}><ClipboardList className="w-6 h-6 text-slate-600" /> SKU</h3>
@@ -416,9 +401,7 @@ const SampleProfile: React.FC = () => {
              </Card>
           </div>
 
-          {/* Right Column: Upcoming Plan & Application & History & Links */}
           <div className="lg:col-span-2 space-y-8">
-             {/* Upcoming Plan Section */}
              <div className={`${cardBaseClass} ${urgencyClass} border-2 px-10 py-10 transition-colors`}>
                 <button onClick={() => setIsEditingPlan(true)} className={`absolute top-8 right-8 p-3 rounded-2xl bg-emerald-600 text-white shadow-lg active:scale-90 transition-all z-10 ${isTestFinished ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={isTestFinished}>
                   <PencilLine size={24} />
@@ -441,27 +424,49 @@ const SampleProfile: React.FC = () => {
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-auto">
-               {/* Application Card */}
                <Card className={cardBaseClass}>
-                  <div className="flex justify-between items-center mb-8">
-                     <h3 className={titleClass}><Target className="w-6 h-6 text-emerald-500" /> APPLICATION</h3>
-                     <button onClick={() => setIsEditingApp(!isEditingApp)} className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-sm active:scale-90"><PencilLine size={20}/></button>
+                  <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-50 dark:border-slate-800">
+                     <h3 className={titleClass}><Target className="w-6 h-6 text-emerald-500" /> USAGE & DETAILS</h3>
+                     <button onClick={() => setIsEditingContext(!isEditingContext)} className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-sm active:scale-90"><PencilLine size={20}/></button>
                   </div>
-                  {isEditingApp ? (
-                     <div className="space-y-4">
-                        <textarea className="w-full p-5 border-2 border-slate-100 rounded-3xl font-bold dark:bg-slate-800 min-h-[150px]" value={editAppText} onChange={e => setEditAppText(e.target.value)} />
-                        <Button onClick={handleSaveApplication} className="w-full">Save Details</Button>
-                     </div>
+                  
+                  {isEditingContext ? (
+                    <div className="space-y-6">
+                       <div className="space-y-2">
+                          <label className={labelClass}>{t('application')}</label>
+                          <textarea className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800 min-h-[100px] text-sm" value={editAppText} onChange={e => setEditAppText(e.target.value)} placeholder="Enter application details..." />
+                       </div>
+                       <div className="space-y-2">
+                          <label className={labelClass}>Internal Details</label>
+                          <textarea className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800 min-h-[100px] text-sm" value={editDetailsText} onChange={e => setEditDetailsText(e.target.value)} placeholder="Enter internal notes or spec details..." />
+                       </div>
+                       <Button onClick={handleSaveContext} className="w-full bg-blue-600">Save Module Info</Button>
+                    </div>
                   ) : (
-                     <div className="bg-slate-50 dark:bg-slate-900/50 p-8 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 shadow-inner min-h-[160px] flex items-center">
-                        <p className="text-slate-800 dark:text-slate-200 text-sm xl:text-lg font-bold italic leading-relaxed tracking-tight text-center w-full">
-                           {sample.application || t('noApplicationProvided')}
-                        </p>
-                     </div>
+                    <div className="space-y-8">
+                       <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-slate-400">
+                             <Target size={14} />
+                             <span className={labelClass}>{t('application')}</span>
+                          </div>
+                          <p className="text-slate-800 dark:text-slate-200 text-sm xl:text-base font-bold italic border-l-4 border-emerald-100 dark:border-emerald-900/40 pl-4 leading-relaxed">
+                             {sample.application || t('noApplicationProvided')}
+                          </p>
+                       </div>
+                       
+                       <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-slate-400">
+                             <FileText size={14} />
+                             <span className={labelClass}>Internal Details</span>
+                          </div>
+                          <p className="text-slate-800 dark:text-slate-200 text-sm xl:text-base font-bold border-l-4 border-blue-100 dark:border-blue-900/40 pl-4 leading-relaxed">
+                             {sample.sampleDetails || "No internal details provided."}
+                          </p>
+                       </div>
+                    </div>
                   )}
                </Card>
 
-               {/* File Links Card */}
                <Card className={cardBaseClass}>
                   <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-50 dark:border-slate-800">
                      <h3 className={titleClass}><LinkIcon className="w-6 h-6 text-blue-500" /> {t('fileLinks')}</h3>
@@ -509,7 +514,6 @@ const SampleProfile: React.FC = () => {
                   </div>
                </Card>
 
-               {/* History Card */}
                <Card className={`${cardBaseClass} md:col-span-2`}>
                   <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-50 dark:border-slate-800">
                      <h3 className={titleClass}><Activity className="w-6 h-6 text-amber-500" /> STATUS DETAILS / HISTORY</h3>
@@ -520,7 +524,6 @@ const SampleProfile: React.FC = () => {
                   <div className="relative border-l-4 border-slate-50 dark:border-slate-800 ml-5 space-y-10 pl-10 py-4">
                      {historyItems.length > 0 ? historyItems.map((item) => (
                        <div key={item.id} className="relative group">
-                          {/* Dot aligned to border-l-4 */}
                           <div className="absolute -left-[50px] top-1.5 w-5 h-5 rounded-full bg-white dark:bg-slate-900 border-4 border-slate-100 dark:border-slate-800 group-hover:border-blue-500 group-hover:scale-125 transition-all"></div>
                           <div className="flex flex-col gap-1 mb-2">
                              <span className="font-black text-[10px] xl:text-xs text-slate-400 uppercase tracking-widest">{item.date}</span>
@@ -540,7 +543,6 @@ const SampleProfile: React.FC = () => {
           </div>
        </div>
 
-       {/* Modals for Editing (Consolidated for better UX) */}
        {isEditingPlan && (
          <Modal isOpen={true} onClose={() => setIsEditingPlan(false)} title="Update Sample Plan">
             <div className="space-y-6">
