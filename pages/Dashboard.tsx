@@ -112,6 +112,13 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
 
   const handleToday = () => setCurrentDate(new Date());
 
+  const getUrgencyColor = (dateStr: string) => {
+    const urgency = getUrgencyLevel(dateStr);
+    if (urgency === 'urgent') return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 border-red-200";
+    if (urgency === 'warning') return "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-200";
+    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border-emerald-200";
+  };
+
   const checkHolidays = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const activeHolidays: { region: string; name: string }[] = [];
@@ -171,7 +178,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
                     </div>
                     <div className="flex-1 flex flex-col gap-0.5 overflow-hidden">
                        {dayCustEvents.map(e => (
-                          <div key={e.id} onClick={(e) => { e.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`cursor-pointer rounded px-2 py-0.5 text-[0.65rem] xl:text-[0.75rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm mb-1 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-200`}>
+                          <div key={e.id} onClick={(e) => { e.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`cursor-pointer rounded px-2 py-0.5 text-[0.65rem] xl:text-[0.75rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm mb-1 ${getUrgencyColor(e.nextActionDate!)}`}>
                              {e.name}
                           </div>
                        ))}
