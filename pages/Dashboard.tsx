@@ -187,13 +187,13 @@ const DashboardCalendar: React.FC<{
                           const urgency = getUrgencyLevel(e.nextActionDate!);
                           const urgencyBg = urgency === 'urgent' ? 'bg-rose-50 text-rose-800 border-rose-100' : urgency === 'warning' ? 'bg-amber-50 text-amber-800 border-amber-100' : 'bg-emerald-50 text-emerald-800 border-emerald-100';
                           return (
-                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded px-1 py-0.5 text-[0.6rem] xl:text-[0.65rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
+                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded px-1 py-0.5 text-[0.7rem] xl:text-[0.75rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
                                {e.name}
                             </div>
                           );
                        })}
                        {daySampleGroups.map(g => (
-                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded px-1 py-0.5 text-[0.6rem] xl:text-[0.65rem] font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 truncate transition-all hover:scale-[1.02] hover:shadow-sm">
+                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded px-1 py-0.5 text-[0.7rem] xl:text-[0.75rem] font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 truncate transition-all hover:scale-[1.02] hover:shadow-sm">
                              {g.customerName}: {g.count}
                           </div>
                        ))}
@@ -255,22 +255,22 @@ const DashboardCalendar: React.FC<{
                           const urgency = getUrgencyLevel(e.nextActionDate!);
                           const urgencyBg = urgency === 'urgent' ? 'bg-rose-50 text-rose-800 border-rose-100' : urgency === 'warning' ? 'bg-amber-50 text-amber-800 border-amber-100' : 'bg-emerald-50 text-emerald-800 border-emerald-100';
                           return (
-                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded-xl p-3 text-[0.7rem] xl:text-[0.75rem] font-black border transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
+                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded-xl p-3 text-[0.8rem] xl:text-[0.85rem] font-black border transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
                                <div className="flex justify-between items-center mb-1">
                                   <span className="truncate pr-1">{e.name}</span>
                                   <div className="scale-75 origin-right shrink-0 opacity-60"><RankStars rank={e.rank} /></div>
                                </div>
-                               <p className="text-[9px] text-slate-500/80 line-clamp-3 italic leading-relaxed">{e.upcomingPlan || "Action needed"}</p>
+                               <p className="text-[10px] text-slate-500/80 line-clamp-3 italic leading-relaxed">{e.upcomingPlan || "Action needed"}</p>
                             </div>
                           );
                        })}
                        {daySampleGroups.map(g => (
-                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded-xl p-3 text-[0.7rem] xl:text-[0.75rem] font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 transition-all hover:scale-[1.02] hover:shadow-sm">
+                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded-xl p-3 text-[0.8rem] xl:text-[0.85rem] font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 transition-all hover:scale-[1.02] hover:shadow-sm">
                              <div className="flex justify-between items-center">
                                 <span className="truncate">{g.customerName}</span>
-                                <span className="px-2 bg-blue-600 text-white rounded-md text-[9px] font-black">{g.count}</span>
+                                <span className="px-2 bg-blue-600 text-white rounded-md text-[10px] font-black">{g.count}</span>
                              </div>
-                             <p className="text-[9px] text-blue-500/70 mt-1 uppercase tracking-widest">Active Samples</p>
+                             <p className="text-[10px] text-blue-500/70 mt-1 uppercase tracking-widest">Active Samples</p>
                           </div>
                        ))}
                     </div>
