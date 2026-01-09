@@ -259,7 +259,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                 <th className="p-4 xl:p-5 font-black w-[90px] text-center">Unreplied</th>
                 <th className="p-4 xl:p-5 font-black w-[90px] text-center">Unfollowed</th>
                 <th className="p-4 xl:p-5 font-black w-[100px]">{t('status')}</th>
-                <th className="p-4 xl:p-5 font-black w-[110px]">Next Action</th>
+                <th className="p-4 xl:p-5 font-black w-[140px]">Next Action</th>
                 <th className="p-4 xl:p-5 font-black">Latest Log</th>
                 <th className="p-4 xl:p-5 font-black w-[40px]"></th>
               </tr>
@@ -314,7 +314,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                       </div>
                     </td>
                     <td className="p-4 xl:p-5 align-top font-black">
-                       <div className="text-slate-800 dark:text-white text-xs xl:text-sm">{customer.nextActionDate || "-"}</div>
+                       <div className="text-slate-800 dark:text-white text-xs xl:text-sm whitespace-nowrap">{customer.nextActionDate || "-"}</div>
                     </td>
                     <td className="p-4 xl:p-5 align-top">
                       <div className="text-slate-600 dark:text-slate-400 line-clamp-2 text-xs xl:text-sm leading-relaxed italic">
