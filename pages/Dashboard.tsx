@@ -144,7 +144,7 @@ const DashboardCalendar: React.FC<{
       <div className="w-full flex flex-col">
          <div className="grid grid-cols-7 mb-3">
             {weekDays.map(d => (
-              <div key={d} className="text-center text-[10px] xl:text-[11px] font-black text-slate-400 uppercase tracking-widest">{d}</div>
+              <div key={d} className="text-center text-xs xl:text-sm font-black text-slate-400 uppercase tracking-widest">{d}</div>
             ))}
          </div>
          <div className="grid grid-cols-7 gap-1.5">
@@ -173,12 +173,12 @@ const DashboardCalendar: React.FC<{
                     <div className="flex justify-between items-start h-4 pr-0.5">
                       <div className="flex-1 overflow-hidden">
                         {dayHolidays.map((h, idx) => (
-                           <div key={idx} className="text-[7px] font-black text-slate-500/80 dark:text-slate-400 uppercase leading-none truncate bg-slate-100 dark:bg-slate-700/50 px-1 py-0.5 rounded-sm">
+                           <div key={idx} className="text-[8.5px] xl:text-[9.5px] font-black text-slate-500/80 dark:text-slate-400 uppercase leading-none truncate bg-slate-100 dark:bg-slate-700/50 px-1 py-0.5 rounded-sm">
                               {h.name}
                            </div>
                         ))}
                       </div>
-                      <span className={`text-[10px] font-black px-1.5 rounded-full ${isDayToday ? 'bg-amber-500 text-white shadow-sm' : isDaySelected ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
+                      <span className={`text-xs font-black px-1.5 rounded-full ${isDayToday ? 'bg-amber-500 text-white shadow-sm' : isDaySelected ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
                         {format(day, 'd')}
                       </span>
                     </div>
@@ -187,13 +187,13 @@ const DashboardCalendar: React.FC<{
                           const urgency = getUrgencyLevel(e.nextActionDate!);
                           const urgencyBg = urgency === 'urgent' ? 'bg-rose-50 text-rose-800 border-rose-100' : urgency === 'warning' ? 'bg-amber-50 text-amber-800 border-amber-100' : 'bg-emerald-50 text-emerald-800 border-emerald-100';
                           return (
-                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded px-1 py-0.5 text-[0.7rem] xl:text-[0.75rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
+                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded px-1 py-0.5 text-[0.8rem] xl:text-[0.85rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
                                {e.name}
                             </div>
                           );
                        })}
                        {daySampleGroups.map(g => (
-                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded px-1 py-0.5 text-[0.7rem] xl:text-[0.75rem] font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 truncate transition-all hover:scale-[1.02] hover:shadow-sm">
+                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded px-1 py-0.5 text-[0.8rem] xl:text-[0.85rem] font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 truncate transition-all hover:scale-[1.02] hover:shadow-sm">
                              {g.customerName}: {g.count}
                           </div>
                        ))}
@@ -216,7 +216,7 @@ const DashboardCalendar: React.FC<{
       <div className="w-full flex flex-col animate-in fade-in duration-300">
          <div className="grid grid-cols-7 mb-3">
             {weekDays.map(d => (
-              <div key={d} className="text-center text-[10px] xl:text-[11px] font-black text-slate-400 uppercase tracking-widest">{d}</div>
+              <div key={d} className="text-center text-xs xl:text-sm font-black text-slate-400 uppercase tracking-widest">{d}</div>
             ))}
          </div>
          <div className="grid grid-cols-7 gap-3">
@@ -241,12 +241,12 @@ const DashboardCalendar: React.FC<{
                     <div className="flex justify-between items-start h-5 pr-0.5">
                       <div className="flex-1 overflow-hidden">
                         {dayHolidays.map((h, idx) => (
-                           <div key={idx} className="text-[8px] font-black text-slate-500/80 dark:text-slate-400 uppercase leading-none truncate bg-slate-100 dark:bg-slate-700/50 px-1.5 py-1 rounded-md mb-1">
+                           <div key={idx} className="text-[10px] xl:text-[11px] font-black text-slate-500/80 dark:text-slate-400 uppercase leading-none truncate bg-slate-100 dark:bg-slate-700/50 px-1.5 py-1 rounded-md mb-1">
                               {h.name}
                            </div>
                         ))}
                       </div>
-                      <span className={`text-xs font-black px-2 py-0.5 rounded-full ${isDayToday ? 'bg-amber-500 text-white shadow-sm' : isDaySelected ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
+                      <span className={`text-sm font-black px-2 py-0.5 rounded-full ${isDayToday ? 'bg-amber-500 text-white shadow-sm' : isDaySelected ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
                         {format(day, 'd')}
                       </span>
                     </div>
@@ -255,22 +255,22 @@ const DashboardCalendar: React.FC<{
                           const urgency = getUrgencyLevel(e.nextActionDate!);
                           const urgencyBg = urgency === 'urgent' ? 'bg-rose-50 text-rose-800 border-rose-100' : urgency === 'warning' ? 'bg-amber-50 text-amber-800 border-amber-100' : 'bg-emerald-50 text-emerald-800 border-emerald-100';
                           return (
-                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded-xl p-3 text-[0.8rem] xl:text-[0.85rem] font-black border transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
+                            <div key={e.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`rounded-xl p-3 text-sm xl:text-base font-black border transition-all hover:scale-[1.02] hover:shadow-sm ${urgencyBg}`}>
                                <div className="flex justify-between items-center mb-1">
                                   <span className="truncate pr-1">{e.name}</span>
                                   <div className="scale-75 origin-right shrink-0 opacity-60"><RankStars rank={e.rank} /></div>
                                </div>
-                               <p className="text-[10px] text-slate-500/80 line-clamp-3 italic leading-relaxed">{e.upcomingPlan || "Action needed"}</p>
+                               <p className="text-xs text-slate-500/80 line-clamp-3 italic leading-relaxed">{e.upcomingPlan || "Action needed"}</p>
                             </div>
                           );
                        })}
                        {daySampleGroups.map(g => (
-                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded-xl p-3 text-[0.8rem] xl:text-[0.85rem] font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 transition-all hover:scale-[1.02] hover:shadow-sm">
+                          <div key={g.customerId} onClick={(ev) => { ev.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="rounded-xl p-3 text-sm xl:text-base font-black border border-blue-200 bg-blue-100/50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 transition-all hover:scale-[1.02] hover:shadow-sm">
                              <div className="flex justify-between items-center">
                                 <span className="truncate">{g.customerName}</span>
                                 <span className="px-2 bg-blue-600 text-white rounded-md text-[10px] font-black">{g.count}</span>
                              </div>
-                             <p className="text-[10px] text-blue-500/70 mt-1 uppercase tracking-widest">Active Samples</p>
+                             <p className="text-xs text-blue-500/70 mt-1 uppercase tracking-widest">Active Samples</p>
                           </div>
                        ))}
                     </div>
@@ -287,15 +287,15 @@ const DashboardCalendar: React.FC<{
        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
           <div className="flex items-center gap-3">
              <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-             <h3 className="font-black text-slate-800 dark:text-white text-sm xl:text-lg uppercase tracking-wider">{t('calendar')}</h3>
-             <span className="text-xs xl:text-base font-black text-slate-400 ml-2">
+             <h3 className="font-black text-slate-800 dark:text-white text-base xl:text-xl uppercase tracking-wider">{t('calendar')}</h3>
+             <span className="text-sm xl:text-lg font-black text-slate-400 ml-2">
                 {view === 'month' ? format(currentDate, 'MMMM yyyy') : `Week of ${format(startOfWeek(currentDate), 'MMM do')}`}
              </span>
              
              <div className="relative ml-4">
                 <button 
                   onClick={() => setIsHolidayMenuOpen(!isHolidayMenuOpen)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 text-[10px] font-black transition-all ${isHolidayMenuOpen ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20 shadow-md scale-105' : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-50'}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 text-[10px] xl:text-[11px] font-black transition-all ${isHolidayMenuOpen ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20 shadow-md scale-105' : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-50'}`}
                 >
                    <Globe size={12} />
                    Holidays ({selectedHolidayRegions.length})
@@ -305,7 +305,7 @@ const DashboardCalendar: React.FC<{
                     <div className="fixed inset-0 z-40" onClick={() => setIsHolidayMenuOpen(false)}></div>
                     <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl z-50 p-3 animate-in fade-in zoom-in-95 duration-200">
                        <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 mb-2">
-                          <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Select Regions</span>
+                          <span className="text-[10px] xl:text-[11px] font-black uppercase text-slate-400 tracking-widest">Select Regions</span>
                        </div>
                        <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
                           {availableRegions.map(region => (
@@ -327,13 +327,13 @@ const DashboardCalendar: React.FC<{
           
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner">
-                <button onClick={() => setView('week')} className={`px-6 py-1.5 text-[10px] xl:text-[11px] font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewWeek')}</button>
-                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-[10px] xl:text-[11px] font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
+                <button onClick={() => setView('week')} className={`px-6 py-1.5 text-[11px] xl:text-[12px] font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewWeek')}</button>
+                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-[11px] xl:text-[12px] font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
              </div>
 
              <div className="flex items-center gap-2">
                 <button onClick={handlePrev} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-all active:scale-90"><ChevronLeft className="w-4 h-4 xl:w-5 xl:h-5"/></button>
-                <button onClick={handleToday} className="px-4 py-1.5 text-[10px] font-black bg-white border-2 border-slate-100 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-sm transition-all active:scale-95">{t('today')}</button>
+                <button onClick={handleToday} className="px-4 py-1.5 text-[11px] xl:text-[12px] font-black bg-white border-2 border-slate-100 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-sm transition-all active:scale-95">{t('today')}</button>
                 <button onClick={handleNext} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-all active:scale-90"><ChevronRight className="w-4 h-4 xl:w-5 xl:h-5"/></button>
              </div>
           </div>
@@ -406,8 +406,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const pendingFeedbackCount = samples.filter(s => ['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status)).length;
   
   const iconClass = "w-4 h-4 xl:w-5 xl:h-5 shrink-0";
-  const labelClass = "text-[9px] xl:text-[10px] font-black uppercase text-slate-400 tracking-widest";
-  const sharedTitleClass = "font-black text-slate-800 dark:text-white text-xs xl:text-base uppercase tracking-wider flex items-center gap-3";
+  const labelClass = "text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
+  const sharedTitleClass = "font-black text-slate-800 dark:text-white text-sm xl:text-lg uppercase tracking-wider flex items-center gap-3";
   const statCardClass = "p-3 xl:p-4 flex items-center gap-4 border-l-4 shadow-sm border-2 rounded-2xl";
 
   const handleDateFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -423,9 +423,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white mb-0.5 tracking-tight uppercase">CRM Master</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-[10px] xl:text-sm font-bold tracking-tight">Enterprise Edition & Console Overview</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] xl:text-base font-bold tracking-tight">Enterprise Edition & Console Overview</p>
         </div>
-        <div className="text-xs xl:text-base text-slate-400 font-black">
+        <div className="text-sm xl:text-lg text-slate-400 font-black">
           Today: <span className="text-slate-900 dark:text-white">{format(new Date(), 'MMM do, yyyy')}</span>
         </div>
       </div>
@@ -476,25 +476,19 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         <Card className="lg:col-span-1 p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full max-h-[850px]">
           <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <h3 className={sharedTitleClass}>
-              <ListTodo className="w-5 h-5 text-blue-600" />
+              <ListTodo className="w-6 h-6 text-blue-600" />
               DAILY AGENDA
             </h3>
-            {/* The wrapper remains for visual placement, but logic moves to input field to avoid security error */}
             <div className="mt-4 relative group">
-               {/* 
-                  REMOVED: onClick showPicker() logic.
-                  FIX: We make the native picker indicator absolute and 100% size but invisible.
-                  This makes the whole input a click trigger for the native date picker.
-               */}
                <input 
                  type="date" 
-                 className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2 text-xs xl:text-sm font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                 className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                  value={selectedDateStr}
                  onChange={handleDateFilterChange}
                />
-               <div className="absolute right-3 top-2.5 flex items-center gap-1.5 pointer-events-none text-slate-300 group-hover:text-blue-500 transition-colors">
-                  <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
-                  <Clock className="w-4 h-4" />
+               <div className="absolute right-3 top-3.5 flex items-center gap-1.5 pointer-events-none text-slate-300 group-hover:text-blue-500 transition-colors">
+                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
+                  <Clock className="w-5 h-5" />
                </div>
             </div>
           </div>
@@ -502,22 +496,22 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
             {dailyCustomers.length === 0 && dailySamples.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem] opacity-30 text-center p-4">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">No Scheduled Actions</span>
+                <span className="text-xs font-black uppercase tracking-widest text-slate-400 italic">No Scheduled Actions</span>
               </div>
             ) : (
               <>
                 {dailyCustomers.length > 0 && (
                   <div className="space-y-3">
-                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Customers</span>
+                    <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Customers</span>
                     {dailyCustomers.map(c => {
                       const urgency = getUrgencyLevel(c.nextActionDate);
                       const urgencyColor = urgency === 'urgent' ? 'border-l-rose-500' : urgency === 'warning' ? 'border-l-amber-500' : 'border-l-emerald-500';
                       return (
                         <Card key={c.id} className={`p-4 hover:shadow-md border-l-4 ${urgencyColor} transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group`} onClick={() => navigate(`/customers/${c.id}`)}>
                           <div className="flex flex-col gap-2">
-                             <h4 className="font-black text-slate-900 dark:text-white text-xs xl:text-sm group-hover:text-blue-600 transition-colors tracking-tight uppercase truncate">{c.name}</h4>
+                             <h4 className="font-black text-slate-900 dark:text-white text-sm xl:text-base group-hover:text-blue-600 transition-colors tracking-tight uppercase truncate">{c.name}</h4>
                              <div className="scale-75 origin-left -mt-1"><RankStars rank={c.rank} /></div>
-                             <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed italic border-l-2 border-slate-100 dark:border-slate-800 pl-2">
+                             <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed italic border-l-2 border-slate-100 dark:border-slate-800 pl-2">
                                 {c.upcomingPlan || "Action needed"}
                              </p>
                           </div>
@@ -529,13 +523,13 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
                 {dailySamples.length > 0 && (
                   <div className="space-y-3 pt-2">
-                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Samples</span>
+                    <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Samples</span>
                     {dailySamples.map(s => (
                       <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
                         <div className="flex flex-col gap-1.5">
-                           <h4 className="font-black text-blue-600 dark:text-blue-400 text-xs xl:text-sm group-hover:text-blue-800 transition-colors tracking-tight uppercase truncate">{s.sampleName}</h4>
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.customerName}</span>
-                           <p className="text-[10px] xl:text-[11px] font-bold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed italic border-l-2 border-slate-100 dark:border-slate-800 pl-2 mt-1">
+                           <h4 className="font-black text-blue-600 dark:text-blue-400 text-sm xl:text-base group-hover:text-blue-800 transition-colors tracking-tight uppercase truncate">{s.sampleName}</h4>
+                           <span className="text-[11px] xl:text-xs font-black text-slate-400 uppercase tracking-widest">{s.customerName}</span>
+                           <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed italic border-l-2 border-slate-100 dark:border-slate-800 pl-2 mt-1">
                               {s.upcomingPlan || "Production check"}
                            </p>
                         </div>
@@ -550,9 +544,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           <div className="pt-4 mt-2 border-t border-slate-50 dark:border-slate-800 shrink-0">
              <button 
                 onClick={() => navigate('/customers')} 
-                className="w-full text-center text-[10px] font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center justify-center gap-2 group transition-colors uppercase tracking-[0.1em]"
+                className="w-full text-center text-xs font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center justify-center gap-2 group transition-colors uppercase tracking-[0.1em]"
               >
-                {t('viewAll')} <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                {t('viewAll')} <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </button>
           </div>
         </Card>
@@ -580,16 +574,16 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </h3>
               <button 
                 onClick={toggleAllExpansion}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] xl:text-[11px] font-black uppercase tracking-widest hover:border-blue-300 transition-all active:scale-95"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] xl:text-xs font-black uppercase tracking-widest hover:border-blue-300 transition-all active:scale-95"
               >
-                 {expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0 ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                 {expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0 ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                  {expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0 ? 'Collapse All' : 'Expand All'}
               </button>
             </div>
 
             <div className="flex items-center gap-3">
                <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
-                  <Filter size={16} />
+                  <Filter size={18} />
                </div>
                <select 
                   className="flex-1 max-w-xs bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2 text-sm xl:text-base font-black uppercase tracking-tight outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
@@ -616,7 +610,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     className="flex items-center justify-between p-4 xl:p-5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-4 min-w-0">
-                       {isExpanded ? <ChevronDown size={20} className="text-slate-400 shrink-0" /> : <ChevronRightSmall size={20} className="text-slate-400 shrink-0" />}
+                       {isExpanded ? <ChevronDown size={22} className="text-slate-400 shrink-0" /> : <ChevronRightSmall size={22} className="text-slate-400 shrink-0" />}
                        <span className="font-black text-sm xl:text-lg text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
                     </div>
                     <Badge color="gray">{group.samples.length} Samples</Badge>
@@ -634,14 +628,14 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                              className={`p-5 cursor-pointer hover:shadow-lg border-l-4 transition-all hover:-translate-y-1 bg-white dark:bg-slate-800 ${colorBorder}`}
                            >
                               <div className="flex justify-between items-start mb-2">
-                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">#{s.sampleIndex}</span>
-                                 <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">
+                                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">#{s.sampleIndex}</span>
+                                 <div className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase">
                                     {s.nextActionDate || 'TBD'}
                                  </div>
                               </div>
                               <p className="text-sm xl:text-base font-black text-slate-800 dark:text-white leading-snug line-clamp-2 uppercase tracking-tight">{s.sampleName}</p>
                               <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50 dark:border-slate-700">
-                                 <span className="text-[10px] font-mono text-slate-400 truncate max-w-[120px] uppercase">{s.sampleSKU || 'NOSKU'}</span>
+                                 <span className="text-[11px] font-mono text-slate-400 truncate max-w-[120px] uppercase">{s.sampleSKU || 'NOSKU'}</span>
                                  <span className="text-xs xl:text-sm font-black text-slate-700 dark:text-slate-300">Qty: {s.quantity}</span>
                               </div>
                            </Card>
@@ -655,8 +649,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             
             {reviewGroups.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2.5rem] opacity-30">
-                 <Box size={40} className="text-slate-400 mb-2" />
-                 <span className="text-[10px] xl:text-xs font-black uppercase tracking-[0.2em] text-slate-400 italic">No Samples Found</span>
+                 <Box size={44} className="text-slate-400 mb-2" />
+                 <span className="text-xs xl:text-sm font-black uppercase tracking-[0.2em] text-slate-400 italic">No Samples Found</span>
               </div>
             )}
          </div>
