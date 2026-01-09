@@ -223,13 +223,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                  {customer.contacts.map((c, i) => (
                    <div key={i} className={`p-4 rounded-xl border-2 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50'}`}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-black text-slate-900 dark:text-white text-base">{c.name}</span>
-                        {c.isPrimary && <Star size={14} className="fill-amber-400 text-amber-400" />}
+                        <span className="font-black text-slate-900 dark:text-white text-lg xl:text-xl">{c.name}</span>
+                        {c.isPrimary && <Star size={16} className="fill-amber-400 text-amber-400" />}
                       </div>
-                      <p className="text-xs font-black text-blue-600 uppercase mb-2">{c.title}</p>
-                      <div className="text-xs space-y-1 text-slate-500 font-bold">
-                        {c.email && <div className="flex items-center gap-2"><Mail size={12}/> {c.email}</div>}
-                        {c.phone && <div className="flex items-center gap-2"><Phone size={12}/> {c.phone}</div>}
+                      <p className="text-sm font-black text-blue-600 uppercase mb-2">{c.title}</p>
+                      <div className="text-sm space-y-1.5 text-slate-500 font-bold">
+                        {c.email && <div className="flex items-center gap-2"><Mail size={14}/> {c.email}</div>}
+                        {c.phone && <div className="flex items-center gap-2"><Phone size={14}/> {c.phone}</div>}
                       </div>
                    </div>
                  ))}
@@ -243,8 +243,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
                <div className="space-y-2">
                  {customer.tags.map((tag, i) => (
-                   <div key={i} className="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100">
-                      <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase truncate flex-1">{tag}</span>
+                   <div key={i} className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100">
+                      <span className="text-sm xl:text-base font-black text-slate-700 dark:text-slate-300 uppercase truncate flex-1">{tag}</span>
                    </div>
                  ))}
                </div>
@@ -267,8 +267,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             </Card>
 
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-              <button onClick={() => setActiveTab('overview')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider ${activeTab === 'overview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('overview')}</button>
-              <button onClick={() => setActiveTab('samples')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider ${activeTab === 'samples' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('samples')} ({customerSamples.length})</button>
+              <button onClick={() => setActiveTab('overview')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider ${activeTab === 'overview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-50'}`}>{t('overview')}</button>
+              <button onClick={() => setActiveTab('samples')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider ${activeTab === 'samples' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-50'}`}>{t('samples')} ({customerSamples.length})</button>
             </div>
 
             {activeTab === 'overview' && (
@@ -309,11 +309,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                            const parsed = parseInteractionSummary(int.summary);
                            return (
                             <div key={int.id} className="relative group">
-                               <div className="absolute -left-[42px] top-1 w-5 h-5 rounded-full bg-blue-600 border-4 border-white shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
+                               <div className="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
                                <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-3">
-                                    <span className="font-black text-xs text-slate-900 dark:text-white">{int.date}</span>
-                                    <Star size={14} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300'} />
+                                    <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
+                                    <Star size={16} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300'} />
                                     {parsed.typeTag !== '无' && <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.typeTag}</span>}
                                     {parsed.effectTag !== '无' && <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.effectTag}</span>}
                                   </div>
@@ -323,7 +323,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                   </div>
                                </div>
                                <Card className="p-4 bg-white shadow-sm border border-slate-100">
-                                  <p className="text-sm xl:text-base font-bold text-slate-800">{parsed.content}</p>
+                                  <p className="text-base xl:text-lg font-bold text-slate-800">{parsed.content}</p>
                                </Card>
                             </div>
                            );
@@ -445,13 +445,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">对接流程类型 (Type)</label>
-                     <select className="w-full p-4 border-2 rounded-xl font-bold bg-white outline-none focus:border-blue-500" value={intTypeTag} onChange={e => setIntTypeTag(e.target.value)}>
+                     <select className="w-full p-4 border-2 rounded-xl font-bold bg-white dark:bg-slate-800 outline-none focus:border-blue-500" value={intTypeTag} onChange={e => setIntTypeTag(e.target.value)}>
                         {tagOptions.interactionTypes.map(t => <option key={t} value={t}>{t}</option>)}
                      </select>
                   </div>
                   <div className="space-y-1">
                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">流程作用标签 (Effect)</label>
-                     <select className="w-full p-4 border-2 rounded-xl font-bold bg-white outline-none focus:border-blue-500" value={intEffectTag} onChange={e => setIntEffectTag(e.target.value)}>
+                     <select className="w-full p-4 border-2 rounded-xl font-bold bg-white dark:bg-slate-800 outline-none focus:border-blue-500" value={intEffectTag} onChange={e => setIntEffectTag(e.target.value)}>
                         {tagOptions.interactionEffects.map(t => <option key={t} value={t}>{t}</option>)}
                      </select>
                   </div>
@@ -459,7 +459,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
                <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Content</label>
-                  <textarea className="w-full h-40 p-4 border-2 rounded-2xl font-bold outline-none focus:border-blue-500" placeholder="Describe the interaction..." value={intContent} onChange={(e) => setIntContent(e.target.value)} />
+                  <textarea className="w-full h-40 p-4 border-2 rounded-2xl font-bold outline-none focus:border-blue-500 dark:bg-slate-800" placeholder="Describe the interaction..." value={intContent} onChange={(e) => setIntContent(e.target.value)} />
                </div>
 
                <div className="flex justify-end gap-3 pt-4 border-t">
