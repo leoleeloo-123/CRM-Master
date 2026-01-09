@@ -132,12 +132,12 @@ export const translations = {
     'CVD': 'CVD',
 
     // Status Data Keys
-    '已申请': 'Requested',
-    '处理中': 'Processing',
-    '已寄出': 'Sent',
+    '等待中': 'Waiting',
+    '样品制作中': 'Processing',
+    '样品已发出': 'Sent',
     '已送达': 'Delivered',
-    '测试中': 'Testing',
-    '已反馈': 'Feedback Received',
+    '客户初步测试': 'Testing',
+    '客户初步结果': 'Feedback Received',
     '已关闭': 'Closed',
 
     // Test Status Keys
@@ -321,10 +321,10 @@ export const translations = {
     addFileLink: '添加链接',
 
     // Sample Columns & Statuses (UI Labels)
-    colRequested: '已申请',
-    colProcessing: '处理中',
-    colSent: '已寄出 / 测试中',
-    colFeedback: '已反馈',
+    colRequested: '等待中',
+    colProcessing: '样品制作中',
+    colSent: '样品已发出',
+    colFeedback: '客户初步结果',
 
     // DATA KEYS: Map Chinese System Keys -> Chinese Display
     '单晶': '单晶',
@@ -339,12 +339,12 @@ export const translations = {
     'CVD': 'CVD',
 
     // Status Data Keys
-    '已申请': '已申请',
-    '处理中': '处理中',
-    '已寄出': '已寄出',
+    '等待中': '等待中',
+    '样品制作中': '样品制作中',
+    '样品已发出': '样品已发出',
     '已送达': '已送达',
-    '测试中': '测试中',
-    '已反馈': '已反馈',
+    '客户初步测试': '客户初步测试',
+    '客户初步结果': '客户初步结果',
     '已关闭': '已关闭',
 
     // Test Status Keys
@@ -442,12 +442,18 @@ const ALIASES: Record<string, string> = {
   '微米粉': '微米粉',
 
   // Statuses
-  'Requested': '已申请',
-  'Processing': '处理中',
-  'Sent': '已寄出',
+  'Requested': '等待中',
+  'Waiting': '等待中',
+  '已申请': '等待中',
+  'Processing': '样品制作中',
+  '处理中': '样品制作中',
+  'Sent': '样品已发出',
+  '已寄出': '样品已发出',
   'Delivered': '已送达',
-  'Testing': '测试中',
-  'Feedback Received': '已反馈',
+  'Testing': '客户初步测试',
+  '测试中': '客户初步测试',
+  'Feedback Received': '客户初步结果',
+  '已反馈': '客户初步结果',
   'Closed': '已关闭',
 
   // Test Status Logic

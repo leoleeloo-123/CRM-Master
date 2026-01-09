@@ -12,6 +12,9 @@ interface SampleTrackerProps {
   customers: Customer[];
 }
 
+// User requested fixed order
+const FIXED_BOARD_ORDER = ['客户初步结果', '客户初步测试', '样品已发出', '样品制作中', '等待中'];
+
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
   const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
@@ -40,7 +43,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     originalSize: '',
     processedSize: '',
     quantity: '',
-    status: tagOptions.sampleStatus[0] || 'Requested',
+    status: FIXED_BOARD_ORDER[0],
     sampleSKU: ''
   });
 
@@ -219,6 +222,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     navigate(`/samples/${newId}`);
   };
 
+  // Determine current board statuses (Fixed + any custom ones not in fixed list)
+  const currentBoardOrder = useMemo(() => {
+    const extraStatuses = tagOptions.sampleStatus.filter(s => !FIXED_BOARD_ORDER.includes(s));
+    return [...FIXED_BOARD_ORDER, ...extraStatuses];
+  }, [tagOptions.sampleStatus]);
+
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex justify-between items-center">
@@ -327,7 +336,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                           <td colSpan={9} className="p-4">
                             <div className="flex items-center gap-3">
                               {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
-                              <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-sm xl:text-base">
+                              <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-base">
                                 {group.customerName}
                               </span>
                               <Badge color="gray">{group.samples.length} Samples</Badge>
@@ -348,7 +357,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample #{s.sampleIndex}</div>
                               </td>
                               <td className="p-4">
-                                 <div className="font-bold text-blue-600 dark:text-blue-400 text-sm">{s.sampleName}</div>
+                                 <div className="font-bold text-blue-600 dark:text-blue-400 text-sm xl:text-base">{s.sampleName}</div>
                                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
                               </td>
                               <td className="p-4">
@@ -385,7 +394,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
           </Card>
         ) : (
           <div className="flex h-full gap-6 overflow-x-auto pb-4 scrollbar-hide">
-             {tagOptions.sampleStatus.map((status) => {
+             {currentBoardOrder.map((status) => {
                 const colSamples = filteredSamples.filter(s => s.status === status);
                 
                 // Group column samples by customer for board view
@@ -402,7 +411,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                 return (
                   <div key={status} className="flex-1 min-w-[320px] max-w-[480px] bg-slate-100 dark:bg-slate-900/50 rounded-3xl p-5 flex flex-col shadow-inner">
                      <div className="flex justify-between items-center mb-5 px-1">
-                        <h4 className="font-extrabold uppercase text-[11px] text-slate-500 flex items-center gap-2 tracking-widest">
+                        <h4 className="font-extrabold uppercase text-sm xl:text-base text-slate-500 flex items-center gap-2 tracking-widest">
                            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
                            {t(status as any)} ({colSamples.length})
                         </h4>
@@ -415,11 +424,11 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                {/* Board Customer Header */}
                                <div 
                                  onClick={() => toggleCustomerExpansion(group.customerId)}
-                                 className="flex items-center justify-between p-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-[0.99]"
+                                 className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-[0.99]"
                                >
                                  <div className="flex items-center gap-3 min-w-0">
-                                    {isExpanded ? <ChevronDown size={16} className="text-slate-400 shrink-0" /> : <ChevronRight size={16} className="text-slate-400 shrink-0" />}
-                                    <span className="font-black text-xs text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
+                                    {isExpanded ? <ChevronDown size={18} className="text-slate-400 shrink-0" /> : <ChevronRight size={18} className="text-slate-400 shrink-0" />}
+                                    <span className="font-black text-sm xl:text-base text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
                                  </div>
                                  <Badge color="gray">{group.samples.length}</Badge>
                                </div>
@@ -431,13 +440,13 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                      <Card 
                                        key={s.id} 
                                        onClick={() => navigate(`/samples/${s.id}`)} 
-                                       className={`p-4 cursor-pointer hover:shadow-xl border-l-4 transition-all hover:-translate-y-1 ${getUrgencyColor(s.lastStatusDate)}`}
+                                       className={`p-5 cursor-pointer hover:shadow-xl border-l-4 transition-all hover:-translate-y-1 ${getUrgencyColor(s.lastStatusDate)}`}
                                      >
                                         <div className="flex justify-between items-start mb-2">
                                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample #{s.sampleIndex}</span>
                                           {renderDaysSinceUpdate(s.lastStatusDate)}
                                         </div>
-                                        <p className="text-sm font-black text-blue-600 dark:text-blue-400 leading-snug mb-3 line-clamp-2 uppercase tracking-tight">{s.sampleName}</p>
+                                        <p className="text-base font-black text-blue-600 dark:text-blue-400 leading-snug mb-3 line-clamp-2 uppercase tracking-tight">{s.sampleName}</p>
                                         
                                         <div className="flex gap-1.5 flex-wrap">
                                           <div className="scale-90 origin-left">
@@ -447,7 +456,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
 
                                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 dark:border-slate-800">
                                           <span className="text-[10px] font-mono text-slate-400 truncate max-w-[120px] uppercase">{s.sampleSKU || 'NO SKU'}</span>
-                                          <span className="text-xs font-black text-slate-700 dark:text-slate-300">{s.quantity}</span>
+                                          <span className="text-sm font-black text-slate-700 dark:text-slate-300">{s.quantity}</span>
                                         </div>
                                      </Card>
                                    ))}
