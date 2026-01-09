@@ -1,9 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel, Button, parseLocalDate } from '../components/Common';
-import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box, Filter, Maximize2, Minimize2, ChevronDown, ChevronRight as ChevronRightSmall, ChevronUp } from 'lucide-react';
 import { 
   format, isBefore, addDays, 
   endOfMonth, endOfWeek, eachDayOfInterval, 
@@ -18,54 +17,25 @@ import { useApp } from '../contexts/AppContext';
  */
 const HOLIDAY_DATA: Record<string, Record<string, string>> = {
   'China': {
-    // 2024
     '2024-01-01': '元旦', '2024-02-10': '春节', '2024-02-11': '春节', '2024-02-12': '春节', '2024-02-13': '春节', '2024-02-14': '春节', '2024-02-15': '春节', '2024-02-16': '春节', '2024-02-17': '春节',
     '2024-04-04': '清明节', '2024-04-05': '清明节', '2024-04-06': '清明节', '2024-05-01': '劳动节', '2024-05-02': '劳动节', '2024-05-03': '劳动节', '2024-05-04': '劳动节', '2024-05-05': '劳动节',
     '2024-06-10': '端午节', '2024-09-15': '中秋节', '2024-09-16': '中秋节', '2024-09-17': '中秋节',
     '2024-10-01': '国庆节', '2024-10-02': '国庆节', '2024-10-03': '国庆节', '2024-10-04': '国庆节', '2024-10-05': '国庆节', '2024-10-06': '国庆节', '2024-10-07': '国庆节',
-    // 2025
     '2025-01-01': '元旦', '2025-01-28': '除夕', '2025-01-29': '春节', '2025-01-30': '春节', '2025-01-31': '春节', '2025-02-01': '春节', '2025-02-02': '春节', '2025-02-03': '春节', '2025-02-04': '春节',
-    '2025-04-04': '清明节', '2025-05-01': '劳动节', '2025-05-02': '劳动节', '2025-05-03': '劳动节', '2025-05-04': '劳动节', '2025-05-05': '劳动节',
-    '2025-10-01': '国庆节', '2025-10-02': '国庆节', '2025-10-03': '国庆节', '2025-10-04': '国庆节', '2025-10-05': '国庆节', '2025-10-06': '国庆节', '2025-10-07': '国庆节',
-    // 2026 (Approximate patterns)
-    '2026-01-01': '元旦', '2026-02-17': '春节', '2026-02-18': '春节', '2026-02-19': '春节', '2026-02-20': '春节', '2026-02-21': '春节', '2026-02-22': '春节', '2026-02-23': '春节',
-    '2026-05-01': '劳动节', '2026-10-01': '国庆节', '2026-10-02': '国庆节', '2026-10-03': '国庆节', '2026-10-04': '国庆节', '2026-10-05': '国庆节', '2026-10-06': '国庆节', '2026-10-07': '国庆节',
-    // 2027
-    '2027-01-01': '元旦', '2027-02-06': '春节(初一)', '2027-05-01': '劳动节', '2027-10-01': '国庆节', '2027-10-02': '国庆节', '2027-10-03': '国庆节', '2027-10-04': '国庆节', '2027-10-05': '国庆节', '2027-10-06': '国庆节', '2027-10-07': '国庆节',
-    // 2028
-    '2028-01-01': '元旦', '2028-01-26': '春节(初一)', '2028-05-01': '劳动节', '2028-10-01': '国庆节', '2028-10-02': '国庆节', '2028-10-03': '国庆节', '2028-10-04': '国庆节', '2028-10-05': '国庆节', '2028-10-06': '国庆节', '2028-10-07': '国庆节',
   },
   'USA': {
-    // Standard Federal Holidays
     '2024-01-01': 'New Year', '2024-01-15': 'MLK Day', '2024-02-19': 'Presidents Day', '2024-05-27': 'Memorial Day', '2024-07-04': 'Independence Day', '2024-09-02': 'Labor Day', '2024-11-28': 'Thanksgiving', '2024-12-25': 'Christmas',
-    '2025-01-01': 'New Year', '2025-01-20': 'MLK Day', '2025-02-17': 'Presidents Day', '2025-05-26': 'Memorial Day', '2025-07-04': 'Independence Day', '2025-09-01': 'Labor Day', '2025-11-27': 'Thanksgiving', '2025-12-25': 'Christmas',
-    '2026-01-01': 'New Year', '2026-01-19': 'MLK Day', '2026-02-16': 'Presidents Day', '2026-05-25': 'Memorial Day', '2026-07-04': 'Independence Day', '2026-09-07': 'Labor Day', '2026-11-26': 'Thanksgiving', '2026-12-25': 'Christmas',
-    '2027-01-01': 'New Year', '2027-07-04': 'Independence Day', '2027-11-25': 'Thanksgiving', '2027-12-25': 'Christmas',
-    '2028-01-01': 'New Year', '2028-07-04': 'Independence Day', '2028-11-23': 'Thanksgiving', '2028-12-25': 'Christmas',
   },
   'Japan': {
-    '2024-01-01': 'New Year', '2024-05-03': 'Const. Day', '2024-05-04': 'Greenery Day', '2024-05-05': 'Childrens Day', '2024-08-11': 'Mountain Day', '2024-11-23': 'Labor Day',
-    '2025-01-01': 'New Year', '2025-05-03': 'Const. Day', '2025-05-04': 'Greenery Day', '2025-05-05': 'Childrens Day', '2025-08-11': 'Mountain Day', '2025-11-23': 'Labor Day',
-    '2026-01-01': 'New Year', '2026-05-03': 'Const. Day', '2026-05-04': 'Greenery Day', '2026-05-05': 'Childrens Day',
-    '2027-01-01': 'New Year', '2027-05-03': 'Const. Day', '2027-05-04': 'Greenery Day', '2027-05-05': 'Childrens Day',
-    '2028-01-01': 'New Year', '2028-05-03': 'Const. Day', '2028-05-04': 'Greenery Day', '2028-05-05': 'Childrens Day',
-  },
-  'Germany': {
-    '2024-01-01': 'Neujahr', '2024-05-01': 'Tag der Arbeit', '2024-10-03': 'Tag d. Einheit', '2024-12-25': 'Weihnachten', '2024-12-26': 'Stephanstag',
-    '2025-01-01': 'Neujahr', '2025-05-01': 'Tag der Arbeit', '2025-10-03': 'Tag d. Einheit', '2025-12-25': 'Weihnachten', '2025-12-26': 'Stephanstag',
-    '2026-01-01': 'Neujahr', '2026-05-01': 'Tag der Arbeit', '2026-10-03': 'Tag d. Einheit', '2026-12-25': 'Weihnachten', '2026-12-26': 'Stephanstag',
-    '2027-01-01': 'Neujahr', '2027-05-01': 'Tag der Arbeit', '2027-10-03': 'Tag d. Einheit', '2027-12-25': 'Weihnachten', '2027-12-26': 'Stephanstag',
-    '2028-01-01': 'Neujahr', '2028-05-01': 'Tag der Arbeit', '2028-10-03': 'Tag d. Einheit', '2028-12-25': 'Weihnachten', '2028-12-26': 'Stephanstag',
+    '2024-01-01': 'New Year', '2024-05-03': 'Const. Day', '2024-05-04': 'Greenery Day', '2024-05-05': 'Childrens Day',
   }
 };
 
-// Map regional strings to Holiday Data keys
 const mapRegionToHolidayKey = (region: string): string | null => {
   const r = region.toLowerCase();
   if (r.includes('china') || r.includes('中国')) return 'China';
   if (r.includes('usa') || r.includes('america') || r.includes('美国')) return 'USA';
   if (r.includes('japan') || r.includes('日本')) return 'Japan';
-  if (r.includes('germany') || r.includes('europe') || r.includes('德国')) return 'Germany';
   return null;
 };
 
@@ -76,7 +46,6 @@ interface DashboardProps {
 
 type CalendarView = 'day' | 'week' | 'month';
 
-// Explicit interface for sample group info to avoid 'unknown' type errors
 interface SampleGroupInfo {
   customerId: string;
   customerName: string;
@@ -90,7 +59,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('month');
   
-  // Holiday region selection state
   const availableRegions = useMemo(() => {
     const regions = new Set<string>();
     customers.forEach(c => {
@@ -99,14 +67,13 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
         if (key) regions.add(key);
       });
     });
-    ['China', 'USA', 'Japan', 'Germany'].forEach(r => regions.add(r));
+    ['China', 'USA', 'Japan'].forEach(r => regions.add(r));
     return Array.from(regions);
   }, [customers]);
 
   const [selectedHolidayRegions, setSelectedHolidayRegions] = useState<string[]>(['China', 'USA', 'Japan']);
   const [isHolidayMenuOpen, setIsHolidayMenuOpen] = useState(false);
 
-  // Fix: Use parseLocalDate to ensure DDLs don't shift by 1 day
   const customerEvents = useMemo(() => 
     customers.filter(c => c.rank <= 2 && c.nextActionDate).map(c => ({
       ...c,
@@ -116,7 +83,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
   );
 
   const sampleGroups = useMemo(() => {
-    // Explicitly define groups type to avoid 'unknown' when using Object.values
     const groups: Record<string, Record<string, SampleGroupInfo>> = {};
     samples.forEach(s => {
       if (s.nextActionDate && (s.testStatus === 'Ongoing' || s.testStatus === undefined)) {
@@ -146,13 +112,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
 
   const handleToday = () => setCurrentDate(new Date());
 
-  const getUrgencyColor = (dateStr: string) => {
-    const urgency = getUrgencyLevel(dateStr);
-    if (urgency === 'urgent') return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 border-red-200";
-    if (urgency === 'warning') return "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-200";
-    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border-emerald-200";
-  };
-
   const checkHolidays = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const activeHolidays: { region: string; name: string }[] = [];
@@ -163,38 +122,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
     });
     return activeHolidays;
   };
-
-  const renderEventBadge = (c: any) => (
-    <div 
-      key={c.id} 
-      onClick={(e) => { e.stopPropagation(); navigate(`/customers/${c.id}`); }}
-      className={`cursor-pointer rounded px-2 py-0.5 text-[0.65rem] xl:text-[0.75rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm mb-1 ${getUrgencyColor(c.nextActionDate!)}`}
-      title={`Customer: ${c.name} - ${c.upcomingPlan || 'No plan'}`}
-    >
-      {c.name}
-    </div>
-  );
-
-  const renderSampleGroupBadge = (group: { customerId: string, customerName: string, count: number }) => (
-    <div 
-      key={`samp-${group.customerId}`} 
-      onClick={(e) => { e.stopPropagation(); navigate(`/customers/${group.customerId}?tab=samples`); }}
-      className="cursor-pointer rounded px-2 py-0.5 text-[0.65rem] xl:text-[0.75rem] font-black border border-blue-200 bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 truncate transition-all hover:scale-[1.02] hover:shadow-sm mb-1"
-      title={`${group.customerName}: ${group.count} Sample Reminders`}
-    >
-      {group.customerName}: {group.count} Samples
-    </div>
-  );
-
-  const renderHolidayLabel = (holiday: { region: string; name: string }) => (
-    <div 
-      key={holiday.region + holiday.name} 
-      className="text-[8px] xl:text-[9px] font-black text-slate-500/80 dark:text-slate-400 uppercase leading-none truncate whitespace-nowrap mb-0.5 bg-slate-200/50 dark:bg-slate-700/50 px-1 rounded-sm border border-slate-300/30"
-      title={`Holiday: ${holiday.region} ${holiday.name}`}
-    >
-      {holiday.region.substring(0, 3)}: {holiday.name}
-    </div>
-  );
 
   const renderMonthView = () => {
     const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -215,9 +142,7 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
             {days.map(day => {
                const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
                const dayStr = format(day, 'yyyy-MM-dd');
-               // FIX: Explicitly cast Object.values results to SampleGroupInfo[] to avoid 'unknown' type errors
                const daySampleGroups = sampleGroups[dayStr] ? (Object.values(sampleGroups[dayStr]) as SampleGroupInfo[]) : [];
-               
                const dayHolidays = checkHolidays(day);
                const isCurrentMonth = isSameMonth(day, monthStart);
                const isDayToday = isToday(day);
@@ -234,126 +159,33 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
                  >
                     <div className="flex justify-between items-start h-8">
                       <div className="flex-1 overflow-hidden pr-1">
-                        {dayHolidays.map(h => renderHolidayLabel(h))}
+                        {dayHolidays.map((h, idx) => (
+                           <div key={idx} className="text-[8px] xl:text-[9px] font-black text-slate-500/80 dark:text-slate-400 uppercase leading-none truncate whitespace-nowrap mb-0.5 bg-slate-200/50 dark:bg-slate-700/50 px-1 rounded-sm border border-slate-300/30">
+                              {h.region.substring(0, 3)}: {h.name}
+                           </div>
+                        ))}
                       </div>
                       <span className={`text-[10px] xl:text-xs font-black px-1.5 rounded-full ${isDayToday ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400'}`}>
                         {format(day, 'd')}
                       </span>
                     </div>
                     <div className="flex-1 flex flex-col gap-0.5 overflow-hidden">
-                       {dayCustEvents.map(e => renderEventBadge(e))}
-                       {daySampleGroups.map(g => renderSampleGroupBadge(g))}
+                       {dayCustEvents.map(e => (
+                          <div key={e.id} onClick={(e) => { e.stopPropagation(); navigate(`/customers/${e.id}`); }} className={`cursor-pointer rounded px-2 py-0.5 text-[0.65rem] xl:text-[0.75rem] font-black border truncate transition-all hover:scale-[1.02] hover:shadow-sm mb-1 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-200`}>
+                             {e.name}
+                          </div>
+                       ))}
+                       {daySampleGroups.map(g => (
+                          <div key={g.customerId} onClick={(e) => { e.stopPropagation(); navigate(`/customers/${g.customerId}?tab=samples`); }} className="cursor-pointer rounded px-2 py-0.5 text-[0.65rem] xl:text-[0.75rem] font-black border border-blue-200 bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 truncate transition-all hover:scale-[1.02] hover:shadow-sm mb-1">
+                             {g.customerName}: {g.count}
+                          </div>
+                       ))}
                     </div>
                  </div>
                );
             })}
          </div>
       </div>
-    );
-  };
-
-  const renderWeekView = () => {
-    const startDate = addDays(currentDate, -currentDate.getDay());
-    const days = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i));
-
-    return (
-      <div className="grid grid-cols-7 gap-2 h-auto">
-        {days.map(day => {
-           const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
-           const dayStr = format(day, 'yyyy-MM-dd');
-           // FIX: Explicitly cast Object.values results to SampleGroupInfo[] to avoid 'unknown' type errors
-           const daySampleGroups = sampleGroups[dayStr] ? (Object.values(sampleGroups[dayStr]) as SampleGroupInfo[]) : [];
-           
-           const dayHolidays = checkHolidays(day);
-           const isDayToday = isToday(day);
-           const hasHoliday = dayHolidays.length > 0;
-           
-           return (
-             <div key={day.toISOString()} className={`flex flex-col border rounded-lg overflow-hidden ${isDayToday ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700'}`}>
-                <div className={`p-2 text-center border-b border-slate-100 dark:border-slate-700 h-24 flex flex-col justify-center ${isDayToday ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700' : hasHoliday ? 'bg-slate-100 dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                   <div className="text-[10px] xl:text-xs font-black uppercase tracking-widest text-slate-400">{format(day, 'EEE')}</div>
-                   <div className="text-xl xl:text-2xl font-black leading-none my-1">{format(day, 'd')}</div>
-                   <div className="flex flex-col items-center gap-0.5 mt-1 overflow-hidden h-6">
-                      {dayHolidays.map(h => (
-                        <div key={h.name} className="text-[8px] font-black text-slate-500 truncate max-w-full uppercase">{h.region.substring(0,1)}: {h.name}</div>
-                      ))}
-                   </div>
-                </div>
-                <div className={`p-2 flex-1 space-y-2 min-h-[400px] ${hasHoliday ? 'bg-slate-50/50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-800'}`}>
-                   {dayCustEvents.map(e => renderEventBadge(e))}
-                   {daySampleGroups.map(g => renderSampleGroupBadge(g))}
-                   {dayCustEvents.length === 0 && daySampleGroups.length === 0 && <div className="text-xs text-slate-300 text-center py-4">-</div>}
-                </div>
-             </div>
-           );
-        })}
-      </div>
-    );
-  };
-
-  const renderDayView = () => {
-     const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, currentDate)).sort((a,b) => a.rank - b.rank);
-     const dayStr = format(currentDate, 'yyyy-MM-dd');
-     // FIX: Explicitly cast Object.values results to SampleGroupInfo[] to avoid 'unknown' type errors
-     const daySampleGroups = sampleGroups[dayStr] ? (Object.values(sampleGroups[dayStr]) as SampleGroupInfo[]) : [];
-     
-     const dayHolidays = checkHolidays(currentDate);
-     
-     return (
-       <div className={`rounded-lg border p-6 min-h-[500px] shadow-sm transition-colors ${dayHolidays.length > 0 ? 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-          <div className="flex justify-between items-start mb-8">
-            <h4 className="text-lg xl:text-xl font-black flex items-center gap-3">
-               {format(currentDate, 'EEEE, MMMM do')}
-               {isToday(currentDate) && <Badge color="blue">Today</Badge>}
-            </h4>
-            <div className="flex flex-col items-end gap-1.5">
-               {dayHolidays.map(h => (
-                 <div key={h.name} className="px-3 py-1 bg-slate-200 dark:bg-slate-700 rounded-full text-[10px] xl:text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
-                   Holiday: {h.region} {h.name}
-                 </div>
-               ))}
-            </div>
-          </div>
-          {dayCustEvents.length === 0 && daySampleGroups.length === 0 ? (
-             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                <CalendarIcon className="w-12 h-12 xl:w-16 xl:h-16 opacity-10 mb-2" />
-                <p className="italic text-sm xl:text-base font-medium">No critical actions scheduled for this day.</p>
-             </div>
-          ) : (
-             <div className="space-y-4 max-w-4xl mx-auto">
-               {dayCustEvents.map(e => (
-                 <div key={e.id} onClick={() => navigate(`/customers/${e.id}`)} className="flex items-start gap-4 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 hover:shadow-xl cursor-pointer transition-all bg-white dark:bg-slate-900/50 group">
-                    <div className={`w-1.5 self-stretch rounded-full ${getUrgencyLevel(e.nextActionDate!) === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
-                    <div className="flex-1">
-                       <div className="flex justify-between items-start">
-                          <h5 className="font-black text-slate-900 dark:text-white text-base xl:text-lg group-hover:text-blue-600 transition-colors tracking-tight">{e.name} (Customer Action)</h5>
-                          <div className="text-[1em]"><RankStars rank={e.rank} /></div>
-                       </div>
-                       <p className="text-slate-600 dark:text-slate-300 mt-2 font-bold text-sm xl:text-base leading-relaxed italic">{e.upcomingPlan || 'Check details'}</p>
-                    </div>
-                 </div>
-               ))}
-               {daySampleGroups.map(g => (
-                 <div key={`day-samp-${g.customerId}`} onClick={() => navigate(`/customers/${g.customerId}?tab=samples`)} className="flex items-start gap-4 p-6 rounded-2xl border border-blue-100 dark:border-blue-900/40 hover:shadow-xl cursor-pointer transition-all bg-blue-50/30 dark:bg-blue-900/20 group">
-                    <div className="w-1.5 self-stretch rounded-full bg-blue-500"></div>
-                    <div className="flex-1">
-                       <div className="flex justify-between items-start">
-                          <h5 className="font-black text-blue-900 dark:text-blue-100 text-base xl:text-lg group-hover:text-blue-600 transition-colors tracking-tight">{g.customerName}</h5>
-                          <Badge color="blue">Sample Reminders</Badge>
-                       </div>
-                       <p className="text-blue-700 dark:text-blue-300 mt-2 font-bold text-sm xl:text-base leading-relaxed italic">{g.count} samples reaching their target date today.</p>
-                    </div>
-                 </div>
-               ))}
-             </div>
-          )}
-       </div>
-     );
-  };
-
-  const toggleRegion = (region: string) => {
-    setSelectedHolidayRegions(prev => 
-      prev.includes(region) ? prev.filter(r => r !== region) : [...prev, region]
     );
   };
 
@@ -379,14 +211,14 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsHolidayMenuOpen(false)}></div>
                     <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl z-50 p-3 animate-in fade-in zoom-in-95 duration-200">
-                       <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 mb-2 flex justify-between items-center">
+                       <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 mb-2">
                           <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Select Regions</span>
                        </div>
                        <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
                           {availableRegions.map(region => (
                             <button 
                               key={region} 
-                              onClick={() => toggleRegion(region)}
+                              onClick={() => setSelectedHolidayRegions(prev => prev.includes(region) ? prev.filter(r => r !== region) : [...prev, region])}
                               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${selectedHolidayRegions.includes(region) ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                             >
                                {region}
@@ -415,8 +247,6 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
        
        <div className="flex-1 animate-in fade-in duration-500">
           {view === 'month' && renderMonthView()}
-          {view === 'week' && renderWeekView()}
-          {view === 'day' && renderDayView()}
        </div>
     </Card>
   );
@@ -425,10 +255,39 @@ const DashboardCalendar: React.FC<{ customers: Customer[]; samples: Sample[] }> 
 const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const navigate = useNavigate();
   const { t, tagOptions } = useApp();
-  const [priorityType, setPriorityType] = useState<'customers' | 'samples'>('customers');
+  
+  // StatusReview logic
+  const [reviewStatus, setReviewStatus] = useState<string>('样品制作中');
+  
+  // Group samples for the review board
+  const reviewGroups = useMemo(() => {
+    const filtered = samples.filter(s => s.status === reviewStatus);
+    const groupsMap: Record<string, { customerName: string; samples: Sample[] }> = {};
+    
+    filtered.forEach(s => {
+      if (!groupsMap[s.customerId]) {
+        groupsMap[s.customerId] = { customerName: s.customerName, samples: [] };
+      }
+      groupsMap[s.customerId].samples.push(s);
+    });
 
-  // Logic for Priority Attention
-  // 1. Customers: Tier 1 Only (rank 1)
+    return Object.entries(groupsMap).map(([id, data]) => ({
+      customerId: id,
+      ...data
+    })).sort((a, b) => a.customerName.localeCompare(b.customerName, 'zh-Hans-CN'));
+  }, [samples, reviewStatus]);
+
+  // Default to expand all: initialize with all current group IDs
+  const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
+
+  // Effect to handle "Default Expand All" when data or filter changes
+  useEffect(() => {
+    if (reviewGroups.length > 0) {
+      setExpandedCustomers(new Set(reviewGroups.map(g => g.customerId)));
+    }
+  }, [reviewGroups]);
+
+  // Priority Attention logic: Rank 1 Customers
   const priorityCustomers = useMemo(() => 
     customers.filter(c => c.rank === 1).sort((a, b) => {
       const dateA = a.nextActionDate || '9999-12-31';
@@ -437,45 +296,22 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     }), [customers]
   );
 
-  // 2. Samples: DDL within next 7 days (including overdue)
-  const prioritySamples = useMemo(() => 
-    samples.filter(s => {
-      if (!s.nextActionDate) return false;
-      const actionDate = parseLocalDate(s.nextActionDate);
-      const now = startOfDay(new Date());
-      const limit = addDays(now, 7);
-      return actionDate <= limit;
-    }).sort((a, b) => {
-      const dateA = a.nextActionDate || '9999-12-31';
-      const dateB = b.nextActionDate || '9999-12-31';
-      return dateA.localeCompare(dateB);
-    }), [samples]
-  );
+  const toggleAllExpansion = () => {
+    if (expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0) {
+      setExpandedCustomers(new Set());
+    } else {
+      setExpandedCustomers(new Set(reviewGroups.map(g => g.customerId)));
+    }
+  };
 
-  const activeSamples = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received', '已送达', '已关闭', '已反馈'].includes(s.status)).length;
-  const pendingFeedback = samples.filter(s => ['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status)).length;
+  const activeSamplesCount = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received', '已送达', '已关闭', '已反馈'].includes(s.status)).length;
+  const pendingFeedbackCount = samples.filter(s => ['Sent', 'Delivered', '已寄出', '已送达'].includes(s.status)).length;
   
-  const COLORS = ['#94a3b8', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4'];
-  const sampleStatusData = tagOptions.sampleStatus.map((status, index) => {
-    return {
-      name: t(status as any) || status,
-      value: samples.filter(s => s.status === status).length,
-      color: COLORS[index % COLORS.length]
-    };
-  }).filter(item => item.value > 0);
-
-  const regionDataRaw = customers.reduce((acc, curr) => {
-    const regions = Array.isArray(curr.region) ? curr.region : [curr.region];
-    regions.forEach(r => { acc[r] = (acc[r] || 0) + 1; });
-    return acc;
-  }, {} as Record<string, number>);
-  
-  const regionData = Object.keys(regionDataRaw).map(key => ({
-    name: key,
-    count: regionDataRaw[key]
-  }));
-
   const iconClass = "w-6 h-6 xl:w-8 xl:h-8 shrink-0";
+  const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
+  const sharedTitleClass = "font-black text-slate-800 dark:text-white text-base xl:text-lg uppercase tracking-wider flex items-center gap-3";
+  // Fixed height for symmetry and controlled internal scrolling
+  const sharedCardClass = "p-6 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-[700px]";
 
   return (
     <div className="space-y-8 xl:space-y-12 pb-20">
@@ -495,7 +331,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             <Activity className={iconClass} />
           </div>
           <div>
-            <p className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">{t('totalCustomers')}</p>
+            <p className={labelClass + " mb-1.5"}>{t('totalCustomers')}</p>
             <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{customers.length}</p>
           </div>
         </Card>
@@ -504,8 +340,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             <FlaskConical className={iconClass} />
           </div>
           <div>
-            <p className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">{t('activeSamples')}</p>
-            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{activeSamples}</p>
+            <p className={labelClass + " mb-1.5"}>{t('activeSamples')}</p>
+            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{activeSamplesCount}</p>
           </div>
         </Card>
         <Card className="p-5 xl:p-8 flex items-center gap-5 xl:gap-8 border-l-4 border-l-purple-500 shadow-sm border-2">
@@ -513,8 +349,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             <CalendarIcon className={iconClass} />
           </div>
           <div>
-            <p className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Pending Feedback</p>
-            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{pendingFeedback}</p>
+            <p className={labelClass + " mb-1.5"}>{t('pendingFeedback')}</p>
+            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{pendingFeedbackCount}</p>
           </div>
         </Card>
         <Card className="p-5 xl:p-8 flex items-center gap-5 xl:gap-8 border-l-4 border-l-red-500 shadow-sm border-2">
@@ -522,8 +358,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             <AlertTriangle className={iconClass} />
           </div>
           <div>
-            <p className="text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Critical Actions</p>
-            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{priorityCustomers.length + prioritySamples.length}</p>
+            <p className={labelClass + " mb-1.5"}>{t('criticalActions')}</p>
+            <p className="text-3xl xl:text-5xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{priorityCustomers.length}</p>
           </div>
         </Card>
       </div>
@@ -532,171 +368,151 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
          <DashboardCalendar customers={customers} samples={samples} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
-        <div className="flex flex-col h-full space-y-6 xl:space-y-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg xl:text-xl font-black text-slate-800 dark:text-white flex items-center gap-3 tracking-wider uppercase">
-                <AlertTriangle className="w-6 h-6 text-amber-500" />
-                {t('priorityAttention')}
-              </h3>
-              <button 
-                onClick={() => navigate(priorityType === 'customers' ? '/customers' : '/samples')} 
-                className="text-xs xl:text-sm font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center gap-1.5 group transition-colors"
-              >
-                View All <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </button>
-            </div>
-            
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl self-start shadow-inner">
-               <button onClick={() => setPriorityType('customers')} className={`px-5 py-2 text-xs font-black rounded-lg transition-all ${priorityType === 'customers' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>Customers</button>
-               <button onClick={() => setPriorityType('samples')} className={`px-5 py-2 text-xs font-black rounded-lg transition-all ${priorityType === 'samples' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>Samples</button>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-12">
+        {/* Left Column: Priority Attention (Customers Only) */}
+        <Card className={sharedCardClass}>
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-50 dark:border-slate-800">
+            <h3 className={sharedTitleClass}>
+              <AlertTriangle className="w-6 h-6 text-amber-500" />
+              {t('priorityAttention')}
+            </h3>
+            <button 
+              onClick={() => navigate('/customers')} 
+              className="text-xs font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center gap-1.5 group transition-colors uppercase tracking-widest"
+            >
+              {t('viewAll')} <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </button>
           </div>
           
-          <div className="space-y-4 overflow-y-auto max-h-[600px] pr-2 scrollbar-hide">
-            {priorityType === 'customers' ? (
-              priorityCustomers.length === 0 ? (
-                <Card className="p-12 text-center text-slate-400 italic font-medium border-2">
-                  <p>No rank 1 customers found.</p>
-                </Card>
-              ) : (
-                priorityCustomers.map(c => { 
-                  const urgency = getUrgencyLevel(c.nextActionDate);
-                  let dateColor = "text-slate-400";
-                  if (urgency === 'urgent') dateColor = "text-red-600 dark:text-red-500 font-black";
-                  if (urgency === 'warning') dateColor = "text-amber-600 dark:text-amber-500 font-black";
-
-                  return (
-                    <Card key={c.id} className="p-5 hover:shadow-xl transition-all cursor-pointer border-2 border-slate-100 dark:border-slate-800 group" onClick={() => navigate(`/customers/${c.id}`)}>
-                      <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-start">
-                           <div className="flex gap-4">
-                               <div className={`w-1.5 self-stretch rounded-full ${urgency === 'urgent' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
-                               <div>
-                                  <h4 className="font-black text-slate-900 dark:text-white text-base group-hover:text-blue-600 transition-colors tracking-tight leading-tight">{c.name}</h4>
-                                  <div className="mt-2 text-[0.85em]"><RankStars rank={c.rank} /></div>
-                               </div>
-                           </div>
-                           <div className={`flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest ${dateColor}`}>
-                             <CalendarIcon className="w-3.5 h-3.5" />
-                             <span>{c.nextActionDate ? format(parseLocalDate(c.nextActionDate), 'MMM d') : 'N/A'}</span>
-                           </div>
-                        </div>
-                        <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 pl-5 leading-relaxed italic">
-                           {c.upcomingPlan || "Update required"}
-                        </p>
-                        <div className="flex justify-between items-center pl-5">
-                           <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })
-              )
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+            {priorityCustomers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] opacity-30">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">No Priority Items</span>
+              </div>
             ) : (
-              prioritySamples.length === 0 ? (
-                <Card className="p-12 text-center text-slate-400 italic font-medium border-2">
-                  <p>No samples due within 7 days.</p>
-                </Card>
-              ) : (
-                prioritySamples.map(s => { 
-                  const urgency = getUrgencyLevel(s.nextActionDate);
-                  let dateColor = urgency === 'urgent' ? "text-red-600 dark:text-red-500 font-black" : urgency === 'warning' ? "text-amber-600 dark:text-amber-500 font-black" : "text-slate-400";
+              priorityCustomers.map(c => { 
+                const urgency = getUrgencyLevel(c.nextActionDate);
+                const colorBorder = urgency === 'urgent' ? 'border-l-red-500' : urgency === 'warning' ? 'border-l-amber-500' : 'border-l-emerald-500';
+                const dateColor = urgency === 'urgent' ? "text-red-600 dark:text-red-500 font-black" : urgency === 'warning' ? "text-amber-600 dark:text-amber-500 font-black" : "text-slate-400";
 
-                  return (
-                    <Card key={s.id} className="p-5 hover:shadow-xl transition-all cursor-pointer border-2 border-slate-100 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
-                      <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-start">
-                           <div className="flex gap-4">
-                               <div className="p-2 bg-blue-50 dark:bg-blue-900/40 rounded-lg">
-                                 <FlaskConical className="w-4 h-4 text-blue-600" />
-                               </div>
-                               <div>
-                                  <h4 className="font-black text-slate-900 dark:text-white text-base group-hover:text-blue-600 transition-colors tracking-tight leading-tight">{s.sampleName}</h4>
-                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{s.customerName}</p>
-                               </div>
-                           </div>
-                           <div className={`flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest ${dateColor}`}>
-                             <CalendarIcon className="w-3.5 h-3.5" />
-                             <span>{s.nextActionDate ? format(parseLocalDate(s.nextActionDate), 'MMM d') : 'N/A'}</span>
-                           </div>
-                        </div>
-                        <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 pl-12 leading-relaxed italic">
-                           {s.upcomingPlan || "No specific action logged"}
-                        </p>
-                        <div className="flex justify-between items-center pl-12">
-                           <Badge color="blue">{s.status}</Badge>
-                           <Badge color={s.testStatus === 'Ongoing' ? 'yellow' : 'green'}>{s.testStatus}</Badge>
-                        </div>
+                return (
+                  <Card key={c.id} className={`p-5 hover:shadow-lg border-l-4 transition-all cursor-pointer border border-slate-100 dark:border-slate-800 group hover:-translate-y-1 ${colorBorder}`} onClick={() => navigate(`/customers/${c.id}`)}>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                         <div>
+                            <h4 className="font-black text-slate-900 dark:text-white text-base group-hover:text-blue-600 transition-colors tracking-tight leading-tight uppercase">{c.name}</h4>
+                            <div className="mt-2 text-[0.8em]"><RankStars rank={c.rank} /></div>
+                         </div>
+                         <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${dateColor}`}>
+                           <CalendarIcon className="w-3.5 h-3.5" />
+                           <span>{c.nextActionDate ? format(parseLocalDate(c.nextActionDate), 'MMM d') : 'N/A'}</span>
+                         </div>
                       </div>
-                    </Card>
-                  );
-                })
-              )
+                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed italic border-l-2 border-slate-50 dark:border-slate-800 pl-4">
+                         {c.upcomingPlan || "Update required"}
+                      </p>
+                      <div className="flex justify-between items-center">
+                         <Badge color={c.status === 'Active' ? 'green' : 'gray'}>{c.status}</Badge>
+                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{c.region.join(', ')}</span>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })
             )}
           </div>
-        </div>
-
-        <Card className="p-8 xl:p-10 shadow-sm flex flex-col border-2">
-          <h3 className="font-black text-slate-800 dark:text-white mb-8 text-base xl:text-lg uppercase tracking-wider">{t('samplePipeline')}</h3>
-          {sampleStatusData.length > 0 ? (
-            <>
-              <div className="h-64 xl:h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={sampleStatusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={65}
-                      outerRadius={95}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {sampleStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 'bold' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="grid grid-cols-1 gap-3 mt-6">
-                {sampleStatusData.map(d => (
-                  <div key={d.name} className="flex items-center gap-3 text-xs xl:text-sm font-black text-slate-500 uppercase tracking-tight">
-                    <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: d.color }}></div>
-                    <span className="truncate">{d.name}: {d.value}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-slate-400 italic font-medium">No sample data available.</div>
-          )}
         </Card>
 
-        <Card className="p-8 xl:p-10 shadow-sm flex flex-col border-2">
-          <h3 className="font-black text-slate-800 dark:text-white mb-8 text-base xl:text-lg uppercase tracking-wider">Customers by Region</h3>
-          <div className="h-64 xl:h-80 w-full">
-             <ResponsiveContainer width="100%" height="100%">
-               <BarChart data={regionData}>
-                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                 <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: '900', fill: '#94a3b8'}} interval={0} angle={-30} textAnchor="end" height={60} />
-                 <YAxis allowDecimals={false} tick={{fontSize: 10, fontWeight: '900', fill: '#94a3b8'}} />
-                 <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 'bold' }} />
-                 <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-               </BarChart>
-             </ResponsiveContainer>
-          </div>
-          <div className="mt-6 flex-1 overflow-y-auto space-y-2">
-             {regionData.sort((a,b) => b.count - a.count).map(r => (
-               <div key={r.name} className="flex justify-between items-center text-xs xl:text-sm font-black text-slate-500 uppercase">
-                  <span>{r.name}</span>
-                  <Badge color="blue">{r.count}</Badge>
-               </div>
-             ))}
-          </div>
+        {/* Right Column: Status Summary */}
+        <Card className={sharedCardClass}>
+           <div className="flex flex-col gap-6 mb-8 pb-4 border-b border-slate-50 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className={sharedTitleClass}>
+                   <FlaskConical className="w-6 h-6 text-blue-600" />
+                   {t('statusReview')}
+                </h3>
+                <button 
+                  onClick={toggleAllExpansion}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] font-black uppercase tracking-widest hover:border-blue-300 transition-all active:scale-95"
+                >
+                   {expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0 ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                   {expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0 ? 'Collapse All' : 'Expand All'}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                 <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
+                    <Filter size={14} />
+                 </div>
+                 <select 
+                    className="flex-1 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-black uppercase tracking-tight outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                    value={reviewStatus}
+                    onChange={e => setReviewStatus(e.target.value)}
+                 >
+                    {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
+                 </select>
+              </div>
+           </div>
+
+           <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+              {reviewGroups.map(group => {
+                const isExpanded = expandedCustomers.has(group.customerId);
+                return (
+                  <div key={group.customerId} className="space-y-2">
+                    <div 
+                      onClick={() => setExpandedCustomers(prev => {
+                         const next = new Set(prev);
+                         if (next.has(group.customerId)) next.delete(group.customerId);
+                         else next.add(group.customerId);
+                         return next;
+                      })}
+                      className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                         {isExpanded ? <ChevronDown size={18} className="text-slate-400 shrink-0" /> : <ChevronRightSmall size={18} className="text-slate-400 shrink-0" />}
+                         <span className="font-black text-sm text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
+                      </div>
+                      <Badge color="gray">{group.samples.length}</Badge>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="pl-4 space-y-3 border-l-2 border-blue-100 dark:border-blue-900/40 ml-2 animate-in slide-in-from-top-2 duration-300">
+                        {group.samples.map(s => {
+                           const urgency = getUrgencyLevel(s.nextActionDate);
+                           const colorBorder = urgency === 'urgent' ? 'border-l-red-500' : urgency === 'warning' ? 'border-l-amber-500' : 'border-l-emerald-500';
+                           return (
+                             <Card 
+                               key={s.id} 
+                               onClick={() => navigate(`/samples/${s.id}`)}
+                               className={`p-4 cursor-pointer hover:shadow-lg border-l-4 transition-all hover:-translate-y-1 bg-white dark:bg-slate-800 ${colorBorder}`}
+                             >
+                                <div className="flex justify-between items-start mb-2">
+                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">#{s.sampleIndex}</span>
+                                   <div className="text-[10px] font-black text-blue-600 uppercase">
+                                      DDL: {s.nextActionDate || 'TBD'}
+                                   </div>
+                                </div>
+                                <p className="text-sm font-black text-slate-800 dark:text-white leading-snug line-clamp-1 uppercase tracking-tight">{s.sampleName}</p>
+                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 dark:border-slate-700">
+                                   <span className="text-[10px] font-mono text-slate-400 truncate max-w-[120px] uppercase">{s.sampleSKU || 'NOSKU'}</span>
+                                   <span className="text-xs font-black text-slate-700 dark:text-slate-300">Qty: {s.quantity}</span>
+                                </div>
+                             </Card>
+                           );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {reviewGroups.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] opacity-30">
+                   <Box size={40} className="text-slate-400 mb-2" />
+                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">No Samples Found</span>
+                </div>
+              )}
+           </div>
         </Card>
       </div>
     </div>
