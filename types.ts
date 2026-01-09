@@ -16,10 +16,10 @@ export interface Contact {
 export interface Interaction {
   id: string;
   date: string;
-  summary: string; // The "Process Summary"
-  nextSteps?: string; // Kept for legacy compatibility if needed, but UI will focus on Customer.upcomingPlan
+  summary: string; // The "Process Summary" - Now formatted as (Star)<Type>{Effect}Content
+  nextSteps?: string; 
   tags?: string[]; 
-  docLinks?: string[]; // Hyperlinks to docs
+  docLinks?: string[]; 
 }
 
 export interface Exhibition {
@@ -28,37 +28,27 @@ export interface Exhibition {
   date: string;
   location: string;
   link: string;
-  eventSeries?: string[]; // New: List of series tags this exhibition belongs to
-  summary?: string; // New: Descriptive summary or notes about the event
+  eventSeries?: string[]; 
+  summary?: string; 
 }
 
 export interface Customer {
   id: string;
   name: string;
-  region: string[]; // Changed to string array to support multiple regions
+  region: string[]; 
   rank: Rank;
   status: CustomerStatus;
-  
-  // New/Updated Fields based on spreadsheet
-  productSummary: string; // "Status & Product Summary"
-  lastStatusUpdate: string; // Date of last edit to summary
-  
-  followUpStatus: FollowUpStatus; // "Status" column (My turn vs Their turn)
-  
+  productSummary: string; 
+  lastStatusUpdate: string; 
+  followUpStatus: FollowUpStatus; 
   contacts: Contact[];
-  
-  // Tracking Dates
-  lastContactDate: string; // General last contact
-  nextActionDate?: string; // "Key Date"
-  lastCustomerReplyDate?: string; // For "Unreplied" calculation
-  lastMyReplyDate?: string; // For "Unfollowed" calculation
-  
-  tags: string[]; // Exhibition Names (matches Exhibition.name)
-  interactions: Interaction[]; // "Connection Process Summary"
-  
-  docLinks?: string[]; // General document links for the company (Maintained for backward sync if needed)
-
-  // New independent field for upcoming plans
+  lastContactDate: string; 
+  nextActionDate?: string; 
+  lastCustomerReplyDate?: string; 
+  lastMyReplyDate?: string; 
+  tags: string[]; 
+  interactions: Interaction[]; 
+  docLinks?: string[]; 
   upcomingPlan?: string;
 }
 
@@ -70,10 +60,9 @@ export type ProductCategory = 'Agglomerated Diamond' | 'Nano Diamond' | 'Spheric
 export type GradingStatus = 'Graded' | 'Ungraded';
 export type TestStatus = 'Ongoing' | 'Finished' | 'Terminated';
 
-// New Master Product Catalog Interface
 export interface MasterProduct {
   id: string;
-  productName: string; // Unique Key
+  productName: string; 
   crystalType: CrystalType;
   productCategory: ProductCategory[];
   productForm: ProductForm;
@@ -90,57 +79,33 @@ export interface Sample {
   id: string;
   customerId: string;
   customerName: string;
-  
-  // -- New Fields per latest request --
-  sampleIndex: number; // Integer, used for sorting per customer
-  sampleSKU?: string; // Internal SKU
-  
+  sampleIndex: number; 
+  sampleSKU?: string; 
   status: SampleStatus;
-  lastStatusDate: string; // Date of status update
-  statusDetails?: string; // "【Date】Details ||| 【Date】Details"
-  
-  testStatus: TestStatus; // 'Ongoing' | 'Finished' | 'Terminated'
-  
-  // Technical Specs
-  crystalType?: CrystalType; // Single/Poly
-  productCategory?: ProductCategory[]; // Multi-select
-  productForm?: ProductForm; // Powder/Suspension
-  originalSize?: string; // e.g. "10um"
-  processedSize?: string; // e.g. "50nm"
-  isGraded?: GradingStatus; // Graded/Ungraded
-  
-  sampleName?: string; // Core info description (Generated or Mapped)
-  sampleDetails?: string; // Extra details (Mapped from 'Details')
-  
-  // Logistics & Metadata
-  quantity: string; // 10 ct, 50 g, etc.
-  application?: string; // Customer application
-  
+  lastStatusDate: string; 
+  statusDetails?: string; 
+  testStatus: TestStatus; 
+  crystalType?: CrystalType; 
+  productCategory?: ProductCategory[]; 
+  productForm?: ProductForm; 
+  originalSize?: string; 
+  processedSize?: string; 
+  isGraded?: GradingStatus; 
+  sampleName?: string; 
+  sampleDetails?: string; 
+  quantity: string; 
+  application?: string; 
   trackingNumber?: string;
-  
-  trackingLink?: string; // Hyperlink for tracking
-
-  // Legacy fields kept for compatibility or mapped
+  trackingLink?: string; 
   requestDate: string; 
-  productType: string; // Mapped to productCategory string representation
-  specs: string; // Mapped to sampleName/Details
+  productType: string; 
+  specs: string; 
   sentDate?: string;
   feedback?: string;
   feedbackDate?: string;
-
-  // Sync with Customer features
   upcomingPlan?: string;
   nextActionDate?: string;
-
-  // New multi-link support with titles
   docLinks?: SampleDocLink[];
-}
-
-export interface DashboardStats {
-  totalCustomers: number;
-  activeSamples: number;
-  upcomingActions: number;
-  overdueActions: number;
 }
 
 export interface TagOptions {
@@ -148,5 +113,7 @@ export interface TagOptions {
   crystalType: string[];
   productCategory: string[];
   productForm: string[];
-  eventSeries: string[]; // New: Globally manageable exhibition series options
+  eventSeries: string[];
+  interactionTypes: string[];   // New: <Type>
+  interactionEffects: string[]; // New: {Effect}
 }

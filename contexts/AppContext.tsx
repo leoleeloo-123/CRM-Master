@@ -46,40 +46,36 @@ const DEFAULT_TAGS: TagOptions = {
   crystalType: ['单晶', '多晶'],
   productCategory: ['团聚', '纳米金刚石', '球形金刚石', '金刚石球', '微米粉', 'CVD'],
   productForm: ['微粉', '悬浮液'],
-  eventSeries: ['Semicon', 'Optical Expo', 'Industrial Fair']
+  eventSeries: ['Semicon', 'Optical Expo', 'Industrial Fair'],
+  interactionTypes: ['无', '对方邮件', '我方邮件', '双方邮件', '展会相见', '视频会议', '线下会面'],
+  interactionEffects: ['无', '对方回复', '我方跟进', '对方回复及我方跟进']
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Theme State
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedTheme = localStorage.getItem('theme');
     return (savedTheme === 'dark' || savedTheme === 'light') ? savedTheme : 'light';
   });
   
-  // Language State
   const [language, setLanguageState] = useState<Language>(() => {
     const savedLang = localStorage.getItem('language');
     return (savedLang === 'en' || savedLang === 'zh') ? savedLang : 'en';
   });
 
-  // Font Size State
   const [fontSize, setFontSizeState] = useState<FontSize>(() => {
     const savedSize = localStorage.getItem('fontSize');
     return (savedSize === 'small' || savedSize === 'medium' || savedSize === 'large') ? savedSize : 'large';
   });
 
-  // Company Name State
   const [companyName, setCompanyNameState] = useState<string>(() => {
     return localStorage.getItem('companyName') || 'Navi Material';
   });
 
-  // User Name State
   const [userName, setUserNameState] = useState<string>(() => {
     const saved = localStorage.getItem('userName');
     return saved !== null ? saved : 'User';
   });
 
-  // Data State with Persistence
   const [isDemoData, setIsDemoData] = useState<boolean>(() => {
     return localStorage.getItem('isDemoData') !== 'false';
   });
@@ -99,7 +95,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : MOCK_MASTER_PRODUCTS;
   });
 
-  // CRITICAL FIX: Ensure eventSeries is always an array when loading from storage
   const [exhibitions, setExhibitionsState] = useState<Exhibition[]>(() => {
     const saved = localStorage.getItem('exhibitions');
     if (!saved) return [];
@@ -114,7 +109,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
   
-  // Tag Options State
   const [tagOptions, setTagOptionsState] = useState<TagOptions>(() => {
     const saved = localStorage.getItem('tagOptions');
     if (!saved) return DEFAULT_TAGS;
@@ -123,24 +117,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ...DEFAULT_TAGS,
         ...parsed,
-        eventSeries: Array.isArray(parsed.eventSeries) ? parsed.eventSeries : DEFAULT_TAGS.eventSeries
+        interactionTypes: Array.isArray(parsed.interactionTypes) ? parsed.interactionTypes : DEFAULT_TAGS.interactionTypes,
+        interactionEffects: Array.isArray(parsed.interactionEffects) ? parsed.interactionEffects : DEFAULT_TAGS.interactionEffects
       };
     } catch (e) {
       return DEFAULT_TAGS;
     }
   });
 
-  // --- Effects for Data Sync ---
-
-  // 1. Sync Exhibitions from Customers' Tags
   useEffect(() => {
     const uniqueTags = Array.from(new Set(customers.flatMap(c => c.tags || [])));
     if (uniqueTags.length === 0) return;
-
     setExhibitionsState(prev => {
       let hasChanged = false;
       const updated = [...prev];
-      
       uniqueTags.forEach(tagName => {
         const exists = updated.find(e => e.name === tagName);
         if (!exists) {
@@ -155,37 +145,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           hasChanged = true;
         }
       });
-
       return hasChanged ? updated : prev;
     });
   }, [customers]);
 
-  // 2. Sync Event Series tags from Exhibitions data
   useEffect(() => {
     const usedSeries = Array.from(new Set(exhibitions.flatMap(e => e.eventSeries || [])));
     if (usedSeries.length === 0) return;
-
     setTagOptionsState(prev => {
       const existingSeries = new Set(prev.eventSeries);
       const newFoundSeries = usedSeries.filter(s => s && !existingSeries.has(s));
-      
       if (newFoundSeries.length === 0) return prev;
-      
-      return {
-        ...prev,
-        eventSeries: [...prev.eventSeries, ...newFoundSeries]
-      };
+      return { ...prev, eventSeries: [...prev.eventSeries, ...newFoundSeries] };
     });
   }, [exhibitions]);
 
-  // --- Effects for Persistence ---
-
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -198,43 +175,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('fontSize', fontSize);
   }, [fontSize]);
 
-  useEffect(() => {
-    localStorage.setItem('language', language);
-  }, [language]);
-
-  useEffect(() => {
-    localStorage.setItem('companyName', companyName);
-  }, [companyName]);
-
-  useEffect(() => {
-    localStorage.setItem('userName', userName);
-  }, [userName]);
-
-  useEffect(() => {
-    localStorage.setItem('customers', JSON.stringify(customers));
-  }, [customers]);
-
-  useEffect(() => {
-    localStorage.setItem('samples', JSON.stringify(samples));
-  }, [samples]);
-
-  useEffect(() => {
-    localStorage.setItem('masterProducts', JSON.stringify(masterProducts));
-  }, [masterProducts]);
-
-  useEffect(() => {
-    localStorage.setItem('exhibitions', JSON.stringify(exhibitions));
-  }, [exhibitions]);
-
-  useEffect(() => {
-    localStorage.setItem('isDemoData', String(isDemoData));
-  }, [isDemoData]);
-
-  useEffect(() => {
-    localStorage.setItem('tagOptions', JSON.stringify(tagOptions));
-  }, [tagOptions]);
-
-  // --- Setters ---
+  useEffect(() => { localStorage.setItem('language', language); }, [language]);
+  useEffect(() => { localStorage.setItem('companyName', companyName); }, [companyName]);
+  useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
+  useEffect(() => { localStorage.setItem('customers', JSON.stringify(customers)); }, [customers]);
+  useEffect(() => { localStorage.setItem('samples', JSON.stringify(samples)); }, [samples]);
+  useEffect(() => { localStorage.setItem('masterProducts', JSON.stringify(masterProducts)); }, [masterProducts]);
+  useEffect(() => { localStorage.setItem('exhibitions', JSON.stringify(exhibitions)); }, [exhibitions]);
+  useEffect(() => { localStorage.setItem('isDemoData', String(isDemoData)); }, [isDemoData]);
+  useEffect(() => { localStorage.setItem('tagOptions', JSON.stringify(tagOptions)); }, [tagOptions]);
 
   const toggleTheme = (newTheme: 'light' | 'dark') => setTheme(newTheme);
   const setLanguage = (lang: Language) => setLanguageState(lang);
@@ -246,8 +195,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setExhibitions = (val: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => setExhibitionsState(val);
   const setTagOptions = (val: TagOptions | ((prev: TagOptions) => TagOptions)) => setTagOptionsState(val);
 
-  // --- Logic ---
-
   const refreshTagsFromSamples = (sampleList: Sample[], replace: boolean = false) => {
     setTagOptionsState(prev => {
       const newTags = replace ? {
@@ -255,26 +202,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           crystalType: [],
           productCategory: [],
           productForm: [],
-          eventSeries: [...prev.eventSeries]
+          eventSeries: [...prev.eventSeries],
+          interactionTypes: [...prev.interactionTypes],
+          interactionEffects: [...prev.interactionEffects]
       } : { 
           sampleStatus: [...prev.sampleStatus],
           crystalType: [...prev.crystalType],
           productCategory: [...prev.productCategory],
           productForm: [...prev.productForm],
-          eventSeries: [...prev.eventSeries]
+          eventSeries: [...prev.eventSeries],
+          interactionTypes: [...prev.interactionTypes],
+          interactionEffects: [...prev.interactionEffects]
       };
-      
-      const addUnique = (list: string[], item: string) => {
-         if (item && !list.includes(item)) list.push(item);
-      };
-
+      const addUnique = (list: string[], item: string) => { if (item && !list.includes(item)) list.push(item); };
       sampleList.forEach(s => {
         if (s.status) addUnique(newTags.sampleStatus, s.status);
         if (s.crystalType) addUnique(newTags.crystalType, s.crystalType);
         if (s.productForm) addUnique(newTags.productForm, s.productForm);
-        if (s.productCategory) {
-           s.productCategory.forEach(cat => addUnique(newTags.productCategory, cat));
-        }
+        if (s.productCategory) s.productCategory.forEach(cat => addUnique(newTags.productCategory, cat));
       });
       return newTags;
     });
@@ -286,14 +231,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const form = sample.productForm || '';
     const orig = sample.originalSize || '';
     const proc = sample.processedSize ? ` > ${sample.processedSize}` : '';
-    
     const generatedName = `${crystal} ${catStr} ${form} - ${orig}${proc}`;
-    
     setMasterProducts(prev => {
       const exists = prev.find(p => p.productName === generatedName);
       if (exists) return prev;
-      
-      const newProduct: MasterProduct = {
+      return [...prev, {
         id: `mp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         productName: generatedName,
         crystalType: sample.crystalType!,
@@ -301,11 +243,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         productForm: sample.productForm!,
         originalSize: sample.originalSize!,
         processedSize: sample.processedSize
-      };
-      
-      return [...prev, newProduct];
+      }];
     });
-    
     return generatedName;
   };
 
@@ -316,33 +255,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setExhibitionsState([]);
     setIsDemoData(false);
     setTagOptionsState(DEFAULT_TAGS); 
-    localStorage.removeItem('customers');
-    localStorage.removeItem('samples');
-    localStorage.removeItem('masterProducts');
-    localStorage.removeItem('exhibitions');
-    localStorage.setItem('isDemoData', 'false');
-    localStorage.setItem('tagOptions', JSON.stringify(DEFAULT_TAGS));
+    localStorage.clear();
   };
 
-  const t = (key: keyof typeof translations['en']) => {
-    return translations[language][key] || key;
-  };
+  const t = (key: keyof typeof translations['en']) => translations[language][key] || key;
 
   return (
     <AppContext.Provider value={{ 
-      theme, toggleTheme, 
-      language, setLanguage,
-      fontSize, setFontSize,
-      companyName, setCompanyName,
-      userName, setUserName,
-      t,
-      customers, setCustomers,
-      samples, setSamples,
-      exhibitions, setExhibitions,
-      masterProducts, syncSampleToCatalog,
-      clearDatabase,
-      isDemoData, setIsDemoData,
-      tagOptions, setTagOptions, refreshTagsFromSamples
+      theme, toggleTheme, language, setLanguage, fontSize, setFontSize, companyName, setCompanyName, userName, setUserName, t,
+      customers, setCustomers, samples, setSamples, exhibitions, setExhibitions, masterProducts, syncSampleToCatalog,
+      clearDatabase, isDemoData, setIsDemoData, tagOptions, setTagOptions, refreshTagsFromSamples
     }}>
       {children}
     </AppContext.Provider>

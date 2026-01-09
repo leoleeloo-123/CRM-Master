@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation } from 'lucide-react';
+import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation, Activity, ClipboardList } from 'lucide-react';
 import { TagOptions } from '../types';
 import { getCanonicalTag } from '../utils/i18n';
 
@@ -125,6 +125,18 @@ const Settings: React.FC = () => {
                 <Save className="w-5 h-5 xl:w-6 xl:h-6" /> {isSaved ? 'Updated Successfully!' : t('save')}
               </Button>
             </div>
+          </div>
+        </Card>
+
+        {/* Interaction Tags Management Section */}
+        <Card className="p-8 xl:p-12 shadow-sm border-2">
+          <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
+            <Activity className="text-amber-500 w-7 h-7 xl:w-9 xl:h-9" /> 对接进度标签管理 (Interaction Tags)
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {renderTagEditor("对接流程类型 (<Type>)", 'interactionTypes')}
+            {renderTagEditor("流程作用标签 ({Effect})", 'interactionEffects')}
           </div>
         </Card>
 
