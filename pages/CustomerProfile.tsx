@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp } from '../contexts/AppContext';
 
@@ -242,11 +242,22 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                  <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white"><PencilLine size={16}/></button>
                </div>
                <div className="space-y-2">
-                 {customer.tags.map((tag, i) => (
-                   <div key={i} className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100">
-                      <span className="text-sm xl:text-base font-black text-slate-700 dark:text-slate-300 uppercase truncate flex-1">{tag}</span>
-                   </div>
-                 ))}
+                 {customer.tags.map((tag, i) => {
+                   const matchedExhibition = exhibitions.find(e => e.name === tag);
+                   return (
+                    <div 
+                      key={i} 
+                      onClick={() => matchedExhibition && navigate(`/exhibitions/${matchedExhibition.id}`)}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${matchedExhibition ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 hover:border-blue-300 hover:shadow-sm cursor-pointer group' : 'bg-slate-50/50 dark:bg-slate-900/20 border-transparent opacity-60'}`}
+                    >
+                       <span className={`text-sm xl:text-base font-black uppercase truncate flex-1 ${matchedExhibition ? 'text-slate-700 dark:text-slate-300 group-hover:text-blue-600' : 'text-slate-400'}`}>
+                         {tag}
+                       </span>
+                       {matchedExhibition && <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-500 transition-all" />}
+                    </div>
+                   );
+                 })}
+                 {customer.tags.length === 0 && <div className="text-slate-400 italic text-sm">{t('noExhibitions')}</div>}
                </div>
             </Card>
          </div>
@@ -281,7 +292,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                      <Clock className="w-8 h-8 text-slate-800" />
                      <div>
                         <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest">UPCOMING PLAN</h4>
-                        <span className="text-lg font-black text-slate-900">DDL: {customer.nextActionDate || 'TBD'}</span>
+                        <span className="text-lg xl:text-xl font-black text-slate-900 dark:text-white tracking-tight">DDL: {customer.nextActionDate || 'TBD'}</span>
                      </div>
                   </div>
                   <p className={contentTextClass}>{customer.upcomingPlan || "No plan logged."}</p>
