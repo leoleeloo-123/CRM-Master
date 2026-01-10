@@ -51,6 +51,10 @@ export const translations = {
     viewMonth: 'Month',
     filterTier1Only: 'Tier 1 Only',
     filterTier1And2: 'Tier 1 & 2',
+    generateReport: 'Generate Report',
+    exportPdf: 'Export PDF',
+    sampleReportTitle: 'Sample Status Report',
+    reportDetails: 'Report Details',
 
     // Customer List
     customerDatabase: 'Customer Database',
@@ -222,7 +226,7 @@ export const translations = {
     // Font Size
     fontSize: 'Font Size',
     fontSmall: 'Small',
-    fontMedium: 'Medium',
+    fontStandard: 'Standard',
     fontLarge: 'Large',
   },
   zh: {
@@ -275,6 +279,10 @@ export const translations = {
     viewMonth: '月视图',
     filterTier1Only: '仅显示 Tier 1',
     filterTier1And2: '显示 Tier 1 & 2',
+    generateReport: '生成报告',
+    exportPdf: '导出 PDF',
+    sampleReportTitle: '样品状态报告',
+    reportDetails: '报告详情',
 
     // Customer List
     customerDatabase: '客户数据库',
@@ -446,7 +454,7 @@ export const translations = {
     // Font Size
     fontSize: '字体大小',
     fontSmall: '小',
-    fontMedium: '中',
+    fontStandard: '标准',
     fontLarge: '大',
   }
 };
