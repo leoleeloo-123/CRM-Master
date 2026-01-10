@@ -327,7 +327,7 @@ const DashboardCalendar: React.FC<{
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner">
                 <button onClick={() => setView('week')} className={`px-6 py-1.5 text-[11px] xl:text-[12px] font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewWeek')}</button>
-                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-[11px] xl:text-[12px] font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500'}`}>{t('viewMonth')}</button>
+                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-[11px] xl:text-[12px] font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-50'}`}>{t('viewMonth')}</button>
              </div>
 
              <div className="flex items-center gap-2">
@@ -702,9 +702,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
               {/* Modal Content - The "US Letter Paper" Area */}
               <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible">
-                 <div id="sample-status-report" className="mx-auto w-[8.5in] min-h-[11in] bg-white text-slate-900 shadow-2xl p-[20mm] print:shadow-none print:w-full print:p-0 print:min-h-0">
+                 <div id="sample-status-report" className="mx-auto w-[8.5in] min-h-[11in] bg-white text-slate-900 shadow-2xl p-[20mm] print:shadow-none print:w-full print:p-0 print:min-h-0 flex flex-col">
                     {/* Report Header */}
-                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10">
+                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0">
                        <div className="space-y-1">
                           <h2 className="text-4xl font-black uppercase tracking-tight leading-none text-blue-700">{companyName}</h2>
                           <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">{t('sampleReportTitle')}</p>
@@ -718,7 +718,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     </div>
 
                     {/* Report Info Banner */}
-                    <div className="bg-slate-100 p-6 rounded-2xl mb-10 flex justify-between items-center">
+                    <div className="bg-slate-100 p-6 rounded-2xl mb-10 flex justify-between items-center shrink-0">
                        <div>
                           <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Filter Criteria</span>
                           <h4 className="text-xl font-black uppercase mt-1">Status: <span className="text-blue-600">{reviewStatus}</span></h4>
@@ -730,50 +730,52 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     </div>
 
                     {/* Report Content Table */}
-                    <div className="space-y-10">
-                       {reviewGroups.map(group => (
-                          <div key={group.customerId} className="space-y-4 break-inside-avoid">
-                             <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-2">
-                                <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
-                                <h5 className="font-black text-lg uppercase tracking-tight">{group.customerName}</h5>
-                             </div>
-                             <table className="w-full text-left">
-                                <thead>
-                                   <tr className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 border-y">
-                                      <th className="p-3 w-10">#</th>
-                                      <th className="p-3">Sample Item & SKU</th>
-                                      <th className="p-3 w-24">Quantity</th>
-                                      <th className="p-3">Plan / Next Steps</th>
-                                      <th className="p-3 w-28">Key Date</th>
-                                   </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                   {group.samples.map(s => (
-                                      <tr key={s.id} className="text-[11px]">
-                                         <td className="p-3 font-bold text-slate-400 align-top">{s.sampleIndex}</td>
-                                         <td className="p-3 align-top">
-                                            <div className="font-black uppercase leading-tight">{s.sampleName}</div>
-                                            <div className="font-mono text-[9px] text-slate-400 mt-1">{s.sampleSKU || 'NO SKU'}</div>
-                                         </td>
-                                         <td className="p-3 align-top font-black">{s.quantity}</td>
-                                         <td className="p-3 align-top italic text-slate-600 leading-relaxed">
-                                            {s.upcomingPlan || '-'}
-                                         </td>
-                                         <td className="p-3 align-top font-black uppercase whitespace-nowrap">
-                                            {s.nextActionDate || '-'}
-                                         </td>
+                    <div className="flex-1">
+                       <div className="space-y-10">
+                          {reviewGroups.map(group => (
+                             <div key={group.customerId} className="space-y-4 print-break-inside-avoid">
+                                <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-2">
+                                   <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
+                                   <h5 className="font-black text-lg uppercase tracking-tight">{group.customerName}</h5>
+                                </div>
+                                <table className="w-full text-left">
+                                   <thead>
+                                      <tr className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 border-y">
+                                         <th className="p-3 w-10">#</th>
+                                         <th className="p-3">Sample Item & SKU</th>
+                                         <th className="p-3 w-24">Quantity</th>
+                                         <th className="p-3">Plan / Next Steps</th>
+                                         <th className="p-3 w-28">Key Date</th>
                                       </tr>
-                                   ))}
-                                </tbody>
-                             </table>
-                          </div>
-                       ))}
+                                   </thead>
+                                   <tbody className="divide-y divide-slate-100">
+                                      {group.samples.map(s => (
+                                         <tr key={s.id} className="text-[11px]">
+                                            <td className="p-3 font-bold text-slate-400 align-top">{s.sampleIndex}</td>
+                                            <td className="p-3 align-top">
+                                               <div className="font-black uppercase leading-tight">{s.sampleName}</div>
+                                               <div className="font-mono text-[9px] text-slate-400 mt-1">{s.sampleSKU || 'NO SKU'}</div>
+                                            </td>
+                                            <td className="p-3 align-top font-black">{s.quantity}</td>
+                                            <td className="p-3 align-top italic text-slate-600 leading-relaxed">
+                                               {s.upcomingPlan || '-'}
+                                            </td>
+                                            <td className="p-3 align-top font-black uppercase whitespace-nowrap">
+                                               {s.nextActionDate || '-'}
+                                            </td>
+                                         </tr>
+                                      ))}
+                                   </tbody>
+                                </table>
+                             </div>
+                          ))}
+                       </div>
                     </div>
 
                     {/* Report Footer */}
-                    <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] print:fixed print:bottom-10 print:left-0 print:right-0">
+                    <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0">
                        <span>© {companyName} Confidential Report</span>
-                       <span>Page 1 of 1</span>
+                       <span className="print:hidden">Digital Preview Only</span>
                     </div>
                  </div>
               </div>
