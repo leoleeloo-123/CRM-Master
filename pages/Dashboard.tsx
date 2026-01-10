@@ -680,7 +680,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
       {/* Report Preview Modal */}
       {isPreviewModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 print:p-0 print:bg-white print:backdrop-blur-none overflow-hidden">
-           <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 print:h-auto print:max-w-none print:shadow-none print:rounded-none print:static print:block">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 print:h-auto print:max-w-none print:shadow-none print:rounded-none print:static print:block print:bg-white">
               {/* Modal Header - Hidden on Print */}
               <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 print:hidden">
                  <div className="flex items-center gap-3">
@@ -701,11 +701,11 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </div>
 
               {/* Modal Content - The "US Letter Paper" Area */}
-              <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible">
-                 {/* ID "sample-status-report" is used in print media query. Height: auto and min-h: 0 allow natural multi-page flow. */}
+              <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible print:block">
+                 {/* ID "sample-status-report" is used in print media query. Standard document flow for printing. */}
                  <div id="sample-status-report" className="mx-auto w-[8.5in] bg-white text-slate-900 shadow-2xl p-[15mm] print:shadow-none print:w-full print:p-0 flex flex-col min-h-0 h-auto">
                     {/* Report Header */}
-                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0 print:mt-4">
+                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0 print:no-break">
                        <div className="space-y-1">
                           <h2 className="text-4xl font-black uppercase tracking-tight leading-none text-blue-700">{companyName}</h2>
                           <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">{t('sampleReportTitle')}</p>
@@ -719,7 +719,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     </div>
 
                     {/* Report Info Banner */}
-                    <div className="bg-slate-100 p-6 rounded-2xl mb-10 flex justify-between items-center shrink-0">
+                    <div className="bg-slate-100 p-6 rounded-2xl mb-10 flex justify-between items-center shrink-0 print:no-break">
                        <div>
                           <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Filter Criteria</span>
                           <h4 className="text-xl font-black uppercase mt-1">Status: <span className="text-blue-600">{reviewStatus}</span></h4>
@@ -730,10 +730,10 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                        </div>
                     </div>
 
-                    {/* Report Content Table */}
+                    {/* Report Content Tables */}
                     <div className="flex-1 space-y-12">
                        {reviewGroups.map(group => (
-                          <div key={group.customerId} className="space-y-4 print-break-inside-avoid">
+                          <div key={group.customerId} className="space-y-4 print-no-break">
                              <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-2">
                                 <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
                                 <h5 className="font-black text-lg uppercase tracking-tight">{group.customerName}</h5>
@@ -772,9 +772,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     </div>
 
                     {/* Report Footer */}
-                    <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0 print:pt-4">
+                    <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0 print:no-break">
                        <span>© {companyName} Confidential Report</span>
-                       <span className="print:hidden">Digital Preview - Page layout is automatic for print</span>
+                       <span className="print:hidden italic">Page layout is automatic for print</span>
                     </div>
                  </div>
               </div>
