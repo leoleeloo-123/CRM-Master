@@ -679,8 +679,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
       {/* Report Preview Modal */}
       {isPreviewModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 print:p-0 print:bg-white print:backdrop-blur-none">
-           <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 print:h-auto print:max-w-none print:shadow-none print:rounded-none print:static">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 print:p-0 print:bg-white print:backdrop-blur-none overflow-hidden">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 print:h-auto print:max-w-none print:shadow-none print:rounded-none print:static print:block">
               {/* Modal Header - Hidden on Print */}
               <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 print:hidden">
                  <div className="flex items-center gap-3">
@@ -702,9 +702,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
               {/* Modal Content - The "US Letter Paper" Area */}
               <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible">
-                 <div id="sample-status-report" className="mx-auto w-[8.5in] min-h-[11in] bg-white text-slate-900 shadow-2xl p-[20mm] print:shadow-none print:w-full print:p-0 print:min-h-0 flex flex-col">
-                    {/* Report Header */}
-                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0">
+                 <div id="sample-status-report" className="mx-auto w-[8.5in] min-h-[11in] bg-white text-slate-900 shadow-2xl p-[15mm] print:shadow-none print:w-full print:p-0 print:min-h-0 flex flex-col">
+                    {/* Report Header - Add extra margin for print to clear browser headers */}
+                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0 print:mt-4">
                        <div className="space-y-1">
                           <h2 className="text-4xl font-black uppercase tracking-tight leading-none text-blue-700">{companyName}</h2>
                           <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">{t('sampleReportTitle')}</p>
@@ -731,7 +731,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
                     {/* Report Content Table */}
                     <div className="flex-1">
-                       <div className="space-y-10">
+                       <div className="space-y-12">
                           {reviewGroups.map(group => (
                              <div key={group.customerId} className="space-y-4 print-break-inside-avoid">
                                 <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-2">
@@ -773,7 +773,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     </div>
 
                     {/* Report Footer */}
-                    <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0">
+                    <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0 print:pt-4">
                        <span>© {companyName} Confidential Report</span>
                        <span className="print:hidden">Digital Preview Only</span>
                     </div>
