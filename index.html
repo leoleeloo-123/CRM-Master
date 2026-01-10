@@ -57,46 +57,68 @@
       @media print {
         @page {
           size: auto;
-          margin: 15mm; /* Balanced margin for headers/footers */
-        }
-        /* CRITICAL: Disable all scrolling and height limits on all parents */
-        html, body, #root, [data-reactroot], 
-        .overflow-y-auto, .h-\[90vh\], .flex-1 {
-          height: auto !important;
-          overflow: visible !important;
-          position: static !important;
-          display: block !important;
+          margin: 15mm; 
         }
         
-        body * {
-          visibility: hidden;
-        }
-        #sample-status-report, #sample-status-report * {
-          visibility: visible;
-        }
-        #sample-status-report {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
+        /* 1. Eliminate all parent layout constraints */
+        html, body, #root, [data-reactroot] {
           height: auto !important;
           min-height: 0 !important;
+          overflow: visible !important;
           margin: 0 !important;
           padding: 0 !important;
+        }
+
+        /* 2. Hide everything by default using display: none to remove from layout */
+        body > * {
+          display: none !important;
+        }
+
+        /* 3. Re-enable only the essential containers for the report */
+        .print-modal-overlay, 
+        .print-modal-container, 
+        .print-modal-content,
+        #sample-status-report {
+          display: block !important;
+          visibility: visible !important;
+          height: auto !important;
+          min-height: 0 !important;
+          overflow: visible !important;
+          position: static !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
           box-shadow: none !important;
           background: white !important;
-          color: black !important;
         }
+
+        /* Ensure the modal overlay doesn't create a fixed backdrop in print */
+        .print-modal-overlay {
+          position: static !important;
+          background: none !important;
+        }
+
+        /* Ensure the report uses standard flow */
+        #sample-status-report {
+          width: 100% !important;
+          max-width: none !important;
+        }
+
+        /* Hide modal-specific UI elements */
+        .print-hidden {
+          display: none !important;
+        }
+
+        /* Table Rules */
         .print-no-break {
           break-inside: avoid !important;
           page-break-inside: avoid !important;
         }
         thead {
-          display: table-header-group !important; /* Repeats table headers on each page */
+          display: table-header-group !important;
         }
         tr {
           break-inside: avoid !important;
-          page-break-inside: avoid !important;
         }
         table {
           width: 100% !important;
@@ -104,12 +126,13 @@
           border-collapse: collapse !important;
           page-break-inside: auto !important;
         }
-        /* Ensure colors render even if user doesn't check "Background Graphics" */
+
         body {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        /* Fix dark mode printing issues */
+
+        /* Dark mode overrides for print */
         .dark #sample-status-report {
            background-color: white !important;
            color: black !important;
