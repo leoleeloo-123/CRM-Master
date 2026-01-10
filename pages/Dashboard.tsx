@@ -451,7 +451,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   };
 
   return (
-    <div className="space-y-8 xl:space-y-12 pb-20">
+    <>
       <style>{`
         /* Hide browser-native calendar icon in date inputs to avoid double-icons */
         input[type="date"]::-webkit-calendar-picker-indicator {
@@ -468,269 +468,271 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         }
       `}</style>
 
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('dashboard')}</h2>
-          <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('dashboardDesc')}</p>
+      <div className="space-y-8 xl:space-y-12 pb-20">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('dashboard')}</h2>
+            <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('dashboardDesc')}</p>
+          </div>
+          <div className="text-sm xl:text-lg text-slate-400 font-black">
+            Today: <span className="text-slate-900 dark:text-white">{format(new Date(), 'MMM do, yyyy')}</span>
+          </div>
         </div>
-        <div className="text-sm xl:text-lg text-slate-400 font-black">
-          Today: <span className="text-slate-900 dark:text-white">{format(new Date(), 'MMM do, yyyy')}</span>
-        </div>
-      </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xl:gap-6">
-        <Card className={`${statCardClass} border-l-blue-500`}>
-          <div className="p-2 xl:p-2.5 bg-blue-50 dark:bg-blue-900/50 rounded-xl text-blue-600 dark:text-blue-400 shadow-sm">
-            <Activity className={iconClass} />
-          </div>
-          <div>
-            <p className={labelClass}>{t('totalCustomers')}</p>
-            <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{customers.length}</p>
-          </div>
-        </Card>
-        <Card className={`${statCardClass} border-l-amber-500`}>
-          <div className="p-2 xl:p-2.5 bg-amber-50 dark:bg-amber-900/50 rounded-xl text-amber-600 dark:text-amber-400 shadow-sm">
-            <FlaskConical className={iconClass} />
-          </div>
-          <div>
-            <p className={labelClass}>{t('activeSamples')}</p>
-            <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{activeSamplesCount}</p>
-          </div>
-        </Card>
-        <Card className={`${statCardClass} border-l-purple-500`}>
-          <div className="p-2 xl:p-2.5 bg-purple-50 dark:bg-purple-900/50 rounded-xl text-purple-600 dark:text-purple-400 shadow-sm">
-            <CalendarIcon className={iconClass} />
-          </div>
-          <div>
-            <p className={labelClass}>{t('pendingFeedback')}</p>
-            <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{pendingFeedbackCount}</p>
-          </div>
-        </Card>
-        <Card className={`${statCardClass} border-l-red-500`}>
-          <div className="p-2 xl:p-2.5 bg-red-50 dark:bg-red-900/50 rounded-xl text-red-600 dark:text-red-400 shadow-sm">
-            <AlertTriangle className={iconClass} />
-          </div>
-          <div>
-            <p className={labelClass}>{t('criticalActions')}</p>
-            <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{dailyCustomers.length + dailySamples.length}</p>
-          </div>
-        </Card>
-      </div>
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch min-h-[600px]">
-        <Card className="lg:col-span-1 p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full max-h-[850px]">
-          <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-            <h3 className={sharedTitleClass}>
-              <ListTodo className="w-6 h-6 text-blue-600" />
-              DAILY AGENDA
-            </h3>
-            <div className="mt-4 relative group">
-               <input 
-                 type="date" 
-                 className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer"
-                 value={selectedDateStr}
-                 onChange={handleDateFilterChange}
-               />
-               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none text-slate-300">
-                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
-                  <Clock className="w-5 h-5" />
-               </div>
+        {/* Stats row */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xl:gap-6">
+          <Card className={`${statCardClass} border-l-blue-500`}>
+            <div className="p-2 xl:p-2.5 bg-blue-50 dark:bg-blue-900/50 rounded-xl text-blue-600 dark:text-blue-400 shadow-sm">
+              <Activity className={iconClass} />
             </div>
-          </div>
-          <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
-            {dailyCustomers.length === 0 && dailySamples.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem] opacity-30 text-center p-4">
-                <span className="text-xs font-black uppercase tracking-widest text-slate-400 italic">No Scheduled Actions</span>
-              </div>
-            ) : (
-              <>
-                {dailyCustomers.length > 0 && (
-                  <div className="space-y-3">
-                    <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Customers</span>
-                    {dailyCustomers.map(c => (
-                        <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-rose-500 bg-rose-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800" onClick={() => navigate(`/customers/${c.id}`)}>
-                             <h4 className="font-black text-rose-800 dark:text-rose-400 text-sm xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
-                             <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || "Action needed"}</p>
-                        </Card>
-                    ))}
-                  </div>
-                )}
-                {dailySamples.length > 0 && (
-                  <div className="space-y-3 pt-2">
-                    <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Samples</span>
-                    {dailySamples.map(s => (
-                      <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 bg-blue-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
-                         <h4 className="font-black text-blue-800 dark:text-blue-400 text-sm xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
-                         <p className="text-xs xl:text-sm font-bold text-slate-500 line-clamp-2 italic pl-2 border-l-2 border-blue-100 mt-1">{s.customerName}</p>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </Card>
-
-        <div className="lg:col-span-3 h-full">
-           <DashboardCalendar 
-             customers={customers} 
-             samples={samples} 
-             selectedDate={selectedDate}
-             onSelectDate={setSelectedDate}
-             currentDate={currentCalendarMonth}
-             setCurrentDate={setCurrentCalendarMonth}
-           />
-        </div>
-      </div>
-
-      {/* Report Trigger Card - Visual cleanup for uniformity */}
-      <Card className="p-10 xl:p-12 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 min-h-[350px] items-center justify-center text-center">
-         <div className="max-w-3xl">
-            <h3 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white uppercase mb-4 tracking-tight">
-               {t('generateReport')}
-            </h3>
-            <p className="text-slate-500 font-bold mb-10 uppercase tracking-widest text-sm xl:text-base leading-relaxed">
-               {t('reportSubtitlePrefix')}
-               <span className="text-blue-600 px-1 font-black">{t(reviewStatus as any) || reviewStatus}</span>
-               {t('reportSubtitleSuffix')}
-            </p>
-            
-            <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4 sm:h-16">
-               <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 shadow-sm min-w-[280px]">
-                  <Filter size={20} className="text-blue-500 shrink-0" />
-                  <select 
-                     className="flex-1 bg-transparent border-none py-2 text-sm xl:text-base font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-slate-900 dark:text-white"
-                     value={reviewStatus}
-                     onChange={e => setReviewStatus(e.target.value)}
-                  >
-                     {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
-                  </select>
-                  <ChevronDown size={16} className="text-slate-400 shrink-0" />
-               </div>
-
-               <button 
-                  onClick={() => setIsPreviewModalOpen(true)}
-                  className="flex items-center justify-center gap-4 px-10 bg-blue-600 text-white rounded-2xl font-black text-sm xl:text-lg uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all min-h-[64px] sm:min-h-0"
-               >
-                  <FileText size={22} />
-                  {t('previewExportJpg')}
-               </button>
+            <div>
+              <p className={labelClass}>{t('totalCustomers')}</p>
+              <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{customers.length}</p>
             </div>
-         </div>
-      </Card>
+          </Card>
+          <Card className={`${statCardClass} border-l-amber-500`}>
+            <div className="p-2 xl:p-2.5 bg-amber-50 dark:bg-amber-900/50 rounded-xl text-amber-600 dark:text-amber-400 shadow-sm">
+              <FlaskConical className={iconClass} />
+            </div>
+            <div>
+              <p className={labelClass}>{t('activeSamples')}</p>
+              <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{activeSamplesCount}</p>
+            </div>
+          </Card>
+          <Card className={`${statCardClass} border-l-purple-500`}>
+            <div className="p-2 xl:p-2.5 bg-purple-50 dark:bg-purple-900/50 rounded-xl text-purple-600 dark:text-purple-400 shadow-sm">
+              <CalendarIcon className={iconClass} />
+            </div>
+            <div>
+              <p className={labelClass}>{t('pendingFeedback')}</p>
+              <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{pendingFeedbackCount}</p>
+            </div>
+          </Card>
+          <Card className={`${statCardClass} border-l-red-500`}>
+            <div className="p-2 xl:p-2.5 bg-red-50 dark:bg-red-900/50 rounded-xl text-red-600 dark:text-red-400 shadow-sm">
+              <AlertTriangle className={iconClass} />
+            </div>
+            <div>
+              <p className={labelClass}>{t('criticalActions')}</p>
+              <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{dailyCustomers.length + dailySamples.length}</p>
+            </div>
+          </Card>
+        </div>
 
-      {/* Report Preview Modal */}
-      {isPreviewModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-           <div className="bg-white dark:bg-slate-900 w-full max-w-[1200px] h-[95vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
-              {/* Header UI */}
-              <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
-                 <div className="flex items-center gap-3">
-                    <ImageIcon className="text-blue-600 w-6 h-6" />
-                    <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-wider">{t('previewExportJpg')}</h3>
-                    <Badge color="gray">{reviewGroups.length} {t('customers')}</Badge>
-                 </div>
-                 <div className="flex items-center gap-4">
-                    <button 
-                       onClick={handleExportJpg}
-                       disabled={isExporting}
-                       className="flex items-center gap-3 px-8 py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-600/20 active:scale-95 transition-all disabled:opacity-50"
-                    >
-                       {isExporting ? <RefreshCcw className="animate-spin" size={20} /> : <Download size={20} />} 
-                       {isExporting ? 'Capturing...' : t('export')}
-                    </button>
-                    <button onClick={() => setIsPreviewModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                       <X className="w-7 h-7 text-slate-400" />
-                    </button>
-                 </div>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch min-h-[600px]">
+          <Card className="lg:col-span-1 p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full max-h-[850px]">
+            <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <h3 className={sharedTitleClass}>
+                <ListTodo className="w-6 h-6 text-blue-600" />
+                DAILY AGENDA
+              </h3>
+              <div className="mt-4 relative group">
+                <input 
+                  type="date" 
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer"
+                  value={selectedDateStr}
+                  onChange={handleDateFilterChange}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none text-slate-300">
+                    <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
+                    <Clock className="w-5 h-5" />
+                </div>
               </div>
-
-              {/* Content Area - Uses real scaling */}
-              <div className="flex-1 overflow-y-auto p-12 bg-slate-100 dark:bg-slate-950 flex flex-col items-center">
-                 <div className="bg-white shadow-2xl">
-                    <div ref={reportRef} id="sample-status-report">
-                       {/* Header - Strictly separated columns to prevent overlapping */}
-                       <div className="border-b-[12px] border-slate-900 pb-16 mb-20" style={{ display: 'block', clear: 'both', height: 'auto', overflow: 'hidden' }}>
-                          <div style={{ float: 'left', width: '650px' }}>
-                             <h2 style={{ fontSize: '64px', fontWeight: '900', color: '#1d4ed8', margin: '0 0 10px 0', textTransform: 'uppercase' }}>{companyName}</h2>
-                             <p style={{ fontSize: '20px', fontWeight: '900', color: '#94a3b8', letterSpacing: '8px', margin: '0', textTransform: 'uppercase' }}>{t('sampleReportTitle')}</p>
-                          </div>
-                          <div style={{ float: 'right', width: '300px', textAlign: 'right' }}>
-                             <p style={{ fontSize: '12px', fontWeight: '900', color: '#94a3b8', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 5px 0' }}>Report Date</p>
-                             <p style={{ fontSize: '24px', fontWeight: '900', color: '#000', margin: '0 0 25px 0' }}>{format(new Date(), 'yyyy-MM-dd HH:mm')}</p>
-                             <p style={{ fontSize: '12px', fontWeight: '900', color: '#94a3b8', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 5px 0' }}>Prepared By</p>
-                             <p style={{ fontSize: '24px', fontWeight: '900', color: '#000', margin: '0' }}>{userName}</p>
-                          </div>
-                          <div style={{ clear: 'both' }}></div>
-                       </div>
-
-                       {/* Banner - Filter Context */}
-                       <div className="bg-slate-100 p-12 rounded-[3rem] mb-20 border-2 border-slate-200" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ flex: '1' }}>
-                             <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Filter Criteria</span>
-                             <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>Status: <span style={{ color: '#2563eb' }}>{t(reviewStatus as any) || reviewStatus}</span></h4>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                             <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Summary</span>
-                             <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>{reviewGroups.length} <span style={{ color: '#94a3b8' }}>{t('customers')}</span></h4>
-                          </div>
-                       </div>
-
-                       {/* Content Groups */}
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '80px' }}>
-                          {reviewGroups.map(group => (
-                             <div key={group.customerId} style={{ display: 'block' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', borderBottom: '4px solid #f1f5f9', paddingBottom: '15px', marginBottom: '30px' }}>
-                                   <div style={{ width: '12px', height: '40px', backgroundColor: '#1d4ed8', borderRadius: '10px' }}></div>
-                                   <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0' }}>{group.customerName}</h5>
-                                </div>
-                                <table className="w-full">
-                                   <thead>
-                                      <tr style={{ fontSize: '14px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#64748b', backgroundColor: '#f8fafc', borderTop: '2px solid #e2e8f0', borderBottom: '2px solid #e2e8f0' }}>
-                                         <th style={{ padding: '20px', textAlign: 'left', width: '60px' }}>#</th>
-                                         <th style={{ padding: '20px', textAlign: 'left', width: '380px' }}>Sample Details</th>
-                                         <th style={{ padding: '20px', textAlign: 'left', width: '150px' }}>Quantity</th>
-                                         <th style={{ padding: '20px', textAlign: 'left' }}>Plan / Next Steps</th>
-                                         <th style={{ padding: '20px', textAlign: 'right', width: '180px' }}>Key Date</th>
-                                      </tr>
-                                   </thead>
-                                   <tbody>
-                                      {group.samples.map(s => (
-                                         <tr key={s.id}>
-                                            <td style={{ padding: '20px', fontWeight: '900', color: '#94a3b8', fontSize: '20px' }}>{s.sampleIndex}</td>
-                                            <td style={{ padding: '20px' }}>
-                                               <div style={{ fontSize: '22px', fontWeight: '900', textTransform: 'uppercase', color: '#000', marginBottom: '8px' }}>{s.sampleName}</div>
-                                               <div style={{ fontSize: '14px', fontFamily: 'monospace', color: '#64748b', letterSpacing: '2px' }}>{s.sampleSKU || 'NO SKU RECORD'}</div>
-                                            </td>
-                                            <td style={{ padding: '20px', fontWeight: '900', fontSize: '20px' }}>{s.quantity}</td>
-                                            <td style={{ padding: '20px', fontStyle: 'italic', color: '#334155', fontSize: '20px' }}>
-                                               {s.upcomingPlan || '-'}
-                                            </td>
-                                            <td style={{ padding: '20px', fontWeight: '900', textTransform: 'uppercase', textAlign: 'right', fontSize: '20px', color: '#1d4ed8' }}>
-                                               {s.nextActionDate || '-'}
-                                            </td>
-                                         </tr>
-                                      ))}
-                                   </tbody>
-                                </table>
-                             </div>
-                          ))}
-                       </div>
-
-                       {/* Footer */}
-                       <div style={{ marginTop: '100px', paddingTop: '40px', borderTop: '4px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '3px' }}>
-                          <span>© {companyName} • Confidential Sample Status Log</span>
-                          <span style={{ fontStyle: 'italic' }}>High Definition Long Image Export</span>
-                       </div>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
+              {dailyCustomers.length === 0 && dailySamples.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem] opacity-30 text-center p-4">
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-400 italic">No Scheduled Actions</span>
+                </div>
+              ) : (
+                <>
+                  {dailyCustomers.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Customers</span>
+                      {dailyCustomers.map(c => (
+                          <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-rose-500 bg-rose-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800" onClick={() => navigate(`/customers/${c.id}`)}>
+                              <h4 className="font-black text-rose-800 dark:text-rose-400 text-sm xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
+                              <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || "Action needed"}</p>
+                          </Card>
+                      ))}
                     </div>
-                 </div>
-              </div>
-           </div>
+                  )}
+                  {dailySamples.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Samples</span>
+                      {dailySamples.map(s => (
+                        <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 bg-blue-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
+                          <h4 className="font-black text-blue-800 dark:text-blue-400 text-sm xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
+                          <p className="text-xs xl:text-sm font-bold text-slate-500 line-clamp-2 italic pl-2 border-l-2 border-blue-100 mt-1">{s.customerName}</p>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </Card>
+
+          <div className="lg:col-span-3 h-full">
+            <DashboardCalendar 
+              customers={customers} 
+              samples={samples} 
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              currentDate={currentCalendarMonth}
+              setCurrentDate={setCurrentCalendarMonth}
+            />
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Report Trigger Card - Visual cleanup for uniformity */}
+        <Card className="p-10 xl:p-12 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 min-h-[350px] items-center justify-center text-center">
+          <div className="max-w-3xl">
+              <h3 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white uppercase mb-4 tracking-tight">
+                {t('generateReport')}
+              </h3>
+              <p className="text-slate-500 font-bold mb-10 uppercase tracking-widest text-sm xl:text-base leading-relaxed">
+                {t('reportSubtitlePrefix')}
+                <span className="text-blue-600 px-1 font-black">{t(reviewStatus as any) || reviewStatus}</span>
+                {t('reportSubtitleSuffix')}
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4 sm:h-16">
+                <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 shadow-sm min-w-[280px]">
+                    <Filter size={20} className="text-blue-500 shrink-0" />
+                    <select 
+                      className="flex-1 bg-transparent border-none py-2 text-sm xl:text-base font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-slate-900 dark:text-white"
+                      value={reviewStatus}
+                      onChange={e => setReviewStatus(e.target.value)}
+                    >
+                      {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
+                    </select>
+                    <ChevronDown size={16} className="text-slate-400 shrink-0" />
+                </div>
+
+                <button 
+                    onClick={() => setIsPreviewModalOpen(true)}
+                    className="flex items-center justify-center gap-4 px-10 bg-blue-600 text-white rounded-2xl font-black text-sm xl:text-lg uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all min-h-[64px] sm:min-h-0"
+                >
+                    <FileText size={22} />
+                    {t('previewExportJpg')}
+                </button>
+              </div>
+          </div>
+        </Card>
+
+        {/* Report Preview Modal */}
+        {isPreviewModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-[1200px] h-[95vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+                {/* Header UI */}
+                <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+                  <div className="flex items-center gap-3">
+                      <ImageIcon className="text-blue-600 w-6 h-6" />
+                      <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-wider">{t('previewExportJpg')}</h3>
+                      <Badge color="gray">{reviewGroups.length} {t('customers')}</Badge>
+                  </div>
+                  <div className="flex items-center gap-4">
+                      <button 
+                        onClick={handleExportJpg}
+                        disabled={isExporting}
+                        className="flex items-center gap-3 px-8 py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-600/20 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {isExporting ? <RefreshCcw className="animate-spin" size={20} /> : <Download size={20} />} 
+                        {isExporting ? 'Capturing...' : t('export')}
+                      </button>
+                      <button onClick={() => setIsPreviewModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                        <X className="w-7 h-7 text-slate-400" />
+                      </button>
+                  </div>
+                </div>
+
+                {/* Content Area - Uses real scaling */}
+                <div className="flex-1 overflow-y-auto p-12 bg-slate-100 dark:bg-slate-950 flex flex-col items-center">
+                  <div className="bg-white shadow-2xl">
+                      <div ref={reportRef} id="sample-status-report">
+                        {/* Header - Strictly separated columns to prevent overlapping */}
+                        <div className="border-b-[12px] border-slate-900 pb-16 mb-20" style={{ display: 'block', clear: 'both', height: 'auto', overflow: 'hidden' }}>
+                            <div style={{ float: 'left', width: '650px' }}>
+                              <h2 style={{ fontSize: '64px', fontWeight: '900', color: '#1d4ed8', margin: '0 0 10px 0', textTransform: 'uppercase' }}>{companyName}</h2>
+                              <p style={{ fontSize: '20px', fontWeight: '900', color: '#94a3b8', letterSpacing: '8px', margin: '0', textTransform: 'uppercase' }}>{t('sampleReportTitle')}</p>
+                            </div>
+                            <div style={{ float: 'right', width: '300px', textAlign: 'right' }}>
+                              <p style={{ fontSize: '12px', fontWeight: '900', color: '#94a3b8', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 5px 0' }}>Report Date</p>
+                              <p style={{ fontSize: '24px', fontWeight: '900', color: '#000', margin: '0 0 25px 0' }}>{format(new Date(), 'yyyy-MM-dd HH:mm')}</p>
+                              <p style={{ fontSize: '12px', fontWeight: '900', color: '#94a3b8', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 5px 0' }}>Prepared By</p>
+                              <p style={{ fontSize: '24px', fontWeight: '900', color: '#000', margin: '0' }}>{userName}</p>
+                            </div>
+                            <div style={{ clear: 'both' }}></div>
+                        </div>
+
+                        {/* Banner - Filter Context */}
+                        <div className="bg-slate-100 p-12 rounded-[3rem] mb-20 border-2 border-slate-200" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ flex: '1' }}>
+                              <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Filter Criteria</span>
+                              <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>Status: <span style={{ color: '#2563eb' }}>{t(reviewStatus as any) || reviewStatus}</span></h4>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Summary</span>
+                              <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>{reviewGroups.length} <span style={{ color: '#94a3b8' }}>{t('customers')}</span></h4>
+                            </div>
+                        </div>
+
+                        {/* Content Groups */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '80px' }}>
+                            {reviewGroups.map(group => (
+                              <div key={group.customerId} style={{ display: 'block' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', borderBottom: '4px solid #f1f5f9', paddingBottom: '15px', marginBottom: '30px' }}>
+                                    <div style={{ width: '12px', height: '40px', backgroundColor: '#1d4ed8', borderRadius: '10px' }}></div>
+                                    <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0' }}>{group.customerName}</h5>
+                                  </div>
+                                  <table className="w-full">
+                                    <thead>
+                                        <tr style={{ fontSize: '14px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#64748b', backgroundColor: '#f8fafc', borderTop: '2px solid #e2e8f0', borderBottom: '2px solid #e2e8f0' }}>
+                                          <th style={{ padding: '20px', textAlign: 'left', width: '60px' }}>#</th>
+                                          <th style={{ padding: '20px', textAlign: 'left', width: '380px' }}>Sample Details</th>
+                                          <th style={{ padding: '20px', textAlign: 'left', width: '150px' }}>Quantity</th>
+                                          <th style={{ padding: '20px', textAlign: 'left' }}>Plan / Next Steps</th>
+                                          <th style={{ padding: '20px', textAlign: 'right', width: '180px' }}>Key Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {group.samples.map(s => (
+                                          <tr key={s.id}>
+                                              <td style={{ padding: '20px', fontWeight: '900', color: '#94a3b8', fontSize: '20px' }}>{s.sampleIndex}</td>
+                                              <td style={{ padding: '20px' }}>
+                                                <div style={{ fontSize: '22px', fontWeight: '900', textTransform: 'uppercase', color: '#000', marginBottom: '8px' }}>{s.sampleName}</div>
+                                                <div style={{ fontSize: '14px', fontFamily: 'monospace', color: '#64748b', letterSpacing: '2px' }}>{s.sampleSKU || 'NO SKU RECORD'}</div>
+                                              </td>
+                                              <td style={{ padding: '20px', fontWeight: '900', fontSize: '20px' }}>{s.quantity}</td>
+                                              <td style={{ padding: '20px', fontStyle: 'italic', color: '#334155', fontSize: '20px' }}>
+                                                {s.upcomingPlan || '-'}
+                                              </td>
+                                              <td style={{ padding: '20px', fontWeight: '900', textTransform: 'uppercase', textAlign: 'right', fontSize: '20px', color: '#1d4ed8' }}>
+                                                {s.nextActionDate || '-'}
+                                              </td>
+                                          </tr>
+                                        ))}
+                                    </tbody>
+                                  </table>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div style={{ marginTop: '100px', paddingTop: '40px', borderTop: '4px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '3px' }}>
+                            <span>© {companyName} • Confidential Sample Status Log</span>
+                            <span style={{ fontStyle: 'italic' }}>High Definition Long Image Export</span>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
