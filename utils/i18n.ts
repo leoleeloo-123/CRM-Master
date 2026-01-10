@@ -10,6 +10,14 @@ export const translations = {
     dataManagement: 'Data Management',
     settings: 'Settings',
 
+    // Page Subtitles
+    dashboardDesc: 'Enterprise Edition & Console Overview',
+    manageClients: 'Manage all client relationships, rankings, and status updates.',
+    monitorSamples: 'Monitor sample production and customer feedback.',
+    exhibitionDesc: 'Managing links and info for all exhibition entries.',
+    dataManagementDesc: 'Bulk import and export tools for database management.',
+    settingsDesc: 'Customize your application experience.',
+
     // Common
     search: 'Search...',
     welcome: 'Welcome back',
@@ -47,7 +55,6 @@ export const translations = {
 
     // Customer List
     customerDatabase: 'Customer Database',
-    manageClients: 'Manage all client relationships, rankings, and status updates.',
     noCustomersFound: 'No customers found matching your criteria.',
     filterRank: 'All Ranks',
     
@@ -86,7 +93,6 @@ export const translations = {
     statusNoAction: 'No Action',
 
     // Sample Tracker
-    monitorSamples: 'Monitor sample production and customer feedback.',
     newSample: 'New Sample',
     board: 'Board',
     list: 'List',
@@ -120,7 +126,7 @@ export const translations = {
     colSent: 'Sent / Testing',
     colFeedback: 'Feedback',
 
-    // DATA KEYS: Map Non-Standard/English terms to CANONICAL CHINESE KEYS
+    // DATA KEYS
     '单晶': 'Single Crystal',
     '多晶': 'Polycrystalline',
     '微粉': 'Powder',
@@ -193,7 +199,6 @@ export const translations = {
     darkMode: 'Dark Mode',
     english: 'English',
     chinese: 'Chinese (Simplified)',
-    settingsDesc: 'Customize your application experience.',
     
     // Tag Management
     tagManagement: 'Tag Management',
@@ -217,6 +222,14 @@ export const translations = {
     sampleTracking: '样品追踪',
     dataManagement: '数据管理',
     settings: '设置',
+
+    // Page Subtitles
+    dashboardDesc: '企业版 & 控制台概览',
+    manageClients: '管理所有客户关系、等级和状态更新。',
+    monitorSamples: '监控样品生产和客户反馈。',
+    exhibitionDesc: '管理展会链接及详细记录。',
+    dataManagementDesc: '用于数据库维护的批量导入和导出工具。',
+    settingsDesc: '自定义您的应用程序体验。',
 
     // Common
     search: '搜索...',
@@ -255,7 +268,6 @@ export const translations = {
 
     // Customer List
     customerDatabase: '客户数据库',
-    manageClients: '管理所有客户关系、等级和状态更新。',
     noCustomersFound: '未找到符合条件的客户。',
     filterRank: '所有等级',
 
@@ -294,7 +306,6 @@ export const translations = {
     statusNoAction: '暂无',
 
     // Sample Tracker
-    monitorSamples: '监控样品生产和客户反馈。',
     newSample: '新建样品',
     board: '看板',
     list: '列表',
@@ -328,7 +339,7 @@ export const translations = {
     colSent: '样品已发出',
     colFeedback: '客户初步结果',
 
-    // DATA KEYS: Map Chinese System Keys -> Chinese Display
+    // DATA KEYS
     '单晶': '单晶',
     '多晶': '多晶',
     '微粉': '微粉',
@@ -401,7 +412,6 @@ export const translations = {
     darkMode: '深色模式',
     english: '英文',
     chinese: '中文 (简体)',
-    settingsDesc: '自定义您的应用程序体验。',
 
     // Tag Management
     tagManagement: '标签管理 (下拉菜单选项)',
@@ -420,18 +430,12 @@ export const translations = {
   }
 };
 
-// Aliases: Map Non-Standard/English terms to CANONICAL CHINESE KEYS
 const ALIASES: Record<string, string> = {
-  // Crystal Types
   'Single Crystal': '单晶',
   'Polycrystalline': '多晶',
-  
-  // Forms
   'Powder': '微粉',
   '粉末': '微粉',
   'Suspension': '悬浮液',
-  
-  // Categories
   'Agglomerated Diamond': '团聚',
   'Agglomerated': '团聚',
   '聚晶': '团聚',
@@ -442,8 +446,6 @@ const ALIASES: Record<string, string> = {
   '球形金刚石': '球形金刚石',
   '金刚石球': '金刚石球',
   '微米粉': '微米粉',
-
-  // Statuses
   'Requested': '等待中',
   'Waiting': '等待中',
   '已申请': '等待中',
@@ -457,8 +459,6 @@ const ALIASES: Record<string, string> = {
   'Feedback Received': '客户初步结果',
   '已反馈': '客户初步结果',
   'Closed': '已关闭',
-
-  // Test Status Logic
   'No': 'Ongoing',
   'Ongoing': 'Ongoing',
   '否': 'Ongoing',
@@ -471,26 +471,16 @@ const ALIASES: Record<string, string> = {
   '项目终止': 'Terminated'
 };
 
-/**
- * Normalizes a term (tag) to its canonical CHINESE key.
- */
 export const getCanonicalTag = (term: string): string => {
   if (!term) return '';
   const trimmed = term.trim();
-  
-  // 1. Is it already a System Key?
   if (translations.en[trimmed as keyof typeof translations.en]) {
       return trimmed;
   }
-
-  // 2. Check Aliases (English -> Chinese)
   if (ALIASES[trimmed]) {
       return ALIASES[trimmed];
   }
-
-  // 3. Check if it matches a known value
   const enEntry = Object.entries(translations.en).find(([key, val]) => val === trimmed);
   if (enEntry) return enEntry[0];
-
   return trimmed;
 };

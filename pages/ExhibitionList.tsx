@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, Button, Modal, Badge } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
@@ -181,8 +180,8 @@ const ExhibitionList: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight uppercase">{t('exhibitions')}</h2>
-          <p className="text-slate-500 font-bold mt-1 tracking-tight">Managing links and info for all exhibition entries.</p>
+          <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('exhibitions')}</h2>
+          <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('exhibitionDesc')}</p>
         </div>
         <Button onClick={() => { setEditingExhibition(null); setFormData({name:'', date:'', location:'', link:'', eventSeries:[], summary: ''}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-8 py-3 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
            <Plus size={20} />
@@ -368,6 +367,7 @@ const ExhibitionList: React.FC = () => {
                               >
                                 <PencilLine size={16} />
                               </button>
+                              {/* Fix: Pass 'exh.id' and 'exh.name' instead of undefined variables 'id' and 'name' */}
                               <button 
                                 onClick={(e) => handleDelete(exh.id, exh.name, e)} 
                                 className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90"

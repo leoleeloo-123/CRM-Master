@@ -422,8 +422,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     <div className="space-y-8 xl:space-y-12 pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white mb-0.5 tracking-tight uppercase">CRM Master</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-[11px] xl:text-base font-bold tracking-tight">Enterprise Edition & Console Overview</p>
+          <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('dashboard')}</h2>
+          <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('dashboardDesc')}</p>
         </div>
         <div className="text-sm xl:text-lg text-slate-400 font-black">
           Today: <span className="text-slate-900 dark:text-white">{format(new Date(), 'MMM do, yyyy')}</span>
@@ -610,7 +610,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     className="flex items-center justify-between p-4 xl:p-5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-4 min-w-0">
-                       {isExpanded ? <ChevronDown size={22} className="text-slate-400 shrink-0" /> : <ChevronRightSmall size={22} className="text-slate-400 shrink-0" />}
+                       {isExpanded ? <ChevronDown size={22} className="text-slate-400 shrink-0" /> : <ChevronRight size={22} className="text-slate-400 shrink-0" />}
                        <span className="font-black text-sm xl:text-lg text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
                     </div>
                     <Badge color="gray">{group.samples.length} Samples</Badge>

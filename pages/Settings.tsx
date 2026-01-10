@@ -82,8 +82,8 @@ const Settings: React.FC = () => {
   return (
     <div className="space-y-10 xl:space-y-16 max-w-6xl mx-auto pb-20">
       <div>
-        <h2 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white mb-2 tracking-tight uppercase tracking-wider">{t('settings')}</h2>
-        <p className="text-sm xl:text-xl text-slate-500 dark:text-slate-400 font-bold tracking-tight">{t('settingsDesc')}</p>
+        <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('settings')}</h2>
+        <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('settingsDesc')}</p>
       </div>
 
       <div className="space-y-12">

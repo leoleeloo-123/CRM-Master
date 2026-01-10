@@ -166,8 +166,8 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     <div className="space-y-6 xl:space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl xl:text-4xl font-bold text-slate-800 dark:text-white mb-1 tracking-tight">{t('customerDatabase')}</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm xl:text-lg">{t('manageClients')}</p>
+          <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('customerDatabase')}</h2>
+          <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('manageClients')}</p>
         </div>
         <div className="flex gap-2">
            <Button className="flex items-center gap-2" onClick={() => setIsAddModalOpen(true)}>

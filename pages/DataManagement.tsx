@@ -716,8 +716,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('dataManagement')}</h2>
-          <p className="text-slate-500 dark:text-slate-400">{t('bulkImport')} / {t('export')}</p>
+          <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('dataManagement')}</h2>
+          <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('dataManagementDesc')}</p>
         </div>
         <div className="flex gap-2">
            <Button variant="secondary" onClick={toggleReviewMode} className={`flex items-center gap-2 ${viewMode === 'review' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : ''}`}>

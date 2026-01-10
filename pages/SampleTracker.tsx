@@ -232,8 +232,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     <div className="flex flex-col h-full space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-slate-800 dark:text-white">{t('sampleTracking')}</h2>
-          <p className="text-slate-500">Real-time status monitor with strict aging protocol.</p>
+          <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('sampleTracking')}</h2>
+          <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('monitorSamples')}</p>
         </div>
         <div className="flex gap-2">
           <div className="bg-slate-100 p-1 rounded-lg flex dark:bg-slate-800">
@@ -425,7 +425,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                <div 
                                  onClick={() => toggleCustomerExpansion(group.customerId)}
                                  className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-[0.99]"
-                                Lark Grouping
                                >
                                  <div className="flex items-center gap-3 min-w-0">
                                     {isExpanded ? <ChevronDown size={18} className="text-slate-400 shrink-0" /> : <ChevronRight size={18} className="text-slate-400 shrink-0" />}
