@@ -35,104 +35,94 @@
       body {
         font-family: 'Inter', sans-serif;
       }
-      /* Data Point Specific Font Scaling */
-      [data-font-size="small"] table tbody td,
-      [data-font-size="small"] .data-card-text,
-      [data-font-size="small"] p,
-      [data-font-size="small"] span:not(.font-black):not(.uppercase) {
-        font-size: 0.85rem !important;
-      }
-      [data-font-size="medium"] table tbody td,
-      [data-font-size="medium"] p {
-        font-size: 1rem !important;
-      }
-      [data-font-size="large"] table tbody td,
-      [data-font-size="large"] .data-card-text,
-      [data-font-size="large"] p,
-      [data-font-size="large"] span:not(.font-black):not(.uppercase) {
-        font-size: 1.15rem !important;
-      }
-
+      
       /* PDF Generation and Printing Rules */
       @media print {
         @page {
-          size: auto;
-          margin: 15mm; 
+          size: A4;
+          margin: 15mm;
         }
-        
-        /* 1. Eliminate all parent layout constraints */
-        html, body, #root, [data-reactroot] {
+
+        /* 1. Reset root and body for printing */
+        html, body, #root {
           height: auto !important;
           min-height: 0 !important;
           overflow: visible !important;
           margin: 0 !important;
           padding: 0 !important;
+          background-color: white !important;
         }
 
-        /* 2. Hide everything by default using display: none to remove from layout */
-        body > * {
+        /* 2. Hide common UI components that might interfere with printing */
+        aside, nav, header, .print-hidden, button:not(.print-show) {
           display: none !important;
         }
 
-        /* 3. Re-enable only the essential containers for the report */
-        .print-modal-overlay, 
-        .print-modal-container, 
-        .print-modal-content,
-        #sample-status-report {
-          display: block !important;
-          visibility: visible !important;
-          height: auto !important;
-          min-height: 0 !important;
-          overflow: visible !important;
-          position: static !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
-          box-shadow: none !important;
-          background: white !important;
-        }
-
-        /* Ensure the modal overlay doesn't create a fixed backdrop in print */
+        /* 3. Force the report container to take up the full document flow */
         .print-modal-overlay {
           position: static !important;
-          background: none !important;
+          background: white !important;
+          padding: 0 !important;
+          display: block !important;
         }
 
-        /* Ensure the report uses standard flow */
-        #sample-status-report {
+        .print-modal-container {
+          position: static !important;
           width: 100% !important;
           max-width: none !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+          border: none !important;
+          display: block !important;
         }
 
-        /* Hide modal-specific UI elements */
-        .print-hidden {
-          display: none !important;
+        .print-modal-content {
+          overflow: visible !important;
+          height: auto !important;
+          padding: 0 !important;
+          background: white !important;
+          display: block !important;
         }
 
-        /* Table Rules */
+        /* 4. Report specific styling */
+        #sample-status-report {
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          height: auto !important;
+          position: static !important;
+          display: block !important;
+        }
+
+        /* 5. Pagination Logic */
         .print-no-break {
           break-inside: avoid !important;
           page-break-inside: avoid !important;
+          margin-bottom: 20px;
         }
+
         thead {
-          display: table-header-group !important;
+          display: table-header-group !important; /* Repeats header on new pages */
         }
+
         tr {
           break-inside: avoid !important;
         }
+
         table {
           width: 100% !important;
-          table-layout: auto !important;
           border-collapse: collapse !important;
           page-break-inside: auto !important;
         }
 
+        /* 6. Fix for dark mode colors during print */
         body {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
 
-        /* Dark mode overrides for print */
         .dark #sample-status-report {
            background-color: white !important;
            color: black !important;
@@ -142,7 +132,7 @@
            border-color: #e2e8f0 !important;
         }
         .dark #sample-status-report .bg-slate-100 {
-           background-color: #f8fafc !important;
+           background-color: #f1f5f9 !important;
         }
         .dark #sample-status-report .text-blue-700 {
            color: #1d4ed8 !important;
