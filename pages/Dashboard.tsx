@@ -327,13 +327,13 @@ const DashboardCalendar: React.FC<{
           
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner">
-                <button onClick={() => setView('week')} className={`px-6 py-1.5 text-[11px] xl:text-[12px] font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewWeek')}</button>
-                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-[11px] xl:text-[12px] font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-50'}`}>{t('viewMonth')}</button>
+                <button onClick={() => setView('week')} className={`px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewWeek')}</button>
+                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewMonth')}</button>
              </div>
 
              <div className="flex items-center gap-2">
                 <button onClick={handlePrev} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-all active:scale-90"><ChevronLeft className="w-4 h-4 xl:w-5 xl:h-5"/></button>
-                <button onClick={handleToday} className="px-4 py-1.5 text-[11px] xl:text-[12px] font-black bg-white border-2 border-slate-100 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-sm transition-all active:scale-95">{t('today')}</button>
+                <button onClick={handleToday} className="px-5 py-1.5 text-xs xl:text-sm font-black bg-white border-2 border-slate-100 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-sm transition-all active:scale-95">{t('today')}</button>
                 <button onClick={handleNext} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-all active:scale-90"><ChevronRight className="w-4 h-4 xl:w-5 xl:h-5"/></button>
              </div>
           </div>
