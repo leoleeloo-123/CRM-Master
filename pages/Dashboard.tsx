@@ -423,7 +423,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     const now = new Date();
     const dateStr = format(now, 'yyyyMMdd');
     const timeStr = format(now, 'HHmm');
-    const fileName = `样品报告_${companyName}_${userName}_${dateStr}_${timeStr}`;
+    const fileName = `Sample_Report_${companyName}_${dateStr}_${timeStr}`;
     
     document.title = fileName;
     window.print();
@@ -442,7 +442,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </div>
       </div>
 
-      {/* Flattened top row stats */}
+      {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xl:gap-6">
         <Card className={`${statCardClass} border-l-blue-500`}>
           <div className="p-2 xl:p-2.5 bg-blue-50 dark:bg-blue-900/50 rounded-xl text-blue-600 dark:text-blue-400 shadow-sm">
@@ -482,9 +482,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </Card>
       </div>
 
-      {/* Main Grid: Daily Agenda (1/4) and Calendar (3/4) */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch h-full min-h-[600px] lg:min-h-[800px]">
-        {/* Daily Agenda Side with Constrained Height and Internal Scroll */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch min-h-[600px]">
         <Card className="lg:col-span-1 p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full max-h-[850px]">
           <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <h3 className={sharedTitleClass}>
@@ -494,17 +492,16 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             <div className="mt-4 relative group">
                <input 
                  type="date" 
-                 className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                 className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer appearance-none"
                  value={selectedDateStr}
                  onChange={handleDateFilterChange}
                />
-               <div className="absolute right-3 top-3.5 flex items-center gap-1.5 pointer-events-none text-slate-300 group-hover:text-blue-500 transition-colors">
+               <div className="absolute right-3 top-3.5 flex items-center gap-1.5 pointer-events-none text-slate-300">
                   <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
                   <Clock className="w-5 h-5" />
                </div>
             </div>
           </div>
-          
           <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
             {dailyCustomers.length === 0 && dailySamples.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem] opacity-30 text-center p-4">
@@ -515,36 +512,21 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 {dailyCustomers.length > 0 && (
                   <div className="space-y-3">
                     <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Customers</span>
-                    {dailyCustomers.map(c => {
-                      const urgency = getUrgencyLevel(c.nextActionDate);
-                      const urgencyColor = urgency === 'urgent' ? 'border-l-rose-500' : urgency === 'warning' ? 'border-l-amber-500' : 'border-l-emerald-500';
-                      return (
-                        <Card key={c.id} className={`p-4 hover:shadow-md border-l-4 ${urgencyColor} transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group`} onClick={() => navigate(`/customers/${c.id}`)}>
-                          <div className="flex flex-col gap-2">
-                             <h4 className="font-black text-slate-900 dark:text-white text-sm xl:text-base group-hover:text-blue-600 transition-colors tracking-tight uppercase truncate">{c.name}</h4>
-                             <div className="scale-75 origin-left -mt-1"><RankStars rank={c.rank} /></div>
-                             <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed italic border-l-2 border-slate-100 dark:border-slate-800 pl-2">
-                                {c.upcomingPlan || "Action needed"}
-                             </p>
-                          </div>
+                    {dailyCustomers.map(c => (
+                        <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 transition-all cursor-pointer border border-slate-50 dark:border-slate-800" onClick={() => navigate(`/customers/${c.id}`)}>
+                             <h4 className="font-black text-slate-900 dark:text-white text-sm xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
+                             <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-slate-100 dark:border-slate-800 mt-2">{c.upcomingPlan || "Action needed"}</p>
                         </Card>
-                      );
-                    })}
+                    ))}
                   </div>
                 )}
-
                 {dailySamples.length > 0 && (
                   <div className="space-y-3 pt-2">
                     <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Samples</span>
                     {dailySamples.map(s => (
-                      <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
-                        <div className="flex flex-col gap-1.5">
-                           <h4 className="font-black text-blue-600 dark:text-blue-400 text-sm xl:text-base group-hover:text-blue-800 transition-colors tracking-tight uppercase truncate">{s.sampleName}</h4>
-                           <span className="text-[11px] xl:text-xs font-black text-slate-400 uppercase tracking-widest">{s.customerName}</span>
-                           <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed italic border-l-2 border-slate-100 dark:border-slate-800 pl-2 mt-1">
-                              {s.upcomingPlan || "Production check"}
-                           </p>
-                        </div>
+                      <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-amber-500 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
+                         <h4 className="font-black text-amber-600 text-sm xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
+                         <p className="text-xs xl:text-sm font-bold text-slate-500 line-clamp-2 italic pl-2 border-l-2 border-slate-100 mt-1">{s.customerName}</p>
                       </Card>
                     ))}
                   </div>
@@ -552,18 +534,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </>
             )}
           </div>
-          
-          <div className="pt-4 mt-2 border-t border-slate-50 dark:border-slate-800 shrink-0">
-             <button 
-                onClick={() => navigate('/customers')} 
-                className="w-full text-center text-xs font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center justify-center gap-2 group transition-colors uppercase tracking-[0.1em]"
-              >
-                {t('viewAll')} <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </button>
-          </div>
         </Card>
 
-        {/* Calendar - Height master */}
         <div className="lg:col-span-3 h-full">
            <DashboardCalendar 
              customers={customers} 
@@ -576,113 +548,12 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </div>
       </div>
 
-      {/* Full Width Status Summary */}
-      <Card className="p-8 xl:p-10 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 min-h-[500px]">
-         <div className="flex flex-col gap-6 mb-8 pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <h3 className={sharedTitleClass}>
-                 <FlaskConical className="w-6 h-6 text-blue-600" />
-                 {t('statusReview')}
-              </h3>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => setIsPreviewModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-emerald-100 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-900/20 text-[11px] xl:text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest hover:border-emerald-300 transition-all active:scale-95"
-                >
-                   <FileText size={16} />
-                   {t('generateReport')}
-                </button>
-                <button 
-                  onClick={toggleAllExpansion}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] xl:text-xs font-black uppercase tracking-widest hover:border-blue-300 transition-all active:scale-95"
-                >
-                   {expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0 ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                   {expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0 ? 'Collapse All' : 'Expand All'}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-               <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
-                  <Filter size={18} />
-               </div>
-               <select 
-                  className="flex-1 max-w-xs bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2 text-sm xl:text-base font-black uppercase tracking-tight outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                  value={reviewStatus}
-                  onChange={e => setReviewStatus(e.target.value)}
-               >
-                  {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
-               </select>
-            </div>
-         </div>
-
-         <div className="flex-1 overflow-y-auto space-y-6 pr-1 scrollbar-hide">
-            {reviewGroups.map(group => {
-              const isExpanded = expandedCustomers.has(group.customerId);
-              return (
-                <div key={group.customerId} className="space-y-4">
-                  <div 
-                    onClick={() => setExpandedCustomers(prev => {
-                       const next = new Set(prev);
-                       if (next.has(group.customerId)) next.delete(group.customerId);
-                       else next.add(group.customerId);
-                       return next;
-                    })}
-                    className="flex items-center justify-between p-4 xl:p-5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
-                  >
-                    <div className="flex items-center gap-4 min-w-0">
-                       {isExpanded ? <ChevronDown size={22} className="text-slate-400 shrink-0" /> : <ChevronRight size={22} className="text-slate-400 shrink-0" />}
-                       <span className="font-black text-sm xl:text-lg text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
-                    </div>
-                    <Badge color="gray">{group.samples.length} Samples</Badge>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 xl:gap-6 pl-4 border-l-2 border-blue-100 dark:border-blue-900/40 ml-2 animate-in slide-in-from-top-2 duration-300">
-                      {group.samples.map(s => {
-                         const urgency = getUrgencyLevel(s.nextActionDate);
-                         const colorBorder = urgency === 'urgent' ? 'border-l-rose-500' : urgency === 'warning' ? 'border-l-amber-500' : 'border-l-emerald-500';
-                         return (
-                           <Card 
-                             key={s.id} 
-                             onClick={() => navigate(`/samples/${s.id}`)}
-                             className={`p-5 cursor-pointer hover:shadow-lg border-l-4 transition-all hover:-translate-y-1 bg-white dark:bg-slate-800 ${colorBorder}`}
-                           >
-                              <div className="flex justify-between items-start mb-2">
-                                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">#{s.sampleIndex}</span>
-                                 <div className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase">
-                                    {s.nextActionDate || 'TBD'}
-                                 </div>
-                              </div>
-                              <p className="text-sm xl:text-base font-black text-slate-800 dark:text-white leading-snug line-clamp-2 uppercase tracking-tight">{s.sampleName}</p>
-                              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50 dark:border-slate-700">
-                                 <span className="text-[11px] font-mono text-slate-400 truncate max-w-[120px] uppercase">{s.sampleSKU || 'NOSKU'}</span>
-                                 <span className="text-xs xl:text-sm font-black text-slate-700 dark:text-slate-300">Qty: {s.quantity}</span>
-                              </div>
-                           </Card>
-                         );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            
-            {reviewGroups.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2.5rem] opacity-30">
-                 <Box size={44} className="text-slate-400 mb-2" />
-                 <span className="text-xs xl:text-sm font-black uppercase tracking-[0.2em] text-slate-400 italic">No Samples Found</span>
-              </div>
-            )}
-         </div>
-      </Card>
-
       {/* Report Preview Modal */}
       {isPreviewModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 print:p-0 print:bg-white print:backdrop-blur-none overflow-hidden print:static print:block">
-           <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 print:h-auto print:max-w-none print:shadow-none print:rounded-none print:static print:block print:bg-white">
-              {/* Modal Header - Hidden on Print */}
-              <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 print:hidden">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 print-modal-overlay">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 print-modal-container">
+              {/* Header - Hidden on Print */}
+              <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 print-hidden">
                  <div className="flex items-center gap-3">
                     <FileText className="text-blue-600 w-6 h-6" />
                     <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-wider">{t('reportDetails')}</h3>
@@ -700,15 +571,12 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                  </div>
               </div>
 
-              {/* Modal Content Area */}
-              <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible print:block">
-                 {/* 
-                   ID "sample-status-report" is the specific container for print. 
-                   We use standard document flow classes here.
-                 */}
-                 <div id="sample-status-report" className="mx-auto w-full max-w-[8.5in] bg-white text-slate-900 shadow-2xl p-[15mm] print:shadow-none print:w-full print:p-0 flex flex-col min-h-0 h-auto">
-                    {/* Report Header */}
-                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0 print:no-break">
+              {/* Content Area */}
+              <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print-modal-content">
+                 <div id="sample-status-report" className="mx-auto w-full max-w-[8.5in] bg-white text-slate-900 shadow-2xl p-[15mm] border border-slate-100 print:shadow-none print:max-w-none print:w-full print:border-none print:p-0">
+                    
+                    {/* Header */}
+                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0">
                        <div className="space-y-1">
                           <h2 className="text-4xl font-black uppercase tracking-tight leading-none text-blue-700">{companyName}</h2>
                           <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">{t('sampleReportTitle')}</p>
@@ -721,8 +589,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                        </div>
                     </div>
 
-                    {/* Report Info Banner */}
-                    <div className="bg-slate-100 p-6 rounded-2xl mb-10 flex justify-between items-center shrink-0 print:no-break">
+                    {/* Banner */}
+                    <div className="bg-slate-100 p-6 rounded-2xl mb-10 flex justify-between items-center shrink-0">
                        <div>
                           <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Filter Criteria</span>
                           <h4 className="text-xl font-black uppercase mt-1">Status: <span className="text-blue-600">{reviewStatus}</span></h4>
@@ -733,34 +601,34 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                        </div>
                     </div>
 
-                    {/* Report Content Tables */}
-                    <div className="flex-1 space-y-12">
+                    {/* Content Groups */}
+                    <div className="space-y-12">
                        {reviewGroups.map(group => (
-                          <div key={group.customerId} className="space-y-4 print-no-break">
-                             <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-2">
+                          <div key={group.customerId} className="print-no-break">
+                             <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-2 mb-4">
                                 <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
                                 <h5 className="font-black text-lg uppercase tracking-tight">{group.customerName}</h5>
                              </div>
-                             <table className="w-full text-left">
+                             <table className="w-full">
                                 <thead>
                                    <tr className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 border-y">
-                                      <th className="p-3 w-10">#</th>
-                                      <th className="p-3">Sample Item & SKU</th>
-                                      <th className="p-3 w-24">Quantity</th>
-                                      <th className="p-3">Plan / Next Steps</th>
-                                      <th className="p-3 w-28">Key Date</th>
+                                      <th className="p-3 text-left w-10">#</th>
+                                      <th className="p-3 text-left">Sample Details</th>
+                                      <th className="p-3 text-left w-24">Quantity</th>
+                                      <th className="p-3 text-left">Plan / Next Steps</th>
+                                      <th className="p-3 text-left w-28">Key Date</th>
                                    </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                    {group.samples.map(s => (
-                                      <tr key={s.id} className="text-[11px]">
+                                      <tr key={s.id}>
                                          <td className="p-3 font-bold text-slate-400 align-top">{s.sampleIndex}</td>
                                          <td className="p-3 align-top">
                                             <div className="font-black uppercase leading-tight">{s.sampleName}</div>
                                             <div className="font-mono text-[9px] text-slate-400 mt-1">{s.sampleSKU || 'NO SKU'}</div>
                                          </td>
                                          <td className="p-3 align-top font-black">{s.quantity}</td>
-                                         <td className="p-3 align-top italic text-slate-600 leading-relaxed">
+                                         <td className="p-3 align-top italic text-slate-600">
                                             {s.upcomingPlan || '-'}
                                          </td>
                                          <td className="p-3 align-top font-black uppercase whitespace-nowrap">
@@ -774,10 +642,10 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                        ))}
                     </div>
 
-                    {/* Report Footer */}
-                    <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0 print:no-break">
+                    {/* Footer */}
+                    <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0">
                        <span>© {companyName} Confidential Report</span>
-                       <span className="print:hidden italic">Content dynamically paginated for printing</span>
+                       <span className="italic">Standard Document Flow</span>
                     </div>
                  </div>
               </div>
