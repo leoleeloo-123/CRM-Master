@@ -700,9 +700,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                  </div>
               </div>
 
-              {/* Modal Content - The "A4 Paper" Area */}
+              {/* Modal Content - The "US Letter Paper" Area */}
               <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible">
-                 <div id="sample-status-report" className="mx-auto w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl p-[20mm] print:shadow-none print:w-full print:p-0 print:min-h-0">
+                 <div id="sample-status-report" className="mx-auto w-[8.5in] min-h-[11in] bg-white text-slate-900 shadow-2xl p-[20mm] print:shadow-none print:w-full print:p-0 print:min-h-0">
                     {/* Report Header */}
                     <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10">
                        <div className="space-y-1">
