@@ -468,121 +468,121 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         }
       `}</style>
 
-      <div className="space-y-8 xl:space-y-12 pb-20">
+      <div className="space-y-6 xl:space-y-6 pb-20">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('dashboard')}</h2>
             <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('dashboardDesc')}</p>
           </div>
-          <div className="text-sm xl:text-lg text-slate-400 font-black">
-            Today: <span className="text-slate-900 dark:text-white">{format(new Date(), 'MMM do, yyyy')}</span>
+        </div>
+
+        {/* Grouping Stats and Main Grid to reduce their internal gap */}
+        <div className="space-y-4 xl:space-y-6">
+          {/* Stats row */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xl:gap-6">
+            <Card className={`${statCardClass} border-l-blue-500`}>
+              <div className="p-2 xl:p-2.5 bg-blue-50 dark:bg-blue-900/50 rounded-xl text-blue-600 dark:text-blue-400 shadow-sm">
+                <Activity className={iconClass} />
+              </div>
+              <div>
+                <p className={labelClass}>{t('totalCustomers')}</p>
+                <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{customers.length}</p>
+              </div>
+            </Card>
+            <Card className={`${statCardClass} border-l-amber-500`}>
+              <div className="p-2 xl:p-2.5 bg-amber-50 dark:bg-amber-900/50 rounded-xl text-amber-600 dark:text-amber-400 shadow-sm">
+                <FlaskConical className={iconClass} />
+              </div>
+              <div>
+                <p className={labelClass}>{t('activeSamples')}</p>
+                <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{activeSamplesCount}</p>
+              </div>
+            </Card>
+            <Card className={`${statCardClass} border-l-purple-500`}>
+              <div className="p-2 xl:p-2.5 bg-purple-50 dark:bg-purple-900/50 rounded-xl text-purple-600 dark:text-purple-400 shadow-sm">
+                <CalendarIcon className={iconClass} />
+              </div>
+              <div>
+                <p className={labelClass}>{t('pendingFeedback')}</p>
+                <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{pendingFeedbackCount}</p>
+              </div>
+            </Card>
+            <Card className={`${statCardClass} border-l-red-500`}>
+              <div className="p-2 xl:p-2.5 bg-red-50 dark:bg-red-900/50 rounded-xl text-red-600 dark:text-red-400 shadow-sm">
+                <AlertTriangle className={iconClass} />
+              </div>
+              <div>
+                <p className={labelClass}>{t('criticalActions')}</p>
+                <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{dailyCustomers.length + dailySamples.length}</p>
+              </div>
+            </Card>
           </div>
-        </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xl:gap-6">
-          <Card className={`${statCardClass} border-l-blue-500`}>
-            <div className="p-2 xl:p-2.5 bg-blue-50 dark:bg-blue-900/50 rounded-xl text-blue-600 dark:text-blue-400 shadow-sm">
-              <Activity className={iconClass} />
-            </div>
-            <div>
-              <p className={labelClass}>{t('totalCustomers')}</p>
-              <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{customers.length}</p>
-            </div>
-          </Card>
-          <Card className={`${statCardClass} border-l-amber-500`}>
-            <div className="p-2 xl:p-2.5 bg-amber-50 dark:bg-amber-900/50 rounded-xl text-amber-600 dark:text-amber-400 shadow-sm">
-              <FlaskConical className={iconClass} />
-            </div>
-            <div>
-              <p className={labelClass}>{t('activeSamples')}</p>
-              <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{activeSamplesCount}</p>
-            </div>
-          </Card>
-          <Card className={`${statCardClass} border-l-purple-500`}>
-            <div className="p-2 xl:p-2.5 bg-purple-50 dark:bg-purple-900/50 rounded-xl text-purple-600 dark:text-purple-400 shadow-sm">
-              <CalendarIcon className={iconClass} />
-            </div>
-            <div>
-              <p className={labelClass}>{t('pendingFeedback')}</p>
-              <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{pendingFeedbackCount}</p>
-            </div>
-          </Card>
-          <Card className={`${statCardClass} border-l-red-500`}>
-            <div className="p-2 xl:p-2.5 bg-red-50 dark:bg-red-900/50 rounded-xl text-red-600 dark:text-red-400 shadow-sm">
-              <AlertTriangle className={iconClass} />
-            </div>
-            <div>
-              <p className={labelClass}>{t('criticalActions')}</p>
-              <p className="text-xl xl:text-3xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{dailyCustomers.length + dailySamples.length}</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch min-h-[600px]">
-          <Card className="lg:col-span-1 p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full max-h-[850px]">
-            <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-              <h3 className={sharedTitleClass}>
-                <ListTodo className="w-6 h-6 text-blue-600" />
-                DAILY AGENDA
-              </h3>
-              <div className="mt-4 relative group">
-                <input 
-                  type="date" 
-                  className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer"
-                  value={selectedDateStr}
-                  onChange={handleDateFilterChange}
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none text-slate-300">
-                    <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
-                    <Clock className="w-5 h-5" />
+          {/* Main Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch min-h-[600px]">
+            <Card className="lg:col-span-1 p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full max-h-[850px]">
+              <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                <h3 className={sharedTitleClass}>
+                  <ListTodo className="w-6 h-6 text-blue-600" />
+                  DAILY AGENDA
+                </h3>
+                <div className="mt-4 relative group">
+                  <input 
+                    type="date" 
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer"
+                    value={selectedDateStr}
+                    onChange={handleDateFilterChange}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none text-slate-300">
+                      <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
+                      <Clock className="w-5 h-5" />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
-              {dailyCustomers.length === 0 && dailySamples.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem] opacity-30 text-center p-4">
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-400 italic">No Scheduled Actions</span>
-                </div>
-              ) : (
-                <>
-                  {dailyCustomers.length > 0 && (
-                    <div className="space-y-3">
-                      <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Customers</span>
-                      {dailyCustomers.map(c => (
-                          <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-rose-500 bg-rose-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800" onClick={() => navigate(`/customers/${c.id}`)}>
-                              <h4 className="font-black text-rose-800 dark:text-rose-400 text-sm xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
-                              <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || "Action needed"}</p>
+              <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
+                {dailyCustomers.length === 0 && dailySamples.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem] opacity-30 text-center p-4">
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-400 italic">No Scheduled Actions</span>
+                  </div>
+                ) : (
+                  <>
+                    {dailyCustomers.length > 0 && (
+                      <div className="space-y-3">
+                        <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Customers</span>
+                        {dailyCustomers.map(c => (
+                            <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-rose-500 bg-rose-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800" onClick={() => navigate(`/customers/${c.id}`)}>
+                                <h4 className="font-black text-rose-800 dark:text-rose-400 text-sm xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
+                                <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || "Action needed"}</p>
+                            </Card>
+                        ))}
+                      </div>
+                    )}
+                    {dailySamples.length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Samples</span>
+                        {dailySamples.map(s => (
+                          <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 bg-blue-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
+                            <h4 className="font-black text-blue-800 dark:text-blue-400 text-sm xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
+                            <p className="text-xs xl:text-sm font-bold text-slate-500 line-clamp-2 italic pl-2 border-l-2 border-blue-100 mt-1">{s.customerName}</p>
                           </Card>
-                      ))}
-                    </div>
-                  )}
-                  {dailySamples.length > 0 && (
-                    <div className="space-y-3 pt-2">
-                      <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Samples</span>
-                      {dailySamples.map(s => (
-                        <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 bg-blue-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
-                          <h4 className="font-black text-blue-800 dark:text-blue-400 text-sm xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
-                          <p className="text-xs xl:text-sm font-bold text-slate-500 line-clamp-2 italic pl-2 border-l-2 border-blue-100 mt-1">{s.customerName}</p>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </Card>
 
-          <div className="lg:col-span-3 h-full">
-            <DashboardCalendar 
-              customers={customers} 
-              samples={samples} 
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              currentDate={currentCalendarMonth}
-              setCurrentDate={setCurrentCalendarMonth}
-            />
+            <div className="lg:col-span-3 h-full">
+              <DashboardCalendar 
+                customers={customers} 
+                samples={samples} 
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                currentDate={currentCalendarMonth}
+                setCurrentDate={setCurrentCalendarMonth}
+              />
+            </div>
           </div>
         </div>
 
