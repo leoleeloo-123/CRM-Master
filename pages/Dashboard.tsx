@@ -484,7 +484,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
 
       {/* Main Grid: Daily Agenda (1/4) and Calendar (3/4) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch h-full min-h-[600px] lg:min-h-[800px]">
-        {/* Daily Agenda Side */}
+        {/* Daily Agenda Side with Constrained Height and Internal Scroll */}
         <Card className="lg:col-span-1 p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full max-h-[850px]">
           <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <h3 className={sharedTitleClass}>
@@ -494,7 +494,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             <div className="mt-4 relative group">
                <input 
                  type="date" 
-                 className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer appearance-none"
+                 className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                  value={selectedDateStr}
                  onChange={handleDateFilterChange}
                />
@@ -552,9 +552,18 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </>
             )}
           </div>
+          
+          <div className="pt-4 mt-2 border-t border-slate-50 dark:border-slate-800 shrink-0">
+             <button 
+                onClick={() => navigate('/customers')} 
+                className="w-full text-center text-xs font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 flex items-center justify-center gap-2 group transition-colors uppercase tracking-[0.1em]"
+              >
+                {t('viewAll')} <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              </button>
+          </div>
         </Card>
 
-        {/* Calendar */}
+        {/* Calendar - Height master */}
         <div className="lg:col-span-3 h-full">
            <DashboardCalendar 
              customers={customers} 
@@ -567,7 +576,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </div>
       </div>
 
-      {/* Status Summary */}
+      {/* Full Width Status Summary */}
       <Card className="p-8 xl:p-10 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 min-h-[500px]">
          <div className="flex flex-col gap-6 mb-8 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
@@ -658,15 +667,22 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 </div>
               );
             })}
+            
+            {reviewGroups.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2.5rem] opacity-30">
+                 <Box size={44} className="text-slate-400 mb-2" />
+                 <span className="text-xs xl:text-sm font-black uppercase tracking-[0.2em] text-slate-400 italic">No Samples Found</span>
+              </div>
+            )}
          </div>
       </Card>
 
       {/* Report Preview Modal */}
       {isPreviewModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 print-modal-overlay">
-           <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 print-modal-container">
-              {/* Modal Header */}
-              <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 print-hidden">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 print:p-0 print:bg-white print:backdrop-blur-none overflow-hidden print:static print:block">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 print:h-auto print:max-w-none print:shadow-none print:rounded-none print:static print:block print:bg-white">
+              {/* Modal Header - Hidden on Print */}
+              <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 print:hidden">
                  <div className="flex items-center gap-3">
                     <FileText className="text-blue-600 w-6 h-6" />
                     <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-wider">{t('reportDetails')}</h3>
@@ -674,7 +690,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                  <div className="flex items-center gap-4">
                     <button 
                        onClick={handleExportPdf}
-                       className="print-show flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-95 transition-all"
+                       className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-95 transition-all"
                     >
                        <Printer size={16} /> {t('exportPdf')}
                     </button>
@@ -685,10 +701,14 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </div>
 
               {/* Modal Content Area */}
-              <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print-modal-content">
-                 <div id="sample-status-report" className="mx-auto w-full max-w-[8.5in] bg-white text-slate-900 shadow-2xl p-[15mm] border border-slate-200">
+              <div className="flex-1 overflow-y-auto p-10 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible print:block">
+                 {/* 
+                   ID "sample-status-report" is the specific container for print. 
+                   We use standard document flow classes here.
+                 */}
+                 <div id="sample-status-report" className="mx-auto w-full max-w-[8.5in] bg-white text-slate-900 shadow-2xl p-[15mm] print:shadow-none print:w-full print:p-0 flex flex-col min-h-0 h-auto">
                     {/* Report Header */}
-                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0">
+                    <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-10 shrink-0 print:no-break">
                        <div className="space-y-1">
                           <h2 className="text-4xl font-black uppercase tracking-tight leading-none text-blue-700">{companyName}</h2>
                           <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">{t('sampleReportTitle')}</p>
@@ -702,7 +722,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     </div>
 
                     {/* Report Info Banner */}
-                    <div className="bg-slate-100 p-6 rounded-2xl mb-10 flex justify-between items-center shrink-0">
+                    <div className="bg-slate-100 p-6 rounded-2xl mb-10 flex justify-between items-center shrink-0 print:no-break">
                        <div>
                           <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Filter Criteria</span>
                           <h4 className="text-xl font-black uppercase mt-1">Status: <span className="text-blue-600">{reviewStatus}</span></h4>
@@ -714,7 +734,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     </div>
 
                     {/* Report Content Tables */}
-                    <div className="space-y-12">
+                    <div className="flex-1 space-y-12">
                        {reviewGroups.map(group => (
                           <div key={group.customerId} className="space-y-4 print-no-break">
                              <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-2">
@@ -755,9 +775,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                     </div>
 
                     {/* Report Footer */}
-                    <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0">
+                    <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] shrink-0 print:no-break">
                        <span>© {companyName} Confidential Report</span>
-                       <span className="italic">Page {format(new Date(), 'yyyy')}</span>
+                       <span className="print:hidden italic">Content dynamically paginated for printing</span>
                     </div>
                  </div>
               </div>
