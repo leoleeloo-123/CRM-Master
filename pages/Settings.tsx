@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
@@ -47,13 +46,14 @@ const Settings: React.FC = () => {
     }
   };
 
-  const renderTagEditor = (label: string, category: keyof TagOptions) => (
+  const renderTagEditor = (labelKey: keyof typeof import('../utils/i18n').translations['en'], category: keyof TagOptions) => (
     <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-6 border-2 border-slate-100 dark:border-slate-800 shadow-inner">
-       <h4 className="font-black text-slate-400 dark:text-slate-500 mb-5 text-[10px] xl:text-xs uppercase tracking-[0.2em] ml-1">{label}</h4>
+       <h4 className="font-black text-slate-400 dark:text-slate-500 mb-5 text-[10px] xl:text-xs uppercase tracking-[0.2em] ml-1">{t(labelKey)}</h4>
        <div className="flex flex-wrap gap-2.5 mb-5">
          {tagOptions[category].map(tag => (
            <div key={tag} className="flex items-center gap-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl text-xs xl:text-sm font-black shadow-sm group hover:border-blue-300 transition-all">
-              <span className="text-slate-800 dark:text-slate-200">{t(tag as any) || tag}</span>
+              {/* Note: Tags in settings display raw text from database as requested, no translation call here */}
+              <span className="text-slate-800 dark:text-slate-200">{tag}</span>
               <button 
                 onClick={() => handleDeleteTag(category, tag)}
                 className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -81,48 +81,49 @@ const Settings: React.FC = () => {
 
   return (
     <div className="space-y-10 xl:space-y-16 max-w-6xl mx-auto pb-20">
-      <div>
+      <div className="flex flex-col gap-2">
         <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('settings')}</h2>
-        <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('settingsDesc')}</p>
+        <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('settingsDesc')}</p>
       </div>
 
       <div className="space-y-12">
+        {/* Organization Profile */}
         <Card className="p-8 xl:p-12 shadow-sm border-2">
           <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
-            <Building2 className="text-blue-600 w-7 h-7 xl:w-9 xl:h-9" /> Organization & Profile
+            <Building2 className="text-blue-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('orgProfile')}
           </h3>
           
           <div className="max-w-4xl space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
                 <label className="block text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Organization Name
+                  {t('orgName')}
                 </label>
                 <input 
                   type="text" 
                   value={localCompanyName}
                   onChange={(e) => setLocalCompanyName(e.target.value)}
                   className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-base xl:text-xl transition-all"
-                  placeholder="Enter company name..."
+                  placeholder={t('orgName')}
                 />
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
-                  User Name
+                  {t('uName')}
                 </label>
                 <input 
                   type="text" 
                   value={localUserName}
                   onChange={(e) => setLocalUserName(e.target.value)}
                   className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-base xl:text-xl transition-all"
-                  placeholder="Enter your name..."
+                  placeholder={t('uName')}
                 />
               </div>
             </div>
             
             <div className="pt-2 flex items-center gap-6">
               <Button onClick={handleSaveProfile} className="px-10 py-3.5 shadow-xl bg-blue-600 hover:bg-blue-700">
-                <Save className="w-5 h-5 xl:w-6 xl:h-6" /> {isSaved ? 'Updated Successfully!' : t('save')}
+                <Save className="w-5 h-5 xl:w-6 xl:h-6" /> {isSaved ? t('profileUpdated') : t('saveProfile')}
               </Button>
             </div>
           </div>
@@ -131,93 +132,96 @@ const Settings: React.FC = () => {
         {/* Interaction Tags Management Section */}
         <Card className="p-8 xl:p-12 shadow-sm border-2">
           <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
-            <Activity className="text-amber-500 w-7 h-7 xl:w-9 xl:h-9" /> 对接进度标签管理 (Interaction Tags)
+            <Activity className="text-amber-500 w-7 h-7 xl:w-8 xl:h-8" /> {t('interactionTagManagement')}
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {renderTagEditor("对接流程类型 (<Type>)", 'interactionTypes')}
-            {renderTagEditor("流程作用标签 ({Effect})", 'interactionEffects')}
+            {renderTagEditor("interactionType", 'interactionTypes')}
+            {renderTagEditor("interactionEffect", 'interactionEffects')}
           </div>
         </Card>
 
+        {/* General Tag Management */}
         <Card className="p-8 xl:p-12 shadow-sm border-2">
           <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
-            <Tags className="text-indigo-600 w-7 h-7 xl:w-9 xl:h-9" /> {t('tagManagement')}
+            <Tags className="text-indigo-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('tagManagement')}
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {renderTagEditor(t('tagsSampleStatus'), 'sampleStatus')}
-            {renderTagEditor(t('tagsCrystalType'), 'crystalType')}
-            {renderTagEditor(t('tagsProductCategory'), 'productCategory')}
-            {renderTagEditor(t('tagsProductForm'), 'productForm')}
-            <div className="md:col-span-2 pt-6 border-t dark:border-slate-800">
-               <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-3 mb-6 uppercase tracking-wider">
-                  <Presentation size={24} className="text-indigo-500" /> Exhibition Metadata
-               </h3>
-               {renderTagEditor('Event Series (展会系列)', 'eventSeries')}
+            {renderTagEditor("tagsSampleStatus", 'sampleStatus')}
+            {renderTagEditor("tagsCrystalType", 'crystalType')}
+            {renderTagEditor("tagsProductCategory", 'productCategory')}
+            {renderTagEditor("tagsProductForm", 'productForm')}
+            
+            <div className="md:col-span-2 pt-10 border-t dark:border-slate-800">
+               <h4 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 uppercase tracking-wider">
+                  <Presentation size={24} className="text-indigo-500" /> {t('exhibitionMetadata')}
+               </h4>
+               {renderTagEditor('eventSeries', 'eventSeries')}
             </div>
           </div>
         </Card>
 
+        {/* Appearance & Language Selection */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <Card className="p-8 xl:p-12 shadow-sm border-2">
-            <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-10 uppercase tracking-wider">
-              <Monitor className="text-blue-600 w-7 h-7 xl:w-9 xl:h-9" /> {t('appearance')}
+            <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
+              <Monitor className="text-blue-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('appearance')}
             </h3>
             
             <div className="flex gap-6">
                <button
                   onClick={() => toggleTheme('light')}
-                  className={`flex-1 p-8 rounded-3xl border-4 flex flex-col items-center gap-5 transition-all active:scale-95 ${
+                  className={`flex-1 p-6 rounded-3xl border-4 flex flex-col items-center gap-4 transition-all active:scale-95 ${
                     theme === 'light' 
                       ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-slate-800 shadow-xl' 
                       : 'border-slate-100 dark:border-slate-800 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                >
-                  <Sun className="w-10 h-10 xl:w-14 xl:h-14" />
-                  <span className="font-black text-lg xl:text-xl uppercase tracking-widest">{t('lightMode')}</span>
+                  <Sun className="w-8 h-8 xl:w-10 xl:h-10" />
+                  <span className="font-black text-xs xl:text-sm uppercase tracking-widest">{t('lightMode')}</span>
                </button>
 
                <button
                   onClick={() => toggleTheme('dark')}
-                  className={`flex-1 p-8 rounded-3xl border-4 flex flex-col items-center gap-5 transition-all active:scale-95 ${
+                  className={`flex-1 p-6 rounded-3xl border-4 flex flex-col items-center gap-4 transition-all active:scale-95 ${
                     theme === 'dark' 
                       ? 'border-blue-600 bg-slate-800 text-blue-400 shadow-xl' 
                       : 'border-slate-100 dark:border-slate-800 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                >
-                  <Moon className="w-10 h-10 xl:w-14 xl:h-14" />
-                  <span className="font-black text-lg xl:text-xl uppercase tracking-widest">{t('darkMode')}</span>
+                  <Moon className="w-8 h-8 xl:w-10 xl:h-10" />
+                  <span className="font-black text-xs xl:text-sm uppercase tracking-widest">{t('darkMode')}</span>
                </button>
             </div>
           </Card>
 
           <Card className="p-8 xl:p-12 shadow-sm border-2">
-            <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-10 uppercase tracking-wider">
-              <Languages className="text-purple-600 w-7 h-7 xl:w-9 xl:h-9" /> {t('languageSettings')}
+            <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
+              <Languages className="text-purple-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('languageSettings')}
             </h3>
             
             <div className="space-y-4">
               <button
                  onClick={() => setLanguage('en')}
-                 className={`w-full flex items-center justify-between p-6 rounded-2xl border-2 transition-all active:scale-[0.98] ${
+                 className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${
                    language === 'en'
                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-lg'
                      : 'border-slate-100 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800'
                  }`}
               >
-                 <span className="font-black text-base xl:text-xl uppercase tracking-[0.1em]">{t('english')}</span>
+                 <span className="font-black text-xs xl:text-sm uppercase tracking-[0.1em]">{t('english')}</span>
               </button>
 
               <button
                  onClick={() => setLanguage('zh')}
-                 className={`w-full flex items-center justify-between p-6 rounded-2xl border-2 transition-all active:scale-[0.98] ${
+                 className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${
                    language === 'zh'
                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-lg'
                      : 'border-slate-100 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800'
                  }`}
               >
-                 <span className="font-black text-base xl:text-xl uppercase tracking-[0.1em]">{t('chinese')}</span>
+                 <span className="font-black text-xs xl:text-sm uppercase tracking-[0.1em]">{t('chinese')}</span>
               </button>
             </div>
           </Card>

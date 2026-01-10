@@ -1,4 +1,3 @@
-
 export type Language = 'en' | 'zh';
 
 export const translations = {
@@ -193,6 +192,11 @@ export const translations = {
     exportSamples: 'Export Samples',
     
     // Settings
+    orgProfile: 'Organization & Profile',
+    orgName: 'Organization Name',
+    uName: 'User Name',
+    saveProfile: 'Save Profile',
+    profileUpdated: 'Updated Successfully!',
     appearance: 'Appearance',
     languageSettings: 'Language',
     lightMode: 'Light Mode',
@@ -208,6 +212,12 @@ export const translations = {
     tagsProductCategory: 'Product Categories',
     tagsProductForm: 'Product Forms',
     addTagPlaceholder: 'Add new option...',
+    interactionTagManagement: 'Interaction Tag Management',
+    exhibitionMetadata: 'Exhibition Metadata',
+    eventSeries: 'Event Series',
+    interactionType: 'Interaction Type',
+    interactionEffect: 'Interaction Effect',
+    availableTags: 'Available Tags',
     
     // Font Size
     fontSize: 'Font Size',
@@ -406,6 +416,11 @@ export const translations = {
     exportSamples: '导出样品列表',
 
     // Settings
+    orgProfile: '机构与个人资料',
+    orgName: '公司/机构名称',
+    uName: '用户姓名',
+    saveProfile: '保存资料',
+    profileUpdated: '资料更新成功！',
     appearance: '外观设置',
     languageSettings: '语言设置',
     lightMode: '浅色模式',
@@ -414,13 +429,19 @@ export const translations = {
     chinese: '中文 (简体)',
 
     // Tag Management
-    tagManagement: '标签管理 (下拉菜单选项)',
+    tagManagement: '标签管理',
     tagDesc: '管理样品信息的下拉菜单选项。',
     tagsSampleStatus: '样品状态',
     tagsCrystalType: '晶体类型',
-    tagsProductCategory: 'Product Categories',
-    tagsProductForm: 'Product Forms',
-    addTagPlaceholder: 'Add new option...',
+    tagsProductCategory: '产品分类',
+    tagsProductForm: '产品形态',
+    addTagPlaceholder: '输入新选项...',
+    interactionTagManagement: '互动记录标签管理',
+    exhibitionMetadata: '展会元数据',
+    eventSeries: '展会系列',
+    interactionType: '对接流程类型',
+    interactionEffect: '流程作用标签',
+    availableTags: '可用标签',
     
     // Font Size
     fontSize: '字体大小',
@@ -430,57 +451,8 @@ export const translations = {
   }
 };
 
-const ALIASES: Record<string, string> = {
-  'Single Crystal': '单晶',
-  'Polycrystalline': '多晶',
-  'Powder': '微粉',
-  '粉末': '微粉',
-  'Suspension': '悬浮液',
-  'Agglomerated Diamond': '团聚',
-  'Agglomerated': '团聚',
-  '聚晶': '团聚',
-  '团聚': '团聚',
-  '纳米金刚石': '纳米金刚石',
-  'Nano Diamond': '纳米金刚石',
-  'Nano': '纳米金刚石',
-  '球形金刚石': '球形金刚石',
-  '金刚石球': '金刚石球',
-  '微米粉': '微米粉',
-  'Requested': '等待中',
-  'Waiting': '等待中',
-  '已申请': '等待中',
-  'Processing': '样品制作中',
-  '处理中': '样品制作中',
-  'Sent': '样品已发出',
-  '已寄出': '样品已发出',
-  'Delivered': '已送达',
-  'Testing': '客户初步测试',
-  '测试中': '客户初步测试',
-  'Feedback Received': '客户初步结果',
-  '已反馈': '客户初步结果',
-  'Closed': '已关闭',
-  'No': 'Ongoing',
-  'Ongoing': 'Ongoing',
-  '否': 'Ongoing',
-  '测试进行中': 'Ongoing',
-  'Yes': 'Finished',
-  'Finished': 'Finished',
-  '是': 'Finished',
-  '测试完成': 'Finished',
-  'Terminated': 'Terminated',
-  '项目终止': 'Terminated'
-};
-
 export const getCanonicalTag = (term: string): string => {
   if (!term) return '';
-  const trimmed = term.trim();
-  if (translations.en[trimmed as keyof typeof translations.en]) {
-      return trimmed;
-  }
-  if (ALIASES[trimmed]) {
-      return ALIASES[trimmed];
-  }
-  const enEntry = Object.entries(translations.en).find(([key, val]) => val === trimmed);
-  if (enEntry) return enEntry[0];
-  return trimmed;
+  // Directly return the trimmed string without language mapping to respect original database text
+  return term.trim();
 };
