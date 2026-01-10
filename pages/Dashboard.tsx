@@ -585,34 +585,37 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </div>
       </div>
 
-      {/* Report Trigger Card */}
-      <Card className="p-8 xl:p-10 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 min-h-[300px] items-center justify-center text-center">
-         <div className="max-w-2xl">
-            <h3 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white uppercase mb-4 tracking-tight">
+      {/* Report Trigger Card - Visual cleanup for uniformity */}
+      <Card className="p-10 xl:p-12 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 min-h-[350px] items-center justify-center text-center">
+         <div className="max-w-3xl">
+            <h3 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white uppercase mb-4 tracking-tight">
                {t('generateReport')}
             </h3>
-            <p className="text-slate-500 font-bold mb-8 uppercase tracking-widest text-sm xl:text-base">
-               Create a high-resolution, full-length image report of all samples currently in <span className="text-blue-600">{reviewStatus}</span> status.
+            <p className="text-slate-500 font-bold mb-10 uppercase tracking-widest text-sm xl:text-base leading-relaxed">
+               {t('reportSubtitlePrefix')}
+               <span className="text-blue-600 px-1 font-black">{t(reviewStatus as any) || reviewStatus}</span>
+               {t('reportSubtitleSuffix')}
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center gap-6 justify-center">
-               <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-2xl border-2 border-slate-100 dark:border-slate-700 shadow-sm min-w-[280px]">
-                  <Filter size={18} className="ml-3 text-blue-500" />
+            <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4 sm:h-16">
+               <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 shadow-sm min-w-[280px]">
+                  <Filter size={20} className="text-blue-500 shrink-0" />
                   <select 
-                     className="flex-1 bg-transparent border-none py-2 text-sm xl:text-base font-black uppercase tracking-tight outline-none cursor-pointer"
+                     className="flex-1 bg-transparent border-none py-2 text-sm xl:text-base font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-slate-900 dark:text-white"
                      value={reviewStatus}
                      onChange={e => setReviewStatus(e.target.value)}
                   >
                      {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
                   </select>
+                  <ChevronDown size={16} className="text-slate-400 shrink-0" />
                </div>
 
                <button 
                   onClick={() => setIsPreviewModalOpen(true)}
-                  className="flex items-center gap-3 px-10 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm xl:text-lg uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all"
+                  className="flex items-center justify-center gap-4 px-10 bg-blue-600 text-white rounded-2xl font-black text-sm xl:text-lg uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all min-h-[64px] sm:min-h-0"
                >
-                  <FileText size={24} />
-                  Preview & Export JPG
+                  <FileText size={22} />
+                  {t('previewExportJpg')}
                </button>
             </div>
          </div>
@@ -626,8 +629,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
                  <div className="flex items-center gap-3">
                     <ImageIcon className="text-blue-600 w-6 h-6" />
-                    <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-wider">Report Image Preview</h3>
-                    <Badge color="gray">{reviewGroups.length} Customers</Badge>
+                    <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-wider">{t('previewExportJpg')}</h3>
+                    <Badge color="gray">{reviewGroups.length} {t('customers')}</Badge>
                  </div>
                  <div className="flex items-center gap-4">
                     <button 
@@ -636,7 +639,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                        className="flex items-center gap-3 px-8 py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-600/20 active:scale-95 transition-all disabled:opacity-50"
                     >
                        {isExporting ? <RefreshCcw className="animate-spin" size={20} /> : <Download size={20} />} 
-                       {isExporting ? 'Capturing...' : 'Download JPG'}
+                       {isExporting ? 'Capturing...' : t('export')}
                     </button>
                     <button onClick={() => setIsPreviewModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                        <X className="w-7 h-7 text-slate-400" />
@@ -667,11 +670,11 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                        <div className="bg-slate-100 p-12 rounded-[3rem] mb-20 border-2 border-slate-200" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ flex: '1' }}>
                              <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Filter Criteria</span>
-                             <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>Status: <span style={{ color: '#2563eb' }}>{reviewStatus}</span></h4>
+                             <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>Status: <span style={{ color: '#2563eb' }}>{t(reviewStatus as any) || reviewStatus}</span></h4>
                           </div>
                           <div style={{ textAlign: 'right' }}>
                              <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Summary</span>
-                             <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>{reviewGroups.length} <span style={{ color: '#94a3b8' }}>Customers</span></h4>
+                             <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>{reviewGroups.length} <span style={{ color: '#94a3b8' }}>{t('customers')}</span></h4>
                           </div>
                        </div>
 

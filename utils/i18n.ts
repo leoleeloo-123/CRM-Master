@@ -55,6 +55,9 @@ export const translations = {
     exportPdf: 'Export PDF',
     sampleReportTitle: 'Sample Status Report',
     reportDetails: 'Report Details',
+    reportSubtitlePrefix: 'Create a high-resolution image report of all samples in ',
+    reportSubtitleSuffix: ' status.',
+    previewExportJpg: 'Preview & Export JPG',
 
     // Customer List
     customerDatabase: 'Customer Database',
@@ -283,6 +286,9 @@ export const translations = {
     exportPdf: '导出 PDF',
     sampleReportTitle: '样品状态报告',
     reportDetails: '报告详情',
+    reportSubtitlePrefix: '为当前状态为“',
+    reportSubtitleSuffix: '”的所有样品生成高分辨率长图报告。',
+    previewExportJpg: '预览并导出 JPG',
 
     // Customer List
     customerDatabase: '客户数据库',
