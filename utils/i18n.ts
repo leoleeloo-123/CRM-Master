@@ -58,6 +58,10 @@ export const translations = {
     reportSubtitlePrefix: 'Create a high-resolution image report of all samples in ',
     reportSubtitleSuffix: ' status.',
     previewExportJpg: 'Preview & Export JPG',
+    selectTemplate: 'Select a visualization template',
+    reportDescription: 'Report Description',
+    filterByStage: 'Filter by Stage',
+    sampleTrackingReport: 'Sample Tracking Report',
 
     // Customer List
     customerDatabase: 'Customer Database',
@@ -289,6 +293,10 @@ export const translations = {
     reportSubtitlePrefix: '为当前状态为“',
     reportSubtitleSuffix: '”的所有样品生成高分辨率长图报告。',
     previewExportJpg: '预览并导出 JPG',
+    selectTemplate: '选择可视化模板',
+    reportDescription: '报告说明',
+    filterByStage: '阶段筛选',
+    sampleTrackingReport: '样品追踪报告',
 
     // Customer List
     customerDatabase: '客户数据库',

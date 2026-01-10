@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel, Button, parseLocalDate, Modal } from '../components/Common';
-import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box, Filter, Maximize2, Minimize2, ChevronDown, ChevronRight as ChevronRightSmall, ChevronUp, Clock, ListTodo, FileText, Download, Printer, X, Image as ImageIcon, RefreshCcw } from 'lucide-react';
+import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box, Filter, Maximize2, Minimize2, ChevronDown, ChevronRight as ChevronRightSmall, ChevronUp, Clock, ListTodo, FileText, Download, Printer, X, Image as ImageIcon, RefreshCcw, FileBarChart2, ClipboardList } from 'lucide-react';
 import { 
   format, isBefore, addDays, 
   endOfMonth, endOfWeek, eachDayOfInterval, 
@@ -327,8 +327,8 @@ const DashboardCalendar: React.FC<{
           
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner">
-                <button onClick={() => setView('week')} className={`px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewWeek')}</button>
-                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>{t('viewMonth')}</button>
+                <button onClick={() => setView('week')} className={`px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-50 hover:text-slate-700'}`}>{t('viewWeek')}</button>
+                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-50 hover:text-slate-700'}`}>{t('viewMonth')}</button>
              </div>
 
              <div className="flex items-center gap-2">
@@ -356,6 +356,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [reportType, setReportType] = useState<'sample'>('sample');
 
   // Shared Calendar & Daily Agenda State
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -586,39 +587,77 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           </div>
         </div>
 
-        {/* Report Trigger Card - Visual cleanup for uniformity */}
-        <Card className="p-10 xl:p-12 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 min-h-[350px] items-center justify-center text-center">
-          <div className="max-w-3xl">
-              <h3 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white uppercase mb-4 tracking-tight">
-                {t('generateReport')}
-              </h3>
-              <p className="text-slate-500 font-bold mb-10 uppercase tracking-widest text-sm xl:text-base leading-relaxed">
-                {t('reportSubtitlePrefix')}
-                <span className="text-blue-600 px-1 font-black">{t(reviewStatus as any) || reviewStatus}</span>
-                {t('reportSubtitleSuffix')}
-              </p>
+        {/* Reorganized Report Generation Section */}
+        <Card className="p-10 xl:p-12 shadow-sm flex flex-col lg:flex-row items-center border-2 overflow-hidden bg-white dark:bg-slate-900/40 min-h-[180px] transition-all">
+          {/* Column 1: Title & Report Type Selection */}
+          <div className="flex-1 w-full lg:w-auto text-center lg:text-left flex flex-col justify-center gap-4">
+              <div>
+                <h3 className="text-2xl xl:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center justify-center lg:justify-start gap-3">
+                  <FileBarChart2 className="text-blue-600" size={28} />
+                  {t('generateReport')}
+                </h3>
+                <p className="text-[10px] xl:text-[11px] text-slate-400 font-black uppercase tracking-[0.15em] mt-1.5">{t('selectTemplate')}</p>
+              </div>
               
-              <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4 sm:h-16">
-                <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 shadow-sm min-w-[280px]">
-                    <Filter size={20} className="text-blue-500 shrink-0" />
+              <div className="relative inline-block w-full max-w-[320px] mx-auto lg:mx-0">
+                <select 
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-5 py-3 text-xs xl:text-sm font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-slate-900 dark:text-white shadow-sm hover:border-blue-300 transition-all"
+                  value={reportType}
+                  onChange={e => setReportType(e.target.value as any)}
+                >
+                  <option value="sample">{t('sampleTrackingReport')}</option>
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+          </div>
+
+          {/* Vertical Separator 1 - Slightly shorter */}
+          <div className="hidden lg:block h-14 w-px bg-slate-200 dark:bg-slate-700 mx-10" />
+          <div className="lg:hidden w-full h-px bg-slate-100 dark:bg-slate-800 my-8" />
+
+          {/* Column 2: Selected Report Description & Filter */}
+          <div className="flex-[1.8] w-full lg:w-auto text-center lg:text-left flex flex-col justify-center gap-5">
+              <div className="space-y-1.5">
+                <h4 className="font-black text-xs xl:text-sm uppercase text-slate-500 dark:text-slate-400 tracking-wider flex items-center justify-center lg:justify-start gap-2">
+                   <ClipboardList size={14} className="opacity-50" />
+                   {t('reportDescription')}
+                </h4>
+                <p className="text-xs xl:text-sm text-slate-800 dark:text-slate-200 font-bold leading-relaxed max-w-xl mx-auto lg:mx-0 opacity-80">
+                  {reportType === 'sample' && t('reportSubtitlePrefix') + (t(reviewStatus as any) || reviewStatus) + t('reportSubtitleSuffix')}
+                </p>
+              </div>
+              
+              {reportType === 'sample' && (
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <span className="text-[10px] xl:text-[11px] font-black uppercase text-slate-400 tracking-widest shrink-0">{t('filterByStage')}:</span>
+                  <div className="relative flex-1 w-full max-w-[320px]">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500"><Filter size={14} /></div>
                     <select 
-                      className="flex-1 bg-transparent border-none py-2 text-sm xl:text-base font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-slate-900 dark:text-white"
+                      className="w-full bg-blue-50/50 dark:bg-blue-900/20 border-2 border-blue-100/50 dark:border-blue-900/50 rounded-xl pl-10 pr-10 py-3 text-xs xl:text-sm font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-800 dark:text-blue-300 hover:bg-blue-50 transition-all"
                       value={reviewStatus}
                       onChange={e => setReviewStatus(e.target.value)}
                     >
                       {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
                     </select>
-                    <ChevronDown size={16} className="text-slate-400 shrink-0" />
+                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
+                  </div>
                 </div>
+              )}
+          </div>
 
-                <button 
-                    onClick={() => setIsPreviewModalOpen(true)}
-                    className="flex items-center justify-center gap-4 px-10 bg-blue-600 text-white rounded-2xl font-black text-sm xl:text-lg uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all min-h-[64px] sm:min-h-0"
-                >
-                    <FileText size={22} />
-                    {t('previewExportJpg')}
-                </button>
-              </div>
+          {/* Vertical Separator 2 - Slightly shorter */}
+          <div className="hidden lg:block h-14 w-px bg-slate-200 dark:bg-slate-700 mx-10" />
+          <div className="lg:hidden w-full h-px bg-slate-100 dark:border-slate-800 my-8" />
+
+          {/* Column 3: Action Button - Centered */}
+          <div className="flex-1 w-full lg:w-auto flex justify-center lg:justify-end items-center">
+              <button 
+                  onClick={() => setIsPreviewModalOpen(true)}
+                  className="flex items-center justify-center gap-3 px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-sm xl:text-base uppercase tracking-[0.1em] shadow-2xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all w-full lg:w-auto"
+              >
+                  <FileText size={22} />
+                  {t('previewExportJpg')}
+              </button>
           </div>
         </Card>
 
