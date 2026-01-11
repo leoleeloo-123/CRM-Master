@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
@@ -9,13 +8,16 @@ import { Exhibition } from '../types';
 
 const ExhibitionProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { exhibitions, setExhibitions, customers, tagOptions, setTagOptions, t } = useApp();
+  const { exhibitions, setExhibitions, customers, setCustomers, tagOptions, setTagOptions, t } = useApp();
   const navigate = useNavigate();
 
   const exhibition = exhibitions.find(e => e.id === id);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
+  const [isEditingNameModalOpen, setIsEditingNameModalOpen] = useState(false);
+  
   const [editFields, setEditFields] = useState<Partial<Exhibition>>({});
+  const [tempName, setTempName] = useState('');
   const [newSeriesInput, setNewSeriesInput] = useState('');
 
   useEffect(() => {
@@ -24,6 +26,7 @@ const ExhibitionProfile: React.FC = () => {
         ...exhibition,
         eventSeries: Array.isArray(exhibition.eventSeries) ? exhibition.eventSeries : []
       });
+      setTempName(exhibition.name);
     }
   }, [exhibition]);
 
@@ -38,6 +41,52 @@ const ExhibitionProfile: React.FC = () => {
     setExhibitions(prev => prev.map(e => e.id === id ? { ...exhibition, ...editFields } as Exhibition : e));
     setIsEditing(false);
     setIsEditingSummary(false);
+  };
+
+  const handleUpdateName = () => {
+    if (!tempName.trim()) return;
+    if (window.confirm(t('confirmExhibitionNameChange'))) {
+      const oldName = exhibition.name;
+      const newName = tempName.trim();
+
+      // 1. Update exhibition record
+      setExhibitions(prev => prev.map(e => e.id === id ? { ...e, name: newName } : e));
+
+      // 2. Update linked customers globally
+      setCustomers(prev => prev.map(c => {
+        if (Array.isArray(c.tags) && c.tags.includes(oldName)) {
+          return {
+            ...c,
+            tags: c.tags.map(t => t === oldName ? newName : t)
+          };
+        }
+        return c;
+      }));
+
+      setIsEditingNameModalOpen(false);
+    }
+  };
+
+  const handleDeleteExhibition = () => {
+    if (window.confirm(t('confirmDeleteExhibition'))) {
+      const exhName = exhibition.name;
+      
+      // 1. Remove from exhibitions list
+      setExhibitions(prev => prev.filter(e => e.id !== id));
+
+      // 2. Remove tag from all associated customers
+      setCustomers(prev => prev.map(c => {
+        if (Array.isArray(c.tags) && c.tags.includes(exhName)) {
+          return {
+            ...c,
+            tags: c.tags.filter(t => t !== exhName)
+          };
+        }
+        return c;
+      }));
+
+      navigate('/exhibitions');
+    }
   };
 
   const toggleSeries = (seriesName: string) => {
@@ -77,7 +126,7 @@ const ExhibitionProfile: React.FC = () => {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-6">
         <div className="flex items-center gap-6">
           <button onClick={() => navigate('/exhibitions')} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 active:scale-90">
             <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
@@ -87,12 +136,23 @@ const ExhibitionProfile: React.FC = () => {
               <p className="text-slate-500 font-bold mt-2 uppercase tracking-widest text-sm">Centralized Event Management</p>
           </div>
         </div>
-        {!isEditing && (
-          <Button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 px-8 py-3 rounded-2xl shadow-xl shadow-emerald-600/20 active:scale-95 transition-all">
-             <PencilLine size={20} />
-             <span className="font-black uppercase tracking-widest text-sm">Edit Event Info</span>
+        
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={() => { setTempName(exhibition.name); setIsEditingNameModalOpen(true); }} className="flex items-center gap-2 px-6 py-3 rounded-2xl shadow-sm active:scale-95 transition-all">
+             <PencilLine size={18} />
+             <span className="font-black uppercase tracking-widest text-xs">{t('edit')}</span>
           </Button>
-        )}
+          <Button variant="danger" onClick={handleDeleteExhibition} className="flex items-center gap-2 px-6 py-3 rounded-2xl shadow-sm active:scale-95 transition-all">
+             <Trash2 size={18} />
+             <span className="font-black uppercase tracking-widest text-xs">{t('delete')}</span>
+          </Button>
+          {!isEditing && (
+            <Button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 px-8 py-3 rounded-2xl shadow-xl shadow-emerald-600/20 active:scale-95 transition-all">
+               <PencilLine size={20} />
+               <span className="font-black uppercase tracking-widest text-sm">Edit Event Info</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -293,6 +353,25 @@ const ExhibitionProfile: React.FC = () => {
             </Card>
          </div>
       </div>
+
+      {/* Rename Modal */}
+      <Modal isOpen={isEditingNameModalOpen} onClose={() => setIsEditingNameModalOpen(false)} title={t('editExhibitionName')}>
+          <div className="space-y-6">
+             <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Exhibition Name</label>
+                <input 
+                  className="w-full p-4 border-2 rounded-2xl font-black text-lg dark:bg-slate-800 outline-none focus:border-blue-500 transition-all" 
+                  value={tempName} 
+                  onChange={(e) => setTempName(e.target.value)} 
+                  autoFocus
+                />
+             </div>
+             <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" onClick={() => setIsEditingNameModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdateName} className="bg-blue-600 px-8"><Save size={18} className="mr-1" /> Save Name</Button>
+             </div>
+          </div>
+       </Modal>
     </div>
   );
 };

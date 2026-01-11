@@ -91,6 +91,9 @@ export const translations = {
     editCustomerName: 'Edit Customer Name',
     confirmNameChange: 'Are you sure you want to change the customer name? This will update the name globally across all related records.',
     confirmTierChange: 'Are you sure you want to change this customer\'s rank/tier?',
+    confirmDeleteExhibition: 'Are you sure you want to delete this exhibition? This will remove the reference from all linked customers.',
+    editExhibitionName: 'Edit Exhibition Name',
+    confirmExhibitionNameChange: 'Are you sure you want to change the exhibition name? This will update the name globally in all customer records.',
     
     // Contacts Edit
     addContact: 'Add Contact',
@@ -330,6 +333,9 @@ export const translations = {
     editCustomerName: '编辑客户名称',
     confirmNameChange: '您确定要修改客户名称吗？这将全局更新所有相关记录中的名称。',
     confirmTierChange: '您确定要更改该客户的等级吗？',
+    confirmDeleteExhibition: '您确定要删除此展会记录吗？这将从所有关联客户的标签中移除该展会。',
+    editExhibitionName: '编辑展会名称',
+    confirmExhibitionNameChange: '您确定要修改展会名称吗？这将全局更新所有关联客户记录中的展会标签。',
 
     // Contacts Edit
     addContact: '添加联系人',
