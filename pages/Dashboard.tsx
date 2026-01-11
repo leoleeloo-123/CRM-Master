@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel, Button, parseLocalDate, Modal } from '../components/Common';
@@ -142,12 +143,12 @@ const DashboardCalendar: React.FC<{
 
     return (
       <div className="w-full flex flex-col">
-         <div className="grid grid-cols-7 mb-3">
+         <div className="grid grid-cols-7 mb-3 px-1">
             {weekDays.map(d => (
               <div key={d} className="text-center text-xs xl:text-sm font-black text-slate-400 uppercase tracking-widest">{d}</div>
             ))}
          </div>
-         <div className="grid grid-cols-7 gap-1.5">
+         <div className="grid grid-cols-7 gap-1.5 p-1">
             {days.map(day => {
                const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
                const dayStr = format(day, 'yyyy-MM-dd');
@@ -162,9 +163,9 @@ const DashboardCalendar: React.FC<{
                  <div 
                    key={day.toISOString()} 
                    onClick={() => onSelectDate(startOfDay(day))}
-                   className={`p-1 border rounded-xl flex flex-col gap-0.5 cursor-pointer transition-all min-h-[90px] xl:min-h-[110px] ${
+                   className={`p-1 border rounded-xl flex flex-col gap-0.5 cursor-pointer transition-all min-h-[90px] xl:min-h-[110px] relative ${
                      isDaySelected 
-                       ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/20 z-10 shadow-md' 
+                       ? 'z-20 border-blue-600 bg-blue-50/20 shadow-lg ring-2 ring-blue-500/20 scale-[1.02]' 
                        : isCurrentMonth 
                          ? hasHoliday ? 'bg-slate-50/80 dark:bg-slate-800/80 border-slate-100 dark:border-slate-800' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800' 
                          : 'bg-slate-50 dark:bg-slate-900 border-transparent opacity-40'
@@ -214,12 +215,12 @@ const DashboardCalendar: React.FC<{
 
     return (
       <div className="w-full flex flex-col animate-in fade-in duration-300">
-         <div className="grid grid-cols-7 mb-3">
+         <div className="grid grid-cols-7 mb-3 px-1">
             {weekDays.map(d => (
               <div key={d} className="text-center text-xs xl:text-sm font-black text-slate-400 uppercase tracking-widest">{d}</div>
             ))}
          </div>
-         <div className="grid grid-cols-7 gap-3">
+         <div className="grid grid-cols-7 gap-3 p-1">
             {days.map(day => {
                const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
                const dayStr = format(day, 'yyyy-MM-dd');
@@ -232,9 +233,9 @@ const DashboardCalendar: React.FC<{
                  <div 
                    key={day.toISOString()} 
                    onClick={() => onSelectDate(startOfDay(day))}
-                   className={`p-3 border rounded-2xl flex flex-col gap-1 cursor-pointer transition-all min-h-[300px] xl:min-h-[450px] ${
+                   className={`p-3 border rounded-2xl flex flex-col gap-1 cursor-pointer transition-all min-h-[300px] xl:min-h-[450px] relative ${
                      isDaySelected 
-                       ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/20 z-10 shadow-md' 
+                       ? 'z-20 border-blue-600 bg-blue-50/20 shadow-lg ring-2 ring-blue-500/20 scale-[1.01]' 
                        : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800'
                    } ${isDayToday && !isDaySelected ? 'border-amber-400' : ''}`}
                  >
@@ -339,7 +340,7 @@ const DashboardCalendar: React.FC<{
           </div>
        </div>
        
-       <div className="animate-in fade-in duration-500 overflow-hidden">
+       <div className="animate-in fade-in duration-500 overflow-visible">
           {view === 'month' && renderMonthView()}
           {view === 'week' && renderWeekView()}
        </div>
