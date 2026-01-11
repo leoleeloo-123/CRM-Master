@@ -201,7 +201,17 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
            <div className="flex-1">
              <div className="flex items-center gap-6">
                <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{customer.name}</h1>
-               <div className="text-[1.2em]"><RankStars rank={customer.rank} editable onRankChange={(r) => saveUpdate({ rank: r })} /></div>
+               <div className="text-[1.2em]">
+                 <RankStars 
+                   rank={customer.rank} 
+                   editable 
+                   onRankChange={(r) => {
+                     if (window.confirm(t('confirmTierChange'))) {
+                       saveUpdate({ rank: r });
+                     }
+                   }} 
+                 />
+               </div>
              </div>
              <div className="flex items-center gap-3 mt-3 text-slate-400 font-black uppercase text-xs tracking-widest">
                <MapPin className="w-4 h-4" /> <span>{customer.region.join(', ')}</span>
