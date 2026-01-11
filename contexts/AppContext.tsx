@@ -1,10 +1,80 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Language, translations } from '../utils/i18n';
-import { Customer, Sample, MasterProduct, TagOptions, Exhibition } from '../types';
+import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction } from '../types';
 import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
+
+// Helper to handle the serialized summary format: (StarStatus)<TypeTag>{EffectTag}Content
+export const parseInteractionSummary = (summary: string) => {
+  const result = {
+    isStarred: false,
+    typeTag: '无',
+    effectTag: '无',
+    content: summary
+  };
+
+  if (!summary) return result;
+
+  // Star status
+  if (summary.startsWith('(标星记录)')) {
+    result.isStarred = true;
+    result.content = result.content.replace('(标星记录)', '');
+  } else if (summary.startsWith('(一般记录)')) {
+    result.content = result.content.replace('(一般记录)', '');
+  }
+
+  // Type Tag <...>
+  const typeMatch = result.content.match(/^<(.*?)>/);
+  if (typeMatch) {
+    result.typeTag = typeMatch[1];
+    result.content = result.content.replace(typeMatch[0], '');
+  }
+
+  // Effect Tag {...}
+  const effectMatch = result.content.match(/^{(.*?)}/);
+  if (effectMatch) {
+    result.effectTag = effectMatch[1];
+    result.content = result.content.replace(effectMatch[0], '');
+  }
+
+  result.content = result.content.trim();
+  return result;
+};
+
+// Helper: Recalculate dynamic dates based on full interaction history
+export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
+  // Sort all logs by date descending (newest first)
+  const sorted = [...interactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  // 1. Last Contact Date (The date of the newest log, regardless of tags)
+  const lastContact = sorted.length > 0 ? sorted[0].date : undefined;
+
+  // 2. Last Customer Reply Date (Unreplied)
+  // Most recent date where Effect Tag is '对方回复' or '对方回复及我方跟进'
+  let lastCustomerReply = undefined;
+  for (const int of sorted) {
+    const { effectTag } = parseInteractionSummary(int.summary);
+    if (effectTag === '对方回复' || effectTag === '对方回复及我方跟进') {
+      lastCustomerReply = int.date;
+      break;
+    }
+  }
+
+  // 3. Last My Reply Date (Unfollowed)
+  // Most recent date where Effect Tag is '我方跟进' or '对方回复及我方跟进'
+  let lastMyReply = undefined;
+  for (const int of sorted) {
+    const { effectTag } = parseInteractionSummary(int.summary);
+    if (effectTag === '我方跟进' || effectTag === '对方回复及我方跟进') {
+      lastMyReply = int.date;
+      break;
+    }
+  }
+
+  return { lastContact, lastCustomerReply, lastMyReply };
+};
 
 interface AppContextType {
   theme: 'light' | 'dark';
@@ -28,6 +98,7 @@ interface AppContextType {
   setSamples: (samples: Sample[] | ((prev: Sample[]) => Sample[])) => void;
   setExhibitions: (exhibitions: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => void;
   syncSampleToCatalog: (sample: Partial<Sample>) => void;
+  refreshAllCustomerDates: () => void;
   
   // Tag Management
   tagOptions: TagOptions;
@@ -195,6 +266,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setExhibitions = (val: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => setExhibitionsState(val);
   const setTagOptions = (val: TagOptions | ((prev: TagOptions) => TagOptions)) => setTagOptionsState(val);
 
+  const refreshAllCustomerDates = useCallback(() => {
+    setCustomersState(prev => prev.map(customer => {
+      const computed = getComputedDatesForCustomer(customer.interactions);
+      return {
+        ...customer,
+        lastContactDate: computed.lastContact || customer.lastContactDate,
+        // Only overwrite if a matching log was found (not undefined)
+        lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
+        lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate
+      };
+    }));
+  }, []);
+
   const refreshTagsFromSamples = (sampleList: Sample[], replace: boolean = false) => {
     setTagOptionsState(prev => {
       const newTags = replace ? {
@@ -264,7 +348,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider value={{ 
       theme, toggleTheme, language, setLanguage, fontSize, setFontSize, companyName, setCompanyName, userName, setUserName, t,
       customers, setCustomers, samples, setSamples, exhibitions, setExhibitions, masterProducts, syncSampleToCatalog,
-      clearDatabase, isDemoData, setIsDemoData, tagOptions, setTagOptions, refreshTagsFromSamples
+      clearDatabase, isDemoData, setIsDemoData, tagOptions, setTagOptions, refreshTagsFromSamples, refreshAllCustomerDates
     }}>
       {children}
     </AppContext.Provider>

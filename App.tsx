@@ -16,7 +16,7 @@ import { AppProvider, useApp } from './contexts/AppContext';
 
 // Inner component to use the context hooks
 const AppContent: React.FC = () => {
-  const { customers, samples, setCustomers, setSamples, isDemoData, setIsDemoData } = useApp();
+  const { customers, samples, setCustomers, setSamples, isDemoData, setIsDemoData, refreshAllCustomerDates } = useApp();
   const [loading, setLoading] = useState(true);
   const [showDemoBanner, setShowDemoBanner] = useState(true);
   
@@ -36,9 +36,11 @@ const AppContent: React.FC = () => {
     // Simulate initial load check
     const timer = setTimeout(() => {
       setLoading(false);
+      // Auto-trigger global date refresh on app load
+      refreshAllCustomerDates();
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [refreshAllCustomerDates]);
 
   const handleUpdateCustomer = (updatedCustomer: Customer) => {
     setCustomers((prev: Customer[]) => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
@@ -107,7 +109,7 @@ const AppContent: React.FC = () => {
                 <button onClick={() => setShowDemoBanner(false)} className="text-white hover:text-blue-200 bg-blue-700 px-2 py-0.5 rounded">Dismiss</button>
               </div>
             )}
-          <main className="max-w-[2560px] mx-auto p-8 xl:p-12 2xl:p-16">
+          <main className="max-max-w-[2560px] mx-auto p-8 xl:p-12 2xl:p-16">
             <Routes>
               <Route path="/" element={<Dashboard customers={customers} samples={samples} />} />
               <Route path="/customers" element={<CustomerList customers={customers} />} />

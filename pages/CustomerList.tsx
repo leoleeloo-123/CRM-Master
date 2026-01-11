@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Customer, Rank, CustomerStatus } from '../types';
 import { Card, Button, RankStars, StatusIcon, Modal } from '../components/Common';
-import { Search, Plus, ChevronRight, Filter, Star } from 'lucide-react';
+import { Search, Plus, ChevronRight, Filter, Star, RefreshCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { differenceInDays, isValid } from 'date-fns';
@@ -13,8 +13,9 @@ interface CustomerListProps {
 
 const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
   const navigate = useNavigate();
-  const { t, setCustomers } = useApp();
+  const { t, setCustomers, refreshAllCustomerDates } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // New Filter States
   const [selectedRanks, setSelectedRanks] = useState<number[]>([1, 2]); // Default 5 and 4 stars
@@ -147,6 +148,12 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     navigate(`/customers/${newId}`);
   };
 
+  const handleGlobalRefresh = () => {
+    setIsRefreshing(true);
+    refreshAllCustomerDates();
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
   const toggleRank = (rank: number) => {
     setSelectedRanks(prev => 
       prev.includes(rank) ? prev.filter(r => r !== rank) : [...prev, rank]
@@ -169,7 +176,14 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
           <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('customerDatabase')}</h2>
           <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('manageClients')}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+           <button 
+             onClick={handleGlobalRefresh}
+             title="Refresh Unreplied / Unfollowed Dates for all customers"
+             className={`p-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all active:scale-90 bg-white dark:bg-slate-900 shadow-sm ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
+           >
+             <RefreshCcw size={20} />
+           </button>
            <Button className="flex items-center gap-2" onClick={() => setIsAddModalOpen(true)}>
              <Plus className="w-4 h-4 xl:w-5 xl:h-5" /> {t('add')}
            </Button>

@@ -3,50 +3,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
-import { useApp } from '../contexts/AppContext';
+import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 
 interface CustomerProfileProps {
   customers: Customer[];
   samples: Sample[];
   onUpdateCustomer: (updated: Customer) => void;
 }
-
-// Helper to handle the new serialized summary format: (StarStatus)<TypeTag>{EffectTag}Content
-const parseInteractionSummary = (summary: string) => {
-  const result = {
-    isStarred: false,
-    typeTag: '无',
-    effectTag: '无',
-    content: summary
-  };
-
-  // Star status
-  if (summary.startsWith('(标星记录)')) {
-    result.isStarred = true;
-    result.content = result.content.replace('(标星记录)', '');
-  } else if (summary.startsWith('(一般记录)')) {
-    result.content = result.content.replace('(一般记录)', '');
-  }
-
-  // Type Tag <...>
-  const typeMatch = result.content.match(/^<(.*?)>/);
-  if (typeMatch) {
-    result.typeTag = typeMatch[1];
-    result.content = result.content.replace(typeMatch[0], '');
-  }
-
-  // Effect Tag {...}
-  const effectMatch = result.content.match(/^{(.*?)}/);
-  if (effectMatch) {
-    result.effectTag = effectMatch[1];
-    result.content = result.content.replace(effectMatch[0], '');
-  }
-
-  result.content = result.content.trim();
-  return result;
-};
 
 const formatInteractionSummary = (isStarred: boolean, typeTag: string, effectTag: string, content: string) => {
   const starStr = isStarred ? '(标星记录)' : '(一般记录)';
@@ -67,6 +32,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isEditContactsOpen, setIsEditContactsOpen] = useState(false);
   const [isEditTagsOpen, setIsEditTagsOpen] = useState(false);
   const [isEditUpcomingPlanOpen, setIsEditUpcomingPlanOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Interaction State
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
@@ -122,6 +88,23 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setIsEditUpcomingPlanOpen(false);
   };
 
+  const handleRefreshDates = () => {
+    setIsRefreshing(true);
+    // Recalculate based on current interactions
+    const computed = getComputedDatesForCustomer(customer.interactions);
+    
+    saveUpdate({
+      lastContactDate: computed.lastContact || customer.lastContactDate,
+      // Only update if computed value is found, otherwise keep original
+      lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
+      lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate,
+      lastStatusUpdate: format(new Date(), 'yyyy-MM-dd')
+    });
+
+    // Brief delay for UX feedback
+    setTimeout(() => setIsRefreshing(false), 600);
+  };
+
   const saveInteraction = (interactionToSave: Interaction) => {
     const isNew = !customer.interactions.some(i => i.id === interactionToSave.id);
     const finalSummary = formatInteractionSummary(intIsStarred, intTypeTag, intEffectTag, intContent);
@@ -131,30 +114,20 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       ? [updatedInt, ...customer.interactions]
       : customer.interactions.map(i => i.id === updatedInt.id ? updatedInt : i);
     
+    // Ensure chronological order for computation
     newInteractions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    // Basic updates that always happen (History storage and record-modified timestamp)
+    // Recalculate all computed dates based on the modified history
+    const computed = getComputedDatesForCustomer(newInteractions);
+
     const updateObj: Partial<Customer> = { 
       interactions: newInteractions,
-      lastStatusUpdate: format(new Date(), 'yyyy-MM-dd')
+      lastStatusUpdate: format(new Date(), 'yyyy-MM-dd'),
+      lastContactDate: computed.lastContact || customer.lastContactDate,
+      // Preserve existing if loop finds nothing
+      lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
+      lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate
     };
-
-    // Business dates auto-update ONLY for NEW records
-    if (isNew) {
-      updateObj.lastContactDate = updatedInt.date;
-      
-      if (intEffectTag === '对方回复') {
-        updateObj.lastCustomerReplyDate = updatedInt.date;
-      } else if (intEffectTag === '我方跟进') {
-        updateObj.lastMyReplyDate = updatedInt.date;
-      } else if (intEffectTag === '对方回复及我方跟进') {
-        updateObj.lastCustomerReplyDate = updatedInt.date;
-        updateObj.lastMyReplyDate = updatedInt.date;
-      } else {
-        // Default behavior for new log: assume it's a follow-up action by user if not specified otherwise
-        updateObj.lastMyReplyDate = updatedInt.date;
-      }
-    }
 
     saveUpdate(updateObj);
     setEditingInteraction(null);
@@ -162,7 +135,21 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const deleteInteraction = (intId: string) => {
     if (confirm(t('confirmDeleteInteraction'))) {
-      saveUpdate({ interactions: customer.interactions.filter(i => i.id !== intId) });
+      const newInteractions = customer.interactions.filter(i => i.id !== intId);
+      
+      // Recalculate based on remaining history
+      const computed = getComputedDatesForCustomer(newInteractions);
+
+      const updateObj: Partial<Customer> = { 
+        interactions: newInteractions,
+        lastStatusUpdate: format(new Date(), 'yyyy-MM-dd'),
+        lastContactDate: computed.lastContact || customer.lastContactDate,
+        // Preserve existing if loop finds nothing
+        lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
+        lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate
+      };
+
+      saveUpdate(updateObj);
     }
   };
 
@@ -301,16 +288,25 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                 <div className="space-y-6">
                    <div className="flex justify-between items-center">
                      <h3 className={titleClass}><Calendar className="w-6 h-6 text-blue-600"/> {t('interactionHistory')}</h3>
-                     <Button className="text-[10px] py-2 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest" 
-                        onClick={() => {
-                          setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
-                          setIntIsStarred(false);
-                          setIntTypeTag('无');
-                          setIntEffectTag('无');
-                          setIntContent('');
-                        }}>
-                       <Plus size={14} className="mr-1" /> Log Progress
-                     </Button>
+                     <div className="flex items-center gap-2">
+                        <button 
+                          onClick={handleRefreshDates}
+                          title="Refresh Unreplied / Unfollowed Dates"
+                          className={`p-2.5 rounded-lg border-2 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all active:scale-90 bg-white dark:bg-slate-900 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
+                        >
+                          <RefreshCcw size={18} />
+                        </button>
+                        <Button className="text-[10px] py-2 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest" 
+                            onClick={() => {
+                              setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
+                              setIntIsStarred(false);
+                              setIntTypeTag('无');
+                              setIntEffectTag('无');
+                              setIntContent('');
+                            }}>
+                          <Plus size={14} className="mr-1" /> Log Progress
+                        </Button>
+                     </div>
                    </div>
                    
                    <div className="border-l-2 border-slate-200 ml-4 pl-8 py-4 space-y-8">
@@ -335,7 +331,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                </div>
                                <Card className="p-4 bg-white shadow-sm border border-slate-100">
                                   <p className="text-base xl:text-lg font-bold text-slate-800">{parsed.content}</p>
-                               </Card>
+                                </Card>
                             </div>
                            );
                          })}
