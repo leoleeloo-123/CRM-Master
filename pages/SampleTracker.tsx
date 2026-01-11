@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
@@ -12,8 +11,8 @@ interface SampleTrackerProps {
   customers: Customer[];
 }
 
-// User requested fixed order
-const FIXED_BOARD_ORDER = ['客户初步结果', '客户初步测试', '样品已发出', '样品制作中', '等待中'];
+// User requested fixed order: 从左往右等待中，样品制作中，样品已发出，客户初步测试，客户初步结果
+const FIXED_BOARD_ORDER = ['等待中', '样品制作中', '样品已发出', '客户初步测试', '客户初步结果'];
 
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
   const navigate = useNavigate();
@@ -404,6 +403,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   if (lastGroup && lastGroup.customerId === s.customerId) {
                     lastGroup.samples.push(s);
                   } else {
+                    // Fix 'string' type used as a value here.
                     colGroups.push({ customerId: s.customerId, customerName: s.customerName, samples: [s] });
                   }
                 });
