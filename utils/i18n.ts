@@ -87,6 +87,9 @@ export const translations = {
     newRequest: 'New Request',
     noSamples: 'No samples recorded for this customer.',
     confirmDeleteInteraction: 'Are you sure you want to delete this interaction?',
+    confirmDeleteCustomer: 'Are you sure you want to delete this customer? This will also remove all associated sample records and cannot be undone.',
+    editCustomerName: 'Edit Customer Name',
+    confirmNameChange: 'Are you sure you want to change the customer name? This will update the name globally across all related records.',
     
     // Contacts Edit
     addContact: 'Add Contact',
@@ -322,7 +325,10 @@ export const translations = {
     newRequest: '新建样品申请',
     noSamples: '该客户暂无样品记录。',
     confirmDeleteInteraction: '您确定要删除此互动记录吗？',
-    
+    confirmDeleteCustomer: '您确定要删除此客户吗？这将同时删除所有相关的样品记录，且无法撤销。',
+    editCustomerName: '编辑客户名称',
+    confirmNameChange: '您确定要修改客户名称吗？这将全局更新所有相关记录中的名称。',
+
     // Contacts Edit
     addContact: '添加联系人',
     primaryContact: '主要联系人',

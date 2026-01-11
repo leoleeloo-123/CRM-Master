@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition } from '../types';
@@ -22,7 +21,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t, exhibitions, tagOptions } = useApp();
+  const { t, exhibitions, tagOptions, setCustomers, setSamples } = useApp();
   
   const [activeTab, setActiveTab] = useState<'overview' | 'samples'>(
     searchParams.get('tab') === 'samples' ? 'samples' : 'overview'
@@ -33,6 +32,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isEditTagsOpen, setIsEditTagsOpen] = useState(false);
   const [isEditUpcomingPlanOpen, setIsEditUpcomingPlanOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isEditNameModalOpen, setIsEditNameModalOpen] = useState(false);
   
   // Interaction State
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
@@ -45,6 +45,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState<string[]>([]);
   const [tempUpcomingPlan, setTempUpcomingPlan] = useState('');
+  const [tempName, setTempName] = useState('');
 
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
@@ -67,6 +68,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     }
   }, [editingInteraction]);
 
+  useEffect(() => {
+    if (customer) {
+      setTempName(customer.name);
+    }
+  }, [customer]);
+
   if (!customer) return <div className="p-8 text-center">Customer not found.</div>;
 
   const saveUpdate = (updatedFields: Partial<Customer>) => {
@@ -86,6 +93,33 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const handleUpdateUpcomingPlan = () => {
     saveUpdate({ upcomingPlan: tempUpcomingPlan });
     setIsEditUpcomingPlanOpen(false);
+  };
+
+  const handleUpdateName = () => {
+    if (!tempName.trim()) return;
+    if (confirm(t('confirmNameChange'))) {
+      const oldName = customer.name;
+      const newName = tempName.trim();
+      
+      // Update customer name
+      saveUpdate({ name: newName });
+      
+      // Update name in samples globally
+      setSamples(prev => prev.map(s => s.customerId === id ? { ...s, customerName: newName } : s));
+      
+      setIsEditNameModalOpen(false);
+    }
+  };
+
+  const handleDeleteCustomer = () => {
+    if (confirm(t('confirmDeleteCustomer'))) {
+      // Remove customer
+      setCustomers(prev => prev.filter(c => c.id !== id));
+      // Remove associated samples
+      setSamples(prev => prev.filter(s => s.customerId !== id));
+      // Redirect
+      navigate('/customers');
+    }
   };
 
   const handleRefreshDates = () => {
@@ -159,18 +193,29 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
-       <div className="flex items-center gap-6">
-         <button onClick={() => navigate('/customers')} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 active:scale-90">
-           <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
-         </button>
-         <div className="flex-1">
-           <div className="flex items-center gap-6">
-             <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{customer.name}</h1>
-             <div className="text-[1.2em]"><RankStars rank={customer.rank} editable onRankChange={(r) => saveUpdate({ rank: r })} /></div>
+       <div className="flex items-center justify-between gap-6">
+         <div className="flex items-center gap-6">
+           <button onClick={() => navigate('/customers')} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 active:scale-90">
+             <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+           </button>
+           <div className="flex-1">
+             <div className="flex items-center gap-6">
+               <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{customer.name}</h1>
+               <div className="text-[1.2em]"><RankStars rank={customer.rank} editable onRankChange={(r) => saveUpdate({ rank: r })} /></div>
+             </div>
+             <div className="flex items-center gap-3 mt-3 text-slate-400 font-black uppercase text-xs tracking-widest">
+               <MapPin className="w-4 h-4" /> <span>{customer.region.join(', ')}</span>
+             </div>
            </div>
-           <div className="flex items-center gap-3 mt-3 text-slate-400 font-black uppercase text-xs tracking-widest">
-             <MapPin className="w-4 h-4" /> <span>{customer.region.join(', ')}</span>
-           </div>
+         </div>
+         
+         <div className="flex items-center gap-3">
+           <Button variant="secondary" onClick={() => { setTempName(customer.name); setIsEditNameModalOpen(true); }} className="flex items-center gap-2">
+             <PencilLine className="w-4 h-4" /> {t('edit')}
+           </Button>
+           <Button variant="danger" onClick={handleDeleteCustomer} className="flex items-center gap-2">
+             <Trash2 className="w-4 h-4" /> {t('delete')}
+           </Button>
          </div>
        </div>
 
@@ -375,6 +420,24 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
        </div>
 
        {/* --- Modals --- */}
+       <Modal isOpen={isEditNameModalOpen} onClose={() => setIsEditNameModalOpen(false)} title={t('editCustomerName')}>
+          <div className="space-y-6">
+             <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('contactName')}</label>
+                <input 
+                  className="w-full p-4 border-2 rounded-2xl font-black text-lg dark:bg-slate-800 outline-none focus:border-blue-500 transition-all" 
+                  value={tempName} 
+                  onChange={(e) => setTempName(e.target.value)} 
+                  autoFocus
+                />
+             </div>
+             <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" onClick={() => setIsEditNameModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdateName} className="bg-blue-600 px-8"><Save size={18} className="mr-1" /> Save Name</Button>
+             </div>
+          </div>
+       </Modal>
+
        <Modal isOpen={isEditSummaryOpen} onClose={() => setIsEditSummaryOpen(false)} title={t('productSummary')}>
           <div className="space-y-4">
              <textarea className="w-full h-64 p-4 border-2 rounded-2xl outline-none font-bold text-lg" value={tempSummary} onChange={(e) => setTempSummary(e.target.value)} />
