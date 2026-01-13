@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink } from '../types';
-import { Card, Button, Badge, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText } from 'lucide-react';
+import { Card, Badge, Button, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
 
@@ -34,8 +34,12 @@ const SampleProfile: React.FC = () => {
   const [editPlanText, setEditPlanText] = useState('');
   const [editPlanDate, setEditPlanDate] = useState('');
 
+  // Link Management State
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [editingLinkIndex, setEditingLinkIndex] = useState<number | null>(null);
+  const [editLinkTitle, setEditLinkTitle] = useState('');
+  const [editLinkUrl, setEditLinkUrl] = useState('');
 
   const [historyItems, setHistoryItems] = useState<{id: string, date: string, text: string}[]>([]);
   const [isAddingHistory, setIsAddingHistory] = useState(false);
@@ -142,6 +146,23 @@ const SampleProfile: React.FC = () => {
       const updatedLinks = (sample.docLinks || []).filter(l => l.url !== linkToDelete.url || l.title !== linkToDelete.title);
       saveSampleUpdate({ docLinks: updatedLinks });
     }
+  };
+
+  const handleStartEditLink = (index: number, link: SampleDocLink) => {
+    setEditingLinkIndex(index);
+    setEditLinkTitle(link.title);
+    setEditLinkUrl(link.url);
+  };
+
+  const handleSaveEditLink = () => {
+    if (!sample || editingLinkIndex === null) return;
+    let url = editLinkUrl.trim();
+    if (url && !url.startsWith('http')) url = 'https://' + url;
+    
+    const updatedLinks = [...(sample.docLinks || [])];
+    updatedLinks[editingLinkIndex] = { title: editLinkTitle.trim() || `Link ${editingLinkIndex + 1}`, url: url || '#' };
+    saveSampleUpdate({ docLinks: updatedLinks });
+    setEditingLinkIndex(null);
   };
 
   const handleSaveStatus = () => {
@@ -472,16 +493,17 @@ const SampleProfile: React.FC = () => {
                      <h3 className={titleClass}><LinkIcon className="w-6 h-6 text-blue-500" /> {t('fileLinks')}</h3>
                   </div>
                   <div className="space-y-4">
-                     <div className="space-y-2">
+                     {/* Add New Link Section */}
+                     <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
                         <input 
-                           className="w-full p-2.5 border-2 border-slate-100 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
+                           className="w-full p-2.5 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
                            placeholder="Link Title (e.g. Test Report)..."
                            value={newLinkTitle}
                            onChange={(e) => setNewLinkTitle(e.target.value)}
                         />
                         <div className="flex gap-2">
                            <input 
-                              className="flex-1 p-2.5 border-2 border-slate-100 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
+                              className="flex-1 p-2.5 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
                               placeholder="Paste URL here..."
                               value={newLinkUrl}
                               onChange={(e) => setNewLinkUrl(e.target.value)}
@@ -492,23 +514,55 @@ const SampleProfile: React.FC = () => {
                            </button>
                         </div>
                      </div>
-                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+
+                     {/* Link List Section */}
+                     <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                         {(sample.docLinks || []).length > 0 ? (sample.docLinks || []).map((link, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 group">
-                             <a 
-                                href={link.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1 pr-2"
-                             >
-                                <ExternalLink size={14} className="shrink-0" /> <span className="truncate">{link.title}</span>
-                             </a>
-                             <button onClick={() => handleDeleteLink(link)} className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 size={14} />
-                             </button>
+                          <div key={idx} className="space-y-2">
+                             {editingLinkIndex === idx ? (
+                               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-800 space-y-3">
+                                  <input 
+                                     className="w-full p-2 border-2 border-white dark:border-slate-800 rounded-lg text-xs font-bold bg-white dark:bg-slate-900"
+                                     value={editLinkTitle}
+                                     onChange={e => setEditLinkTitle(e.target.value)}
+                                     placeholder="Title"
+                                  />
+                                  <input 
+                                     className="w-full p-2 border-2 border-white dark:border-slate-800 rounded-lg text-xs font-bold bg-white dark:bg-slate-900"
+                                     value={editLinkUrl}
+                                     onChange={e => setEditLinkUrl(e.target.value)}
+                                     placeholder="URL"
+                                  />
+                                  <div className="flex gap-2 pt-1">
+                                     <button onClick={() => setEditingLinkIndex(null)} className="flex-1 p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-black uppercase text-slate-500">Cancel</button>
+                                     <button onClick={handleSaveEditLink} className="flex-1 p-2 bg-blue-600 rounded-lg text-[10px] font-black uppercase text-white flex items-center justify-center gap-1"><Check size={12}/> Save</button>
+                                  </div>
+                               </div>
+                             ) : (
+                               <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 group shadow-sm">
+                                  <a 
+                                     href={link.url} 
+                                     target="_blank" 
+                                     rel="noopener noreferrer" 
+                                     className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1 pr-2"
+                                  >
+                                     <ExternalLink size={14} className="shrink-0" /> <span className="truncate">{link.title}</span>
+                                  </a>
+                                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                     <button onClick={() => handleStartEditLink(idx, link)} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all">
+                                        <PencilLine size={14} />
+                                     </button>
+                                     <button onClick={() => handleDeleteLink(link)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                                        <Trash2 size={14} />
+                                     </button>
+                                  </div>
+                               </div>
+                             )}
                           </div>
                         )) : (
-                          <div className="text-center py-6 text-slate-400 italic text-xs xl:text-sm">No links added.</div>
+                          <div className="text-center py-10 text-slate-300 italic text-xs xl:text-sm border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-3xl">
+                             No links added yet.
+                          </div>
                         )}
                      </div>
                   </div>

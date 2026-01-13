@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
-import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight, User, ListFilter, Maximize2, Minimize2 } from 'lucide-react';
+import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight, User, ListFilter, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -18,13 +18,21 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
   
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
+  // Default to list view as requested
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
   
   // Expansion state for both list and board view
   const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
+
+  // Default expand all on mount
+  useEffect(() => {
+    if (customers.length > 0) {
+      setExpandedCustomers(new Set(customers.map(c => c.id)));
+    }
+  }, [customers.length]);
 
   // New Filters
   const [filterCrystal, setFilterCrystal] = useState<string>('');
@@ -170,7 +178,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     setFilterForm('');
     setFilterCustomer('');
     setFilterGrading('');
-    setExpandedCustomers(new Set());
+    // Re-expand all on reset
+    setExpandedCustomers(new Set(customers.map(c => c.id)));
   };
 
   const handleCreateSample = () => {
@@ -311,15 +320,16 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              <table className="w-full text-left">
                 <thead className="bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase text-xs font-bold sticky top-0 z-10">
                   <tr>
-                     <th className="p-4 w-64">Customer</th>
-                     <th className="p-4">Generated Product Spec</th>
-                     <th className="p-4">{t('grading')}</th>
-                     <th className="p-4">{t('qtyAbbr')}</th>
-                     <th className="p-4">Status</th>
+                     <th className="p-4 w-40">Customer</th>
+                     <th className="p-4 w-60">Generated Product Spec</th>
+                     <th className="p-4 w-44">Links</th>
+                     <th className="p-4 w-24 text-center">{t('grading')}</th>
+                     <th className="p-4 w-20 text-center">{t('qtyAbbr')}</th>
+                     <th className="p-4 w-32">Status</th>
                      <th className="p-4">Next Step</th>
-                     <th className="p-4">Key Date</th>
-                     <th className="p-4 text-center">Aging</th>
-                     <th className="p-4">Test</th>
+                     <th className="p-4 w-28 whitespace-nowrap">Key Date</th>
+                     <th className="p-4 text-center w-20">Aging</th>
+                     <th className="p-4 w-28">Test</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -332,7 +342,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                           onClick={() => toggleCustomerExpansion(group.customerId)}
                           className="bg-slate-50 dark:bg-slate-800/40 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-700"
                         >
-                          <td colSpan={9} className="p-4">
+                          <td colSpan={10} className="p-4">
                             <div className="flex items-center gap-3">
                               {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
                               <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-base">
@@ -360,9 +370,28 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
                               </td>
                               <td className="p-4">
+                                <div className="flex flex-col gap-1 max-w-[160px]">
+                                  {(s.docLinks || []).map((link, lIdx) => (
+                                    <a 
+                                      key={lIdx}
+                                      href={link.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-blue-600 dark:text-blue-400 hover:underline text-[10px] xl:text-xs truncate flex items-center gap-1 font-bold"
+                                      title={link.title}
+                                    >
+                                      <ExternalLink size={10} className="shrink-0" />
+                                      {link.title}
+                                    </a>
+                                  ))}
+                                  {(!s.docLinks || s.docLinks.length === 0) && <span className="text-slate-300">-</span>}
+                                </div>
+                              </td>
+                              <td className="p-4 text-center">
                                 {getGradingBadge(s.isGraded)}
                               </td>
-                              <td className="p-4 font-bold text-slate-700 dark:text-slate-300">{s.quantity}</td>
+                              <td className="p-4 font-bold text-slate-700 dark:text-slate-300 text-center">{s.quantity}</td>
                               <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
                               <td className="p-4 max-w-[200px]">
                                  <div className="truncate text-xs text-slate-600 dark:text-slate-300 italic" title={s.upcomingPlan}>
@@ -385,7 +414,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   
                   {groupedSamplesList.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
+                      <td colSpan={10} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
                     </tr>
                   )}
                 </tbody>
@@ -403,7 +432,6 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   if (lastGroup && lastGroup.customerId === s.customerId) {
                     lastGroup.samples.push(s);
                   } else {
-                    // Fix 'string' type used as a value here.
                     colGroups.push({ customerId: s.customerId, customerName: s.customerName, samples: [s] });
                   }
                 });
