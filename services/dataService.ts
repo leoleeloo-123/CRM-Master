@@ -21,7 +21,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
     lastMyReplyDate: '2025-01-20',
     nextActionDate: '2025-02-01',
     tags: ['CES 2024', 'Tech Expo 2025'],
-    docLinks: ['https://example.com/contract-draft'],
+    docLinks: [{ title: 'Contract Draft', url: 'https://example.com/contract-draft' }],
     interactions: [
       {
         id: 'i1',
@@ -237,7 +237,7 @@ export const MOCK_SAMPLES: Sample[] = [
     processedSize: '0.25um',
     isGraded: 'Graded',
     application: 'Precision Optics',
-    sampleDetails: 'Strict PSD control.',
+    sampleDetails: ' PSD control.',
     requestDate: '2025-02-01',
     lastStatusDate: '2025-02-02',
     statusDetails: '【2025-02-02】Waiting for production batch #404.',

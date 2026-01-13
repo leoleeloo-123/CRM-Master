@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Customer, Rank, CustomerStatus } from '../types';
 import { Card, Button, RankStars, StatusIcon, Modal } from '../components/Common';
-import { Search, Plus, ChevronRight, Filter, Star, RefreshCcw } from 'lucide-react';
+import { Search, Plus, ChevronRight, Filter, Star, RefreshCcw, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { differenceInDays, isValid } from 'date-fns';
@@ -267,8 +267,9 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-[10px] xl:text-[11px] uppercase tracking-widest font-black">
-                <th className="p-4 xl:p-5 font-black w-1/5">Customer</th>
+                <th className="p-4 xl:p-5 font-black w-1/6">Customer</th>
                 <th className="p-4 xl:p-5 font-black w-[80px] text-center">{t('rank')}</th>
+                <th className="p-4 xl:p-5 font-black w-[120px]">Links</th>
                 <th className="p-4 xl:p-5 font-black w-[70px] text-center">Aging</th>
                 <th className="p-4 xl:p-5 font-black w-[90px] text-center">Unreplied</th>
                 <th className="p-4 xl:p-5 font-black w-[90px] text-center">Unfollowed</th>
@@ -302,6 +303,28 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                     <td className="p-4 xl:p-5 align-top text-center">
                       <div className="flex justify-center scale-90 origin-center">
                         <RankStars rank={customer.rank} editable={false} />
+                      </div>
+                    </td>
+                    <td className="p-4 xl:p-5 align-top">
+                      <div className="flex flex-col gap-1 max-w-[120px]">
+                        {(customer.docLinks || []).slice(0, 2).map((link, lIdx) => (
+                          <a 
+                            key={lIdx}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-blue-600 dark:text-blue-400 hover:underline text-[10px] truncate flex items-center gap-1 font-bold"
+                            title={link.title}
+                          >
+                            <ExternalLink size={10} className="shrink-0" />
+                            {link.title}
+                          </a>
+                        ))}
+                        {(customer.docLinks || []).length > 2 && (
+                          <span className="text-[9px] text-slate-400 font-black">+{customer.docLinks!.length - 2} more</span>
+                        )}
+                        {(!customer.docLinks || customer.docLinks.length === 0) && <span className="text-slate-300">-</span>}
                       </div>
                     </td>
                     <td className="p-4 xl:p-5 align-top text-center">
@@ -350,7 +373,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
               })}
               {filteredCustomers.length === 0 && (
                  <tr>
-                   <td colSpan={9} className="p-16 xl:p-24 text-center">
+                   <td colSpan={10} className="p-16 xl:p-24 text-center">
                      <div className="text-slate-400 dark:text-slate-600 font-black uppercase tracking-[0.2em] italic">
                        {t('noCustomersFound')}
                      </div>

@@ -110,7 +110,26 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const nextActionDate = normalizeDate(safeCol(11)); // 关键日期 column
     const lastCustomerReplyDate = normalizeDate(safeCol(14));
     const lastMyReplyDate = normalizeDate(safeCol(16));
-    const docLinks = splitByDelimiter(safeCol(18));
+    
+    // Parse Links - handle modern format (Titles at 20, URLs at 21) if available, otherwise legacy at 18
+    const titles = splitByDelimiter(safeCol(20));
+    const urls = splitByDelimiter(safeCol(21));
+    let docLinks: SampleDocLink[] = [];
+    
+    if (urls.length > 0) {
+      docLinks = titles.map((t, idx) => ({ title: t || `Link ${idx + 1}`, url: urls[idx] || '#' }));
+    } else {
+      // Fallback to legacy string array column if modern ones are empty
+      const legacyLinks = splitByDelimiter(safeCol(18));
+      docLinks = legacyLinks.map((entry, idx) => {
+        if (entry.includes(': ')) {
+          const [t, u] = entry.split(': ');
+          return { title: t, url: u };
+        }
+        return { title: `Link ${idx + 1}`, url: entry };
+      });
+    }
+
     const contactNames = splitByDelimiter(safeCol(8));
     const contactInfos = splitByDelimiter(safeCol(19));
     
@@ -302,7 +321,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const custHeaders = [
       "客户", "地区", "展会", "展会官网", "等级", "状态与产品总结", "状态更新", "未更新", 
       "对接人员", "状态", "下一步", "关键日期", "DDL", "对接流程总结", "对方回复", 
-      "未回复", "我方跟进", "未跟进", "文档超链接", "联系方式"
+      "未回复", "我方跟进", "未跟进", "文档超链接", "联系方式", "File Link Titles", "File link URLs"
     ];
     
     const custRows = customers.map(c => {
@@ -319,14 +338,21 @@ const DataManagement: React.FC<DataManagementProps> = ({
       const contactInfos = c.contacts.map(contact => contact.email || contact.phone || '').join(' ||| ');
       const interactionText = [...c.interactions].reverse().map(i => `【${i.date}】 ${i.summary}`).join(' ||| ');
       const nextStep = c.upcomingPlan || '';
-      const docLinks = c.docLinks ? c.docLinks.join(' ||| ') : '';
+      
+      // Document links column (legacy)
+      const legacyDocLinks = c.docLinks ? c.docLinks.map(l => `${l.title}: ${l.url}`).join(' ||| ') : '';
+      
       const productSummaryExport = (c.productSummary || '').replace(/\n/g, ' ||| ');
       const statusExport = mapStatusToExport(c.followUpStatus);
+
+      // Modern link columns
+      const fileLinkTitlesStr = (c.docLinks || []).map(l => l.title).join(' ||| ');
+      const fileLinkUrlsStr = (c.docLinks || []).map(l => l.url).join(' ||| ');
 
       return [
         c.name, regions, tags, "", c.rank, productSummaryExport, c.lastStatusUpdate, "", contactNames,
         statusExport, nextStep, c.nextActionDate, "", interactionText, c.lastCustomerReplyDate, "",
-        c.lastMyReplyDate, "", docLinks, contactInfos
+        c.lastMyReplyDate, "", legacyDocLinks, contactInfos, fileLinkTitlesStr, fileLinkUrlsStr
       ];
     });
 
@@ -783,7 +809,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       </h4>
                       <p className="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">
                         {activeTab === 'customers' 
-                          ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.文档 | 20.联系方式"
+                          ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.Ignore | 20.联系方式 | 21.Titles | 22.URLs"
                           : activeTab === 'samples'
                           ? "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs"
                           : "1.Name | 2.Date | 3.Location | 4.Link | 5.Event Series | 6.Summary"

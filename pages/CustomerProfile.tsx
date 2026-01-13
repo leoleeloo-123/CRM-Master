@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition } from '../types';
+import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink } from '../types';
 import { Card, Button, RankStars, Badge, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 
@@ -46,6 +47,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [tempTags, setTempTags] = useState<string[]>([]);
   const [tempUpcomingPlan, setTempUpcomingPlan] = useState('');
   const [tempName, setTempName] = useState('');
+
+  // Link Management State
+  const [newLinkTitle, setNewLinkTitle] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [editingLinkIndex, setEditingLinkIndex] = useState<number | null>(null);
+  const [editLinkTitle, setEditLinkTitle] = useState('');
+  const [editLinkUrl, setEditLinkUrl] = useState('');
 
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
@@ -187,9 +195,48 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     }
   };
 
+  // Link Actions
+  const handleAddLink = () => {
+    if (!newLinkUrl.trim() || !customer) return;
+    let url = newLinkUrl.trim();
+    if (!url.startsWith('http')) url = 'https://' + url;
+    const title = newLinkTitle.trim() || `Link ${ (customer.docLinks || []).length + 1 }`;
+    const newLink: SampleDocLink = { title, url };
+    const currentLinks = customer.docLinks || [];
+    saveUpdate({ docLinks: [...currentLinks, newLink] });
+    setNewLinkUrl('');
+    setNewLinkTitle('');
+  };
+
+  const handleDeleteLink = (index: number) => {
+    if (!customer) return;
+    if (confirm('Delete this link?')) {
+      const updatedLinks = (customer.docLinks || []).filter((_, i) => i !== index);
+      saveUpdate({ docLinks: updatedLinks });
+    }
+  };
+
+  const handleStartEditLink = (index: number, link: SampleDocLink) => {
+    setEditingLinkIndex(index);
+    setEditLinkTitle(link.title);
+    setEditLinkUrl(link.url);
+  };
+
+  const handleSaveEditLink = () => {
+    if (!customer || editingLinkIndex === null) return;
+    let url = editLinkUrl.trim();
+    if (url && !url.startsWith('http')) url = 'https://' + url;
+    
+    const updatedLinks = [...(customer.docLinks || [])];
+    updatedLinks[editingLinkIndex] = { title: editLinkTitle.trim() || `Link ${editingLinkIndex + 1}`, url: url || '#' };
+    saveUpdate({ docLinks: updatedLinks });
+    setEditingLinkIndex(null);
+  };
+
   const visibleInteractions = showAllInteractions ? customer.interactions : customer.interactions.slice(0, 3);
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
+  const cardBaseClass = "p-8 xl:p-10 shadow-sm border border-slate-100 dark:border-slate-800 rounded-[2rem] bg-white dark:bg-slate-900/40 relative overflow-hidden transition-all";
 
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
@@ -300,6 +347,86 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                    );
                  })}
                  {customer.tags.length === 0 && <div className="text-slate-400 italic text-sm">{t('noExhibitions')}</div>}
+               </div>
+            </Card>
+
+            <Card className="p-6 xl:p-8">
+               <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-50 dark:border-slate-800">
+                  <h3 className={titleClass}><LinkIcon className="w-6 h-6 text-blue-500" /> {t('fileLinks')}</h3>
+               </div>
+               <div className="space-y-4">
+                  {/* Add New Link Section */}
+                  <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
+                     <input 
+                        className="w-full p-2.5 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
+                        placeholder="Link Title (e.g. Contract)..."
+                        value={newLinkTitle}
+                        onChange={(e) => setNewLinkTitle(e.target.value)}
+                     />
+                     <div className="flex gap-2">
+                        <input 
+                           className="flex-1 p-2.5 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
+                           placeholder="Paste URL here..."
+                           value={newLinkUrl}
+                           onChange={(e) => setNewLinkUrl(e.target.value)}
+                           onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                        />
+                        <button onClick={handleAddLink} className="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 active:scale-90">
+                           <Plus size={18} />
+                        </button>
+                     </div>
+                  </div>
+
+                  {/* Link List Section */}
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                     {(customer.docLinks || []).length > 0 ? (customer.docLinks || []).map((link, idx) => (
+                       <div key={idx} className="space-y-2">
+                          {editingLinkIndex === idx ? (
+                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-800 space-y-3">
+                               <input 
+                                  className="w-full p-2 border-2 border-white dark:border-slate-800 rounded-lg text-xs font-bold bg-white dark:bg-slate-900"
+                                  value={editLinkTitle}
+                                  onChange={e => setEditLinkTitle(e.target.value)}
+                                  placeholder="Title"
+                               />
+                               <input 
+                                  className="w-full p-2 border-2 border-white dark:border-slate-800 rounded-lg text-xs font-bold bg-white dark:bg-slate-900"
+                                  value={editLinkUrl}
+                                  onChange={e => setEditLinkUrl(e.target.value)}
+                                  placeholder="URL"
+                               />
+                               <div className="flex gap-2 pt-1">
+                                  <button onClick={() => setEditingLinkIndex(null)} className="flex-1 p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-black uppercase text-slate-500">Cancel</button>
+                                  <button onClick={handleSaveEditLink} className="flex-1 p-2 bg-blue-600 rounded-lg text-[10px] font-black uppercase text-white flex items-center justify-center gap-1"><Check size={12}/> Save</button>
+                               </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 group shadow-sm">
+                               <a 
+                                  href={link.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1 pr-2"
+                               >
+                                  <ExternalLink size={14} className="shrink-0" /> <span className="truncate">{link.title}</span>
+                               </a>
+                               <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => handleStartEditLink(idx, link)} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all">
+                                     <PencilLine size={14} />
+                                  </button>
+                                  <button onClick={() => handleDeleteLink(idx)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                                     <Trash2 size={14} />
+                                  </button>
+                               </div>
+                            </div>
+                          )}
+                       </div>
+                     )) : (
+                       <div className="text-center py-10 text-slate-300 italic text-xs xl:text-sm border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-3xl">
+                          No links added yet.
+                       </div>
+                     )}
+                  </div>
                </div>
             </Card>
          </div>

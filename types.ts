@@ -48,7 +48,7 @@ export interface Customer {
   lastMyReplyDate?: string; 
   tags: string[]; 
   interactions: Interaction[]; 
-  docLinks?: string[]; 
+  docLinks?: SampleDocLink[]; 
   upcomingPlan?: string;
 }
 
