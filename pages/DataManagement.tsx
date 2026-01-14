@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink, Exhibition } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
@@ -226,13 +225,14 @@ const DataManagement: React.FC<DataManagementProps> = ({
     
     const generatedName = `${crystal} ${categoryStr} ${form} - ${origSize}${procSize}`.trim();
     
-    const testFinishedColVal = (safeCol(2) || '').trim();
+    // Improved Test Status Parsing
+    const testFinishedColVal = (safeCol(2) || '').trim().toLowerCase();
     let testStatus: TestStatus = 'Ongoing';
-    const canonicalTestStatus = getCanonicalTag(testFinishedColVal);
     
-    if (canonicalTestStatus === 'Finished') {
+    // Check for "Finished" variants
+    if (['yes', 'finished', '测试完成', 'true', '1', '是', '完成'].includes(testFinishedColVal)) {
       testStatus = 'Finished';
-    } else if (canonicalTestStatus === 'Terminated') {
+    } else if (['terminated', '终止', '项目终止', '放弃', 'canceled'].includes(testFinishedColVal)) {
       testStatus = 'Terminated';
     } else {
       testStatus = 'Ongoing'; 
