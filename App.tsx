@@ -44,6 +44,14 @@ const AppContent: React.FC = () => {
 
   const handleUpdateCustomer = (updatedCustomer: Customer) => {
     setCustomers((prev: Customer[]) => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+    
+    // Sync DDL to Starred Samples
+    setSamples((prev: Sample[]) => prev.map(s => {
+      if (s.customerId === updatedCustomer.id && s.isStarredSample) {
+        return { ...s, nextActionDate: updatedCustomer.nextActionDate };
+      }
+      return s;
+    }));
   };
 
   const handleImportCustomers = (importedCustomers: Customer[], override: boolean = false) => {

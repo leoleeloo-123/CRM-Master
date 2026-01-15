@@ -95,6 +95,7 @@ export interface Sample {
   sampleName?: string; 
   sampleDetails?: string; 
   nickname?: string;
+  isStarredSample?: boolean;
   quantity: string; 
   application?: string; 
   trackingNumber?: string;

@@ -202,6 +202,10 @@ export const translations = {
     origLabel: 'Orig',
     procLabel: 'Proc',
     nickname: 'Nickname',
+    starSample: 'Star Sample',
+    confirmStarSample: 'Are you sure you want to star this sample? Its DDL will automatically synchronize with the customer\'s DDL.',
+    confirmUnstarSample: 'Are you sure you want to unstar this sample?',
+    starred: 'Starred',
     noApplicationProvided: 'No application details provided.',
     
     // Data Management
@@ -445,6 +449,10 @@ export const translations = {
     origLabel: '原料',
     procLabel: '加工',
     nickname: '昵称',
+    starSample: '标星样品',
+    confirmStarSample: '您确定要标星该样品吗？标星后，样品的DDL将自动与客户页面的DDL保持同步。',
+    confirmUnstarSample: '您确定要取消标星吗？',
+    starred: '标星',
     noApplicationProvided: '暂无应用详情。',
 
     // Data Management

@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
-import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight, User, ListFilter, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
+import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight, User, ListFilter, Maximize2, Minimize2, ExternalLink, Star } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -330,6 +330,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      <th className="p-4 w-24 text-center">{t('grading')}</th>
                      <th className="p-4 w-20 text-center">{t('qtyAbbr')}</th>
                      <th className="p-4 w-32">Status</th>
+                     <th className="p-4 w-12 text-center">⭐</th>
                      <th className="p-4">Next Step</th>
                      <th className="p-4 w-28 whitespace-nowrap">Key Date</th>
                      <th className="p-4 text-center w-20">Aging</th>
@@ -346,7 +347,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                           onClick={() => toggleCustomerExpansion(group.customerId)}
                           className="bg-slate-50 dark:bg-slate-800/40 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-700"
                         >
-                          <td colSpan={10} className="p-4">
+                          <td colSpan={11} className="p-4">
                             <div className="flex items-center gap-3">
                               {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
                               <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-base">
@@ -397,6 +398,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                               </td>
                               <td className="p-4 font-bold text-slate-700 dark:text-slate-300 text-center">{s.quantity}</td>
                               <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
+                              <td className="p-4 text-center">
+                                 {s.isStarredSample ? <Star size={16} className="fill-amber-400 text-amber-400 mx-auto" /> : '-'}
+                              </td>
                               <td className="p-4 max-w-[200px]">
                                  <div className="truncate text-xs text-slate-600 dark:text-slate-300 italic" title={s.upcomingPlan}>
                                    {isTestFinished ? <span className="text-slate-400">N/A</span> : (s.upcomingPlan || '-')}
@@ -418,7 +422,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   
                   {groupedSamplesList.length === 0 && (
                     <tr>
-                      <td colSpan={10} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
+                      <td colSpan={11} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
                     </tr>
                   )}
                 </tbody>
@@ -475,7 +479,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                        className={`p-5 cursor-pointer hover:shadow-xl border-l-4 transition-all hover:-translate-y-1 ${getUrgencyColor(s.lastStatusDate)}`}
                                      >
                                         <div className="flex justify-between items-start mb-2">
-                                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample #{s.sampleIndex}</span>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample #{s.sampleIndex}</span>
+                                            {s.isStarredSample && <Star size={12} className="fill-amber-400 text-amber-400" />}
+                                          </div>
                                           {renderDaysSinceUpdate(s.lastStatusDate)}
                                         </div>
                                         <p className="text-base font-black text-blue-600 dark:text-blue-400 leading-snug mb-3 line-clamp-2 uppercase tracking-tight">{s.sampleName}</p>
@@ -589,12 +596,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
               </div>
 
               <div>
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('nickname')}</label>
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Nickname / 昵称</label>
                  <input 
                     className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
                     value={newSample.nickname}
                     onChange={(e) => setNewSample({...newSample, nickname: e.target.value})}
-                    placeholder="e.g. Custom Batch A"
+                    placeholder="e.g. Agglomerated batch"
                  />
               </div>
 

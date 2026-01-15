@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink } from '../types';
 import { Card, Badge, Button, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check, Star } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format } from 'date-fns';
 
@@ -207,6 +207,26 @@ const SampleProfile: React.FC = () => {
     setIsEditingPlan(false);
   };
 
+  const handleToggleStar = () => {
+    if (!sample) return;
+    const currentlyStarred = !!sample.isStarredSample;
+    const confirmMsg = currentlyStarred ? t('confirmUnstarSample') : t('confirmStarSample');
+    
+    if (confirm(confirmMsg)) {
+      const nextStarred = !currentlyStarred;
+      let nextDate = sample.nextActionDate;
+      
+      if (nextStarred && customer?.nextActionDate) {
+        nextDate = customer.nextActionDate;
+      }
+      
+      saveSampleUpdate({ 
+        isStarredSample: nextStarred,
+        nextActionDate: nextDate
+      });
+    }
+  };
+
   const handleSaveHistoryItem = (item: {id: string, date: string, text: string}) => {
     const updatedHistory = historyItems.map(i => i.id === item.id ? item : i);
     updatedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -246,7 +266,7 @@ const SampleProfile: React.FC = () => {
     <div className="space-y-8 xl:space-y-12 animate-in fade-in duration-500 pb-20">
        <div className="flex items-center justify-between">
          <div className="flex items-center gap-6">
-           <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-90">
+           <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all shadow-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 active:scale-90">
              <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
            </button>
            <div>
@@ -318,7 +338,7 @@ const SampleProfile: React.FC = () => {
              </div>
              {isEditingTracking ? (
                 <div className="flex gap-2">
-                  <input className="flex-1 border-2 border-slate-100 rounded-xl p-2 text-sm font-mono font-bold dark:bg-slate-800" value={editTrackingText} onChange={e => setEditTrackingText(e.target.value)} />
+                  <input className="flex-1 border-2 border-slate-100 rounded-xl p-2 text-sm font-mono font-bold dark:bg-slate-800" value={editTrackingText} onChange={e => setEditTrackingText(e.target.value)} autoFocus />
                   <button onClick={handleSaveTracking} className="p-2 bg-emerald-100 text-emerald-700 rounded-xl"><Save size={18}/></button>
                 </div>
              ) : (
@@ -449,6 +469,22 @@ const SampleProfile: React.FC = () => {
                       </div>
                    </div>
                 </div>
+
+                <div className="flex items-center gap-3 mb-8 px-2">
+                   <button 
+                     onClick={handleToggleStar}
+                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 font-black text-[10px] xl:text-xs uppercase transition-all active:scale-95 ${sample.isStarredSample ? 'border-amber-400 bg-amber-50 text-amber-700 shadow-md' : 'border-slate-100 dark:border-slate-800 text-slate-400 bg-white dark:bg-slate-900'}`}
+                   >
+                     <Star size={18} className={sample.isStarredSample ? 'fill-amber-400 text-amber-500' : 'text-slate-300'} />
+                     {t('starSample')}
+                   </button>
+                   {sample.isStarredSample && (
+                     <span className="text-[10px] font-black uppercase text-amber-500 animate-pulse tracking-widest">
+                       DDL Synced with Customer
+                     </span>
+                   )}
+                </div>
+
                 <p className="text-base xl:text-xl font-bold text-slate-800 dark:text-slate-200 leading-relaxed italic opacity-80 pl-2">
                    {isTestFinished ? <span className="text-slate-400">Sample testing concluded. No further upcoming plans.</span> : (sample.upcomingPlan || <span className="text-slate-400">No upcoming plan logged for this sample.</span>)}
                 </p>
@@ -561,24 +597,24 @@ const SampleProfile: React.FC = () => {
                                   <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                      <button onClick={() => handleStartEditLink(idx, link)} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all">
                                         <PencilLine size={14} />
-                                     </button>
-                                     <button onClick={() => handleDeleteLink(link)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
-                                        <Trash2 size={14} />
-                                     </button>
-                                  </div>
+                                  </button>
+                                  <button onClick={() => handleDeleteLink(link)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                                     <Trash2 size={14} />
+                                  </button>
                                </div>
-                             )}
-                          </div>
-                        )) : (
-                          <div className="text-center py-10 text-slate-300 italic text-xs xl:text-sm border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-3xl">
-                             No links added yet.
-                          </div>
-                        )}
-                     </div>
+                            </div>
+                          )}
+                       </div>
+                     )) : (
+                       <div className="text-center py-10 text-slate-300 italic text-xs xl:text-sm border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-3xl">
+                          No links added yet.
+                       </div>
+                     )}
                   </div>
-               </Card>
+               </div>
+            </Card>
 
-               <Card className={`${cardBaseClass} md:col-span-2`}>
+            <Card className={`${cardBaseClass} md:col-span-2`}>
                   <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-50 dark:border-slate-800">
                      <h3 className={titleClass}><Activity className="w-6 h-6 text-amber-500" /> STATUS DETAILS / HISTORY</h3>
                      <button onClick={() => { setIsAddingHistory(true); setNewHistoryDate(format(new Date(), 'yyyy-MM-dd')); }} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full font-black text-[10px] tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all">
