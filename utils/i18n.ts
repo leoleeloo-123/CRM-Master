@@ -1,3 +1,4 @@
+
 export type Language = 'en' | 'zh';
 
 export const translations = {
@@ -200,6 +201,7 @@ export const translations = {
     processed: 'Processed',
     origLabel: 'Orig',
     procLabel: 'Proc',
+    nickname: 'Nickname',
     noApplicationProvided: 'No application details provided.',
     
     // Data Management
@@ -442,6 +444,7 @@ export const translations = {
     processed: '加工粒度',
     origLabel: '原料',
     procLabel: '加工',
+    nickname: '昵称',
     noApplicationProvided: '暂无应用详情。',
 
     // Data Management

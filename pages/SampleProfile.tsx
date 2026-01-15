@@ -31,6 +31,7 @@ const SampleProfile: React.FC = () => {
   const [editQuantityText, setEditQuantityText] = useState('');
   const [editSKUText, setEditSKUText] = useState('');
   const [editCategoryText, setEditCategoryText] = useState('');
+  const [editNicknameText, setEditNicknameText] = useState('');
   const [editPlanText, setEditPlanText] = useState('');
   const [editPlanDate, setEditPlanDate] = useState('');
 
@@ -56,6 +57,7 @@ const SampleProfile: React.FC = () => {
       setEditQuantityText(sample.quantity || '');
       setEditSKUText(sample.sampleSKU || '');
       setEditCategoryText(sample.productCategory?.join(', ') || '');
+      setEditNicknameText(sample.nickname || '');
       setEditPlanText(sample.upcomingPlan || '');
       setEditPlanDate(sample.nextActionDate || format(new Date(), 'yyyy-MM-dd'));
       parseHistory(sample.statusDetails);
@@ -111,13 +113,16 @@ const SampleProfile: React.FC = () => {
     const form = editSample.productForm || sample.productForm || '';
     const orig = editSample.originalSize || sample.originalSize || '';
     const proc = editSample.processedSize || sample.processedSize ? ` > ${editSample.processedSize || sample.processedSize}` : '';
-    const newName = `${crystal} ${catStr} ${form} - ${orig}${proc}`.trim();
+    const nickname = editNicknameText.trim();
+    
+    const newName = `${crystal} ${catStr} ${form} - ${orig}${proc}${nickname ? ` (${nickname})` : ''}`.trim();
     const today = format(new Date(), 'yyyy-MM-dd');
 
     const updatedSample = { 
       ...sample, 
       ...editSample, 
       productCategory: categories,
+      nickname: nickname,
       sampleName: newName,
       productType: newName,
       lastStatusDate: today
@@ -341,6 +346,10 @@ const SampleProfile: React.FC = () => {
                            </select>
                         </div>
                         <div className="space-y-1">
+                           <label className={labelClass}>{t('category')}</label>
+                           <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editCategoryText} onChange={e => setEditCategoryText(e.target.value)} placeholder="e.g. 纳米级, 团聚" />
+                        </div>
+                        <div className="space-y-1">
                            <label className={labelClass}>{t('form')}</label>
                            <select className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.productForm} onChange={e => setEditSample({...editSample, productForm: e.target.value as ProductForm})}>
                               {tagOptions.productForm.map(opt => <option key={opt} value={opt}>{t(opt as any)}</option>)}
@@ -353,10 +362,6 @@ const SampleProfile: React.FC = () => {
                                <option value="Ungraded">{t('ungraded')}</option>
                            </select>
                         </div>
-                        <div className="space-y-1">
-                           <label className={labelClass}>{t('category')}</label>
-                           <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editCategoryText} onChange={e => setEditCategoryText(e.target.value)} placeholder="e.g. 纳米级, 团聚" />
-                        </div>
                         <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-1">
                               <label className={labelClass}>{t('origLabel')}</label>
@@ -366,6 +371,10 @@ const SampleProfile: React.FC = () => {
                               <label className={labelClass}>{t('procLabel')}</label>
                               <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editSample.processedSize} onChange={e => setEditSample({...editSample, processedSize: e.target.value})} placeholder="e.g. 100 nm" />
                            </div>
+                        </div>
+                        <div className="space-y-1">
+                           <label className={labelClass}>{t('nickname')}</label>
+                           <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800" value={editNicknameText} onChange={e => setEditNicknameText(e.target.value)} placeholder="e.g. Test Nickname" />
                         </div>
                         <Button onClick={handleSaveSpecs} className="w-full mt-4 bg-blue-600">Save Changes</Button>
                      </div>
@@ -377,7 +386,8 @@ const SampleProfile: React.FC = () => {
                           { label: 'FORM', value: t(sample.productForm as any) },
                           { label: 'GRADING', value: sample.isGraded?.toUpperCase() || 'UNGRADED' },
                           { label: 'ORIGINAL', value: sample.originalSize },
-                          { label: 'PROCESSED', value: sample.processedSize || '-' }
+                          { label: 'PROCESSED', value: sample.processedSize || '-' },
+                          { label: 'NICKNAME / 昵称', value: sample.nickname || '-' }
                         ].map((item, idx) => (
                           <div key={idx} className="flex justify-between items-center py-4">
                             <span className={labelClass}>{item.label}</span>

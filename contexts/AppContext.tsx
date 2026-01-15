@@ -315,7 +315,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const form = sample.productForm || '';
     const orig = sample.originalSize || '';
     const proc = sample.processedSize ? ` > ${sample.processedSize}` : '';
-    const generatedName = `${crystal} ${catStr} ${form} - ${orig}${proc}`;
+    const nickname = sample.nickname ? ` (${sample.nickname})` : '';
+    const generatedName = `${crystal} ${catStr} ${form} - ${orig}${proc}${nickname}`.trim();
     setMasterProducts(prev => {
       const exists = prev.find(p => p.productName === generatedName);
       if (exists) return prev;
@@ -326,7 +327,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         productCategory: sample.productCategory || [],
         productForm: sample.productForm!,
         originalSize: sample.originalSize!,
-        processedSize: sample.processedSize
+        processedSize: sample.processedSize,
+        nickname: sample.nickname
       }];
     });
     return generatedName;

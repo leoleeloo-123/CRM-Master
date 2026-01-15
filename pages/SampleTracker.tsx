@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
@@ -49,6 +50,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     productForm: tagOptions.productForm[0] || '',
     originalSize: '',
     processedSize: '',
+    nickname: '',
     quantity: '',
     status: FIXED_BOARD_ORDER[0],
     sampleSKU: ''
@@ -197,7 +199,8 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
 
     const catStr = newSample.productCategory.join(', ');
     const procPart = newSample.processedSize ? ` > ${newSample.processedSize}` : '';
-    const generatedName = `${newSample.crystalType} ${catStr} ${newSample.productForm} - ${newSample.originalSize}${procPart}`;
+    const nickname = newSample.nickname.trim();
+    const generatedName = `${newSample.crystalType} ${catStr} ${newSample.productForm} - ${newSample.originalSize}${procPart}${nickname ? ` (${nickname})` : ''}`;
 
     const newId = `s_${Date.now()}`;
     const now = format(new Date(), 'yyyy-MM-dd');
@@ -216,6 +219,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
       productForm: newSample.productForm as ProductForm,
       originalSize: newSample.originalSize,
       processedSize: newSample.processedSize,
+      nickname: nickname,
       quantity: newSample.quantity || '0',
       sampleName: generatedName,
       requestDate: now,
@@ -581,6 +585,16 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                     value={newSample.processedSize}
                     onChange={(e) => setNewSample({...newSample, processedSize: e.target.value})}
                     placeholder="e.g. 5um"
+                 />
+              </div>
+
+              <div>
+                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('nickname')}</label>
+                 <input 
+                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    value={newSample.nickname}
+                    onChange={(e) => setNewSample({...newSample, nickname: e.target.value})}
+                    placeholder="e.g. Custom Batch A"
                  />
               </div>
 

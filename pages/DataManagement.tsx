@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink, Exhibition } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
@@ -222,8 +223,9 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
     const origSize = safeCol(6) || '';
     const procSize = safeCol(7) ? ` > ${safeCol(7)}` : '';
+    const nickname = safeCol(21) || '';
     
-    const generatedName = `${crystal} ${categoryStr} ${form} - ${origSize}${procSize}`.trim();
+    const generatedName = `${crystal} ${categoryStr} ${form} - ${origSize}${procSize}${nickname ? ` (${nickname})` : ''}`.trim();
     
     // Improved Test Status Parsing
     const testFinishedColVal = (safeCol(2) || '').trim().toLowerCase();
@@ -277,6 +279,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       productForm: form as ProductForm,
       originalSize: safeCol(6) || '',
       processedSize: safeCol(7) || '',
+      nickname: nickname,
       isGraded: (safeCol(8) as GradingStatus) || 'Graded',
       sampleSKU: safeCol(9) || '',
       sampleDetails: safeCol(10) || '',
@@ -364,7 +367,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       "1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", 
       "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", 
       "11.Details", "12.Quantity", "13.Customer Application", "14.Status Date", 
-      "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Link Titles", "21.File Link URLs"
+      "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Link Titles", "21.File Link URLs", "22.Nickname"
     ];
 
     const sampRows = samples.map(s => {
@@ -402,7 +405,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
          s.upcomingPlan || '',
          s.nextActionDate || '',
          docLinkTitlesStr,
-         docLinkUrlsStr
+         docLinkUrlsStr,
+         s.nickname || ''
        ];
     });
 
@@ -811,7 +815,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                         {activeTab === 'customers' 
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网(Ignore) | 5.等级 | 6.产品总结 | 7.更新日期 | 8.Ignore | 9.对接人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.Ignore | 14.流程总结 | 15.对方回复 | 16.Ignore | 17.我方跟进 | 18.Ignore | 19.Ignore | 20.联系方式 | 21.Titles | 22.URLs"
                           : activeTab === 'samples'
-                          ? "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs"
+                          ? "1.Customer | 2.Status | 3.Test Finished | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.DaysSince(Ignore) | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs | 22.Nickname"
                           : "1.Name | 2.Date | 3.Location | 4.Link | 5.Event Series | 6.Summary"
                         }
                       </p>

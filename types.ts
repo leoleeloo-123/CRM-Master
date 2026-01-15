@@ -68,6 +68,7 @@ export interface MasterProduct {
   productForm: ProductForm;
   originalSize: string;
   processedSize?: string;
+  nickname?: string;
 }
 
 export interface SampleDocLink {
@@ -93,6 +94,7 @@ export interface Sample {
   isGraded?: GradingStatus; 
   sampleName?: string; 
   sampleDetails?: string; 
+  nickname?: string;
   quantity: string; 
   application?: string; 
   trackingNumber?: string;
