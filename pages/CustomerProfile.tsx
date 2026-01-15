@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink } from '../types';
+import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
 import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
@@ -48,6 +48,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [filterEffect, setFilterEffect] = useState('all');
   const [filterStarred, setFilterStarred] = useState('all'); // all, starred, normal
 
+  // Filtering States for Samples Tab
+  const [sampleStatusFilter, setSampleStatusFilter] = useState('all');
+  const [sampleTestStatusFilter, setSampleTestStatusFilter] = useState('Ongoing');
+
   const [showAllInteractions, setShowAllInteractions] = useState(false);
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState<string[]>([]);
@@ -72,6 +76,15 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       return dateA.localeCompare(dateB);
     });
   }, [customerSamples]);
+
+  // Derived filtered customer samples
+  const filteredCustomerSamples = useMemo(() => {
+    return sortedCustomerSamples.filter(s => {
+      const matchesStatus = sampleStatusFilter === 'all' || s.status === sampleStatusFilter;
+      const matchesTest = sampleTestStatusFilter === 'all' || s.testStatus === sampleTestStatusFilter;
+      return matchesStatus && matchesTest;
+    });
+  }, [sortedCustomerSamples, sampleStatusFilter, sampleTestStatusFilter]);
 
   // Derived filtered interactions
   const processedInteractions = useMemo(() => {
@@ -637,25 +650,95 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             )}
 
             {activeTab === 'samples' && (
-              <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
-                 {sortedCustomerSamples.map(sample => (
-                   <Card key={sample.id} className="p-6 hover:shadow-lg border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer" onClick={() => navigate(`/samples/${sample.id}`)}>
-                      <div className="flex items-center justify-between gap-4">
-                         <div className="flex items-center gap-4 min-w-0">
-                            <FlaskConical className="text-blue-600 w-8 h-8" />
-                            <div className="truncate">
-                               <h4 className="font-black text-lg text-slate-900 dark:text-white truncate">{sample.sampleName}</h4>
-                               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">SKU: {sample.sampleSKU || 'N/A'} | Qty: {sample.quantity}</div>
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                 {/* Sample List Filters */}
+                 <div className="flex flex-wrap items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800">
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Current Status</label>
+                       <select 
+                         className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500 shadow-sm"
+                         value={sampleStatusFilter}
+                         onChange={e => setSampleStatusFilter(e.target.value)}
+                       >
+                          <option value="all">全部Status</option>
+                          {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
+                       </select>
+                    </div>
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Test Status</label>
+                       <select 
+                         className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500 shadow-sm"
+                         value={sampleTestStatusFilter}
+                         onChange={e => setSampleTestStatusFilter(e.target.value)}
+                       >
+                          <option value="all">Test: 全部</option>
+                          <option value="Ongoing">样品测试中</option>
+                          <option value="Finished">测试完成</option>
+                          <option value="Terminated">项目终止</option>
+                       </select>
+                    </div>
+                    { (sampleStatusFilter !== 'all' || sampleTestStatusFilter !== 'Ongoing') && (
+                       <button onClick={() => { setSampleStatusFilter('all'); setSampleTestStatusFilter('Ongoing'); }} className="mt-5 text-[10px] font-black uppercase text-blue-600 hover:underline">Reset Filters</button>
+                    )}
+                    <div className="ml-auto mt-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                       Showing {filteredCustomerSamples.length} {filteredCustomerSamples.length === 1 ? 'sample' : 'samples'} | {customerSamples.length} {customerSamples.length === 1 ? 'sample' : 'samples'} in total
+                    </div>
+                 </div>
+
+                 <div className="space-y-4">
+                    {filteredCustomerSamples.map(sample => (
+                      <Card key={sample.id} className="p-6 xl:p-8 hover:shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer group" onClick={() => navigate(`/samples/${sample.id}`)}>
+                         <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-4 min-w-0">
+                               <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl text-blue-600 group-hover:scale-110 transition-transform mt-1 shrink-0">
+                                  <FlaskConical className="w-6 h-6 xl:w-8 xl:h-8" />
+                               </div>
+                               <div className="truncate">
+                                  <h4 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white truncate uppercase tracking-tight leading-tight">{sample.sampleName}</h4>
+                                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-3">
+                                     <span className="bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded border dark:border-slate-700">SKU: {sample.sampleSKU || 'N/A'}</span>
+                                     <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                     <span>Qty: {sample.quantity}</span>
+                                     {sample.lastStatusDate && (
+                                       <>
+                                         <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                         <span className="text-slate-500">Updated {differenceInDays(new Date(), parseLocalDate(sample.lastStatusDate))}d ago</span>
+                                       </>
+                                     )}
+                                  </div>
+                                  
+                                  <div className="flex flex-wrap gap-2 mt-4">
+                                     <div className="scale-90 origin-left">
+                                        <Badge color={sample.testStatus === 'Finished' ? 'green' : sample.testStatus === 'Terminated' ? 'red' : 'yellow'}>
+                                          {t(sample.testStatus as any) || sample.testStatus}
+                                        </Badge>
+                                     </div>
+                                     {(sample.docLinks || []).map((link, idx) => (
+                                       <a 
+                                         key={idx} 
+                                         href={link.url} 
+                                         target="_blank" 
+                                         rel="noopener noreferrer" 
+                                         onClick={e => e.stopPropagation()}
+                                         className="flex items-center gap-1.5 text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 hover:underline bg-blue-50/50 dark:bg-blue-900/20 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50 shadow-sm transition-all"
+                                       >
+                                         <LinkIcon size={10} /> {link.title}
+                                       </a>
+                                     ))}
+                                  </div>
+                               </div>
+                            </div>
+                            <div className="flex flex-col items-end shrink-0 gap-2 text-right">
+                               <Badge color="blue">{t(sample.status as any) || sample.status}</Badge>
+                               <div className="text-[10px] font-black text-slate-400 uppercase mt-1 tracking-widest">
+                                  DDL: <span className="text-slate-600 dark:text-slate-300">{sample.nextActionDate || 'TBD'}</span>
+                               </div>
                             </div>
                          </div>
-                         <div className="flex flex-col items-end shrink-0">
-                            <Badge color="blue">{sample.status}</Badge>
-                            <span className="text-[10px] font-black text-slate-400 uppercase mt-2">DDL: {sample.nextActionDate || 'TBD'}</span>
-                         </div>
-                      </div>
-                   </Card>
-                 ))}
-                 {sortedCustomerSamples.length === 0 && <div className="text-slate-400 italic font-bold py-10 text-center uppercase tracking-widest">No samples recorded for this customer.</div>}
+                      </Card>
+                    ))}
+                    {filteredCustomerSamples.length === 0 && <div className="text-slate-400 italic font-bold py-16 text-center uppercase tracking-widest border-2 border-dashed rounded-3xl opacity-50">No samples matching filter.</div>}
+                 </div>
               </div>
             )}
          </div>
