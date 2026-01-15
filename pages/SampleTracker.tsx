@@ -12,7 +12,7 @@ interface SampleTrackerProps {
   customers: Customer[];
 }
 
-// Fixed order for Kanban board columns
+// English canonical status order for board columns
 const FIXED_BOARD_ORDER = ['Waiting', 'Processing', 'Sent', 'Testing', 'Feedback Received'];
 
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {

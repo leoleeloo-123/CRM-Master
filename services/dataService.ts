@@ -34,12 +34,12 @@ export const MOCK_CUSTOMERS: Customer[] = [
       {
         id: 'i1',
         date: dateStr(-5),
-        summary: '(标星记录)<我方邮件>{我方跟进}Sent revised technical datasheet and confirmed arrival of Batch A samples.',
+        summary: '(标星记录)<Our Email>{Our Follow-up}Sent revised technical datasheet and confirmed arrival of Batch A samples.',
       },
       {
         id: 'i2',
         date: dateStr(-15),
-        summary: '(一般记录)<对方微信>{对方回复}Customer confirmed that current removal rates are acceptable but they want better surface finish.',
+        summary: '(一般记录)<Customer Email>{Customer Reply}Customer confirmed that current removal rates are acceptable but they want better surface finish.',
       }
     ]
   },
@@ -58,14 +58,14 @@ export const MOCK_CUSTOMERS: Customer[] = [
     lastContactDate: dateStr(-1),
     lastCustomerReplyDate: dateStr(-1),
     lastMyReplyDate: dateStr(-8),
-    nextActionDate: dateStr(3), // Tomorrow + 2
+    nextActionDate: dateStr(3), // Thursday/Friday depending on when run
     tags: ['Semicon Taiwan'],
     upcomingPlan: 'Customer is reviewing the cost-benefit analysis of switching to Spherical Diamond. Expecting feedback by end of week.',
     interactions: [
       {
         id: 'i3',
         date: dateStr(-1),
-        summary: '(标星记录)<对方邮件>{对方回复}Mark sent the preliminary testing data. The wear rate is 15% lower than competition.',
+        summary: '(标星记录)<Customer Email>{Customer Reply}Mark sent the preliminary testing data. The wear rate is 15% lower than competition.',
       }
     ]
   },
@@ -131,7 +131,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
       {
         id: 'i5',
         date: dateStr(-5),
-        summary: '(一般记录)<展会相见>{建立联系}Met at IDS. Marie requested catalog and price list for dental applications.',
+        summary: '(一般记录)<Met at Exhibition>{Established Contact}Met at IDS. Marie requested catalog and price list for dental applications.',
       }
     ]
   }
@@ -155,13 +155,13 @@ export const MOCK_SAMPLES: Sample[] = [
     originalSize: '0.5um',
     processedSize: '0.5um',
     nickname: 'SuperPolish A',
-    isStarredSample: true, 
+    isStarredSample: true, // Starred - Syncs with Customer DDL
     isGraded: 'Graded',
     application: 'Sapphire Lens Polishing',
     sampleDetails: 'Strict PSD control required. Narrow distribution.',
     requestDate: dateStr(-30),
     lastStatusDate: dateStr(-5),
-    nextActionDate: dateStr(0), 
+    nextActionDate: dateStr(0), // Synced with Customer c1
     upcomingPlan: 'Wait for lab report on Batch A surface roughness.',
     statusDetails: '【' + dateStr(-30) + '】Request received ||| 【' + dateStr(-25) + '】Production started ||| 【' + dateStr(-10) + '】Sample shipped via DHL',
     trackingNumber: 'DHL-99882211'
@@ -188,7 +188,7 @@ export const MOCK_SAMPLES: Sample[] = [
     application: 'Silicon Wafer Dicing',
     requestDate: dateStr(-15),
     lastStatusDate: dateStr(-1),
-    nextActionDate: dateStr(5), 
+    nextActionDate: dateStr(5), // Custom Sample DDL
     upcomingPlan: 'Analyze feedback from engineer regarding cutting speed vs life-time.',
     statusDetails: '【' + dateStr(-15) + '】Request ||| 【' + dateStr(-1) + '】First results received - very positive speed improvement.',
     trackingNumber: 'UPS-1234567'
@@ -210,38 +210,14 @@ export const MOCK_SAMPLES: Sample[] = [
     originalSize: '20nm',
     processedSize: '20nm',
     nickname: 'Aerospace Slurry v4',
-    isStarredSample: true, 
+    isStarredSample: true, // Starred
     isGraded: 'Ungraded',
     application: 'Aerospace Components',
     requestDate: dateStr(-5),
     lastStatusDate: dateStr(-2),
-    nextActionDate: dateStr(1), 
+    nextActionDate: dateStr(1), // Synced with Customer c3
     upcomingPlan: 'Finish mixing Batch 707 and ship by end of week.',
     statusDetails: '【' + dateStr(-5) + '】Urgent request for high-stability formula.'
-  },
-  {
-    id: 's4',
-    customerId: 'c1',
-    customerName: 'Precision Photonics Ltd',
-    sampleIndex: 2,
-    sampleName: 'Single Crystal Micron Powder - 1um > 1um (Standard G1)',
-    productType: 'Powder',
-    specs: 'Standard Grade',
-    quantity: '100g',
-    status: 'Closed',
-    testStatus: 'Finished',
-    crystalType: 'Single Crystal',
-    productCategory: ['Micron'],
-    productForm: 'Powder',
-    originalSize: '1um',
-    processedSize: '1um',
-    nickname: 'Standard G1',
-    isStarredSample: false,
-    isGraded: 'Graded',
-    application: 'General Polishing',
-    requestDate: dateStr(-60),
-    lastStatusDate: dateStr(-40),
-    statusDetails: '【' + dateStr(-60) + '】Old test ||| 【' + dateStr(-40) + '】Test finished, client prefers the 0.5um version (Sample #1).'
   }
 ];
 
@@ -275,14 +251,5 @@ export const MOCK_MASTER_PRODUCTS: MasterProduct[] = [
     originalSize: '20nm',
     processedSize: '20nm',
     nickname: 'Aerospace Slurry v4'
-  },
-  {
-    id: 'mp4',
-    productName: 'Polycrystalline Nano Diamond Powder - 50nm > 50nm',
-    crystalType: 'Polycrystalline',
-    productCategory: ['Nano Diamond'],
-    productForm: 'Powder',
-    originalSize: '50nm',
-    processedSize: '50nm'
   }
 ];

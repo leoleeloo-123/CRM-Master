@@ -52,7 +52,7 @@ export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
   const lastContact = sorted.length > 0 ? sorted[0].date : undefined;
 
   // 2. Last Customer Reply Date (Unreplied)
-  // Most recent date where Effect Tag is '对方回复' or '对方回复及我方跟进'
+  // Most recent date where Effect Tag is 'Customer Reply' or 'Customer Reply & Follow-up'
   let lastCustomerReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
@@ -63,7 +63,7 @@ export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
   }
 
   // 3. Last My Reply Date (Unfollowed)
-  // Most recent date where Effect Tag is '我方跟进' or '对方回复及我方跟进'
+  // Most recent date where Effect Tag is 'Our Follow-up' or 'Customer Reply & Follow-up'
   let lastMyReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
@@ -144,7 +144,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [userName, setUserNameState] = useState<string>(() => {
     const saved = localStorage.getItem('userName');
-    return saved !== null ? saved : 'User';
+    return saved !== null ? saved : 'Demo User';
   });
 
   const [isDemoData, setIsDemoData] = useState<boolean>(() => {
@@ -272,7 +272,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ...customer,
         lastContactDate: computed.lastContact || customer.lastContactDate,
-        // Only overwrite if a matching log was found (not undefined)
         lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
         lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate
       };
@@ -335,12 +334,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const clearDatabase = () => {
-    setCustomersState([]);
-    setSamplesState([]);
-    setMasterProducts([]);
+    // Reset to demo state
+    setCustomersState(MOCK_CUSTOMERS);
+    setSamplesState(MOCK_SAMPLES);
+    setMasterProducts(MOCK_MASTER_PRODUCTS);
     setExhibitionsState([]);
-    setIsDemoData(false);
+    setIsDemoData(true);
     setTagOptionsState(DEFAULT_TAGS); 
+    setCompanyNameState('Navi Material');
+    setUserNameState('Demo User');
     localStorage.clear();
   };
 
