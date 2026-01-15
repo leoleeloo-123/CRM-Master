@@ -1,171 +1,139 @@
 
 import { Customer, Sample, MasterProduct } from '../types';
+import { format, addDays, subDays } from 'date-fns';
 
-// Mock Data updated with generic demo data to avoid data leakage
+// Helper to get consistent dates relative to today for demo purposes
+const today = new Date();
+const dateStr = (days: number) => format(addDays(today, days), 'yyyy-MM-dd');
+
 export const MOCK_CUSTOMERS: Customer[] = [
   {
     id: 'c1',
-    name: 'Acme Corp',
-    region: ['North America'],
+    name: 'Precision Photonics Ltd',
+    region: ['Europe', 'Germany'],
     rank: 1,
     status: 'Active',
-    productSummary: '[Status] Negotiating annual contract for Type A powders. 1. Agglomerated diamond testing successful. 2. Interested in new suspension formula.',
-    lastStatusUpdate: '2025-01-15',
+    productSummary: 'Primary user of high-purity single crystal powders for lens polishing. Currently testing the new Agglomerated Series for next-gen optics.',
+    lastStatusUpdate: dateStr(-2),
     followUpStatus: 'My Turn',
     contacts: [
-      { name: 'John Doe', title: 'Procurement Manager', email: 'john.doe@acme.com' },
-      { name: 'Jane Smith', title: 'R&D Director', email: 'jane.smith@acme.com' }
+      { name: 'Dr. Klaus Weber', title: 'Head of R&D', email: 'k.weber@photonics.de', isPrimary: true },
+      { name: 'Sarah Schmidt', title: 'Procurement', email: 's.schmidt@photonics.de' }
     ],
-    lastContactDate: '2025-01-20',
-    lastCustomerReplyDate: '2025-01-18',
-    lastMyReplyDate: '2025-01-20',
-    nextActionDate: '2025-02-01',
-    tags: ['CES 2024', 'Tech Expo 2025'],
-    docLinks: [{ title: 'Contract Draft', url: 'https://example.com/contract-draft' }],
+    lastContactDate: dateStr(-5),
+    lastCustomerReplyDate: dateStr(-10),
+    lastMyReplyDate: dateStr(-5),
+    nextActionDate: dateStr(0), // Today - Shows in Daily Agenda
+    tags: ['SEMICON 2024', 'Laser World of Photonics'],
+    docLinks: [
+      { title: 'Technical Spec Sheet v2', url: 'https://example.com/specs' },
+      { title: 'SLA Agreement', url: 'https://example.com/sla' }
+    ],
+    upcomingPlan: 'Follow up on the 500g sample results. Need to discuss bulk pricing for Q3 if results meet the 0.5nm roughness target.',
     interactions: [
       {
         id: 'i1',
-        date: '2025-01-20',
-        summary: 'Zoom call to discuss Q2 pricing. They are requesting a 5% discount on bulk orders.',
-        nextSteps: 'Send revised quotation.',
-        tags: ['Negotiation']
+        date: dateStr(-5),
+        summary: '(标星记录)<我方邮件>{我方跟进}Sent revised technical datasheet and confirmed arrival of Batch A samples.',
       },
       {
         id: 'i2',
-        date: '2024-12-10',
-        summary: 'Received positive feedback on Sample S-101. Removal rate met targets.',
-        tags: ['Email']
+        date: dateStr(-15),
+        summary: '(一般记录)<对方微信>{对方回复}Customer confirmed that current removal rates are acceptable but they want better surface finish.',
       }
     ]
   },
   {
     id: 'c2',
-    name: 'Nebula Industries',
-    region: ['Europe', 'Germany'],
-    rank: 2,
-    status: 'Pending',
-    productSummary: 'Evaluating 20nm Nano Diamond for polishing application. Currently comparing with competitor.',
-    lastStatusUpdate: '2025-02-01',
+    name: 'Global Wafer Solutions',
+    region: ['Asia', 'Taiwan'],
+    rank: 1,
+    status: 'Active',
+    productSummary: 'Massive demand for Diamond Balls in wire saw applications. Exploring transition to Spherical Diamond for higher efficiency.',
+    lastStatusUpdate: dateStr(-1),
     followUpStatus: 'Waiting for Customer',
     contacts: [
-      { name: 'Hans Muller', title: 'Process Engineer', email: 'h.muller@nebula.de' }
+      { name: 'Mark Chen', title: 'Engineering Director', isPrimary: true }
     ],
-    lastContactDate: '2025-02-01',
-    lastCustomerReplyDate: '2025-01-25',
-    lastMyReplyDate: '2025-02-01',
-    nextActionDate: '2025-02-15',
-    tags: ['Industry Fair 2024'],
+    lastContactDate: dateStr(-1),
+    lastCustomerReplyDate: dateStr(-1),
+    lastMyReplyDate: dateStr(-8),
+    nextActionDate: dateStr(3), // Tomorrow + 2
+    tags: ['Semicon Taiwan'],
+    upcomingPlan: 'Customer is reviewing the cost-benefit analysis of switching to Spherical Diamond. Expecting feedback by end of week.',
     interactions: [
       {
         id: 'i3',
-        date: '2025-02-01',
-        summary: 'Sent technical datasheet for Nano Series. Pending their lab review.',
-        nextSteps: 'Follow up on lab results.'
+        date: dateStr(-1),
+        summary: '(标星记录)<对方邮件>{对方回复}Mark sent the preliminary testing data. The wear rate is 15% lower than competition.',
       }
     ]
   },
   {
     id: 'c3',
-    name: 'Quantum Optics',
-    region: ['Asia', 'China'],
-    rank: 1,
+    name: 'Innovative Abrasives Inc',
+    region: ['North America', 'USA'],
+    rank: 2,
     status: 'Active',
-    productSummary: 'High-volume buyer for Single Crystal. 1. Monthly recurring orders. 2. Developing new lens polishing process.',
-    lastStatusUpdate: '2025-02-05',
+    productSummary: 'Focus on Suspension and Slurry products. Testing "Batch 707" for aerospace turbine polishing.',
+    lastStatusUpdate: dateStr(-20),
     followUpStatus: 'Scheduled',
     contacts: [
-      { name: 'Li Wei', title: 'Supply Chain Head' }
+      { name: 'Jim Parsons', title: 'Process Engineer', email: 'j.parsons@inn-abrasives.com' }
     ],
-    lastContactDate: '2025-02-03',
-    lastCustomerReplyDate: '2025-02-03',
-    lastMyReplyDate: '2025-02-02',
-    nextActionDate: '2025-02-10',
-    tags: ['Photonics West'],
+    lastContactDate: dateStr(-20),
+    lastCustomerReplyDate: dateStr(-25),
+    lastMyReplyDate: dateStr(-20),
+    nextActionDate: dateStr(1), // Tomorrow
+    tags: ['IMTS 2024'],
+    upcomingPlan: 'Scheduled technical call to review the suspension stability issues reported last month.',
     interactions: []
   },
   {
     id: 'c4',
-    name: 'StartUp Dynamics',
-    region: ['USA'],
-    rank: 4,
-    status: 'Prospect',
-    productSummary: 'Looking for cost-effective alternatives for CMP slurry. Early stage discussion.',
-    lastStatusUpdate: '2024-11-15',
+    name: 'NanoTech Materials',
+    region: ['Asia', 'Japan'],
+    rank: 3,
+    status: 'Pending',
+    productSummary: 'Interested in CVD Diamond components for thermal management. Initial discussions phase.',
+    lastStatusUpdate: dateStr(-45),
     followUpStatus: 'No Action',
     contacts: [
-      { name: 'Sarah Connor', title: 'Founder' }
+      { name: 'Sato-san', title: 'R&D', isPrimary: true }
     ],
-    lastContactDate: '2024-11-15',
-    lastCustomerReplyDate: '2024-11-10',
-    lastMyReplyDate: '2024-11-15',
-    nextActionDate: '2025-03-01',
-    tags: [],
-    interactions: [
-      {
-        id: 'i4',
-        date: '2024-11-15',
-        summary: 'Sent standard price list. No immediate project timeline.',
-        tags: ['Email']
-      }
-    ]
+    lastContactDate: dateStr(-45),
+    lastCustomerReplyDate: dateStr(-50),
+    lastMyReplyDate: dateStr(-45),
+    nextActionDate: dateStr(14), // Farther out
+    tags: ['JPCA Show'],
+    upcomingPlan: 'Re-engage in two weeks once their project budget is finalized.',
+    interactions: []
   },
   {
     id: 'c5',
-    name: 'Global Wafer Co.',
-    region: ['Taiwan'],
-    rank: 3,
-    status: 'Active',
-    productSummary: 'Testing Diamond Ball for wire saw application. Sample 2 sent.',
-    lastStatusUpdate: '2025-01-28',
-    followUpStatus: 'Waiting for Customer',
+    name: 'Advanced Tools Corp',
+    region: ['Europe', 'France'],
+    rank: 4,
+    status: 'Prospect',
+    productSummary: 'Potential lead from exhibition. Interested in Micron powders for dental tool manufacturing.',
+    lastStatusUpdate: dateStr(-5),
+    followUpStatus: 'My Turn',
     contacts: [
-      { name: 'Chen', title: 'R&D' }
+      { name: 'Marie Curie', title: 'Product Lead' }
     ],
-    lastContactDate: '2025-01-28',
-    lastCustomerReplyDate: '2025-01-20',
-    lastMyReplyDate: '2025-01-28',
-    nextActionDate: '2025-02-20',
-    tags: ['Semicon Taiwan'],
-    interactions: []
-  }
-];
-
-export const MOCK_MASTER_PRODUCTS: MasterProduct[] = [
-  {
-    id: 'mp1',
-    productName: '多晶 团聚 微粉 - 5um > 5um',
-    crystalType: '多晶',
-    productCategory: ['团聚'],
-    productForm: '微粉',
-    originalSize: '5um',
-    processedSize: '5um'
-  },
-  {
-    id: 'mp2',
-    productName: '单晶 纳米金刚石 悬浮液 - 20nm > 20nm',
-    crystalType: '单晶',
-    productCategory: ['纳米金刚石'],
-    productForm: '悬浮液',
-    originalSize: '20nm',
-    processedSize: '20nm'
-  },
-  {
-    id: 'mp3',
-    productName: '单晶 微米粉 微粉 - 0.25um > 0.25um',
-    crystalType: '单晶',
-    productCategory: ['微米粉'],
-    productForm: '微粉',
-    originalSize: '0.25um',
-    processedSize: '0.25um'
-  },
-  {
-    id: 'mp4',
-    productName: '多晶 金刚石球 微粉 - 80um > 80um',
-    crystalType: '多晶',
-    productCategory: ['金刚石球'],
-    productForm: '微粉',
-    originalSize: '80um',
-    processedSize: '80um'
+    lastContactDate: dateStr(-5),
+    lastCustomerReplyDate: undefined,
+    lastMyReplyDate: dateStr(-5),
+    nextActionDate: dateStr(0), // Today
+    tags: ['IDS Cologne'],
+    upcomingPlan: 'Send company intro and standard catalog for Micron series.',
+    interactions: [
+      {
+        id: 'i5',
+        date: dateStr(-5),
+        summary: '(一般记录)<展会相见>{建立联系}Met at IDS. Marie requested catalog and price list for dental applications.',
+      }
+    ]
   }
 ];
 
@@ -173,96 +141,148 @@ export const MOCK_SAMPLES: Sample[] = [
   {
     id: 's1',
     customerId: 'c1',
-    customerName: 'Acme Corp',
+    customerName: 'Precision Photonics Ltd',
     sampleIndex: 1,
-    sampleName: '多晶 团聚 微粉 - 5um > 5um',
+    sampleName: 'Single Crystal Agglomerated Diamond Powder - 0.5um > 0.5um (SuperPolish A)',
     productType: 'Powder',
-    specs: '5um, Hydrophilic',
+    specs: '0.5um High Purity',
     quantity: '500g',
-    status: '已反馈',
-    testStatus: 'Finished',
-    crystalType: '多晶',
-    productCategory: ['团聚'],
-    productForm: '微粉',
-    originalSize: '5um',
-    processedSize: '5um',
+    status: 'Testing',
+    testStatus: 'Ongoing',
+    crystalType: 'Single Crystal',
+    productCategory: ['Agglomerated Diamond'],
+    productForm: 'Powder',
+    originalSize: '0.5um',
+    processedSize: '0.5um',
+    nickname: 'SuperPolish A',
+    isStarredSample: true, 
     isGraded: 'Graded',
-    application: 'Sapphire Polishing',
-    sampleDetails: 'Custom size distribution requested.',
-    requestDate: '2024-11-01',
-    lastStatusDate: '2024-12-10',
-    statusDetails: '【2024-12-10】Feedback positive. Moving to commercial negotiation.',
-    feedback: 'Excellent surface finish.',
-    trackingNumber: '1Z999AA10123456784'
+    application: 'Sapphire Lens Polishing',
+    sampleDetails: 'Strict PSD control required. Narrow distribution.',
+    requestDate: dateStr(-30),
+    lastStatusDate: dateStr(-5),
+    nextActionDate: dateStr(0), 
+    upcomingPlan: 'Wait for lab report on Batch A surface roughness.',
+    statusDetails: '【' + dateStr(-30) + '】Request received ||| 【' + dateStr(-25) + '】Production started ||| 【' + dateStr(-10) + '】Sample shipped via DHL',
+    trackingNumber: 'DHL-99882211'
   },
   {
     id: 's2',
     customerId: 'c2',
-    customerName: 'Nebula Industries',
+    customerName: 'Global Wafer Solutions',
     sampleIndex: 1,
-    sampleName: '单晶 纳米金刚石 悬浮液 - 20nm > 20nm',
-    productType: 'Slurry',
-    specs: '20nm, pH 7',
-    quantity: '1 L',
-    status: '已寄出',
+    sampleName: 'Polycrystalline Diamond Ball Powder - 80um > 80um (FastCut-X)',
+    productType: 'Diamond Ball',
+    specs: '80um Cluster',
+    quantity: '2kg',
+    status: 'Feedback Received',
     testStatus: 'Ongoing',
-    crystalType: '单晶',
-    productCategory: ['纳米金刚石'],
-    productForm: '悬浮液',
-    originalSize: '20nm',
-    processedSize: '20nm',
-    isGraded: 'Ungraded',
-    application: 'Lens Polishing',
-    sampleDetails: 'pH neutral suspension.',
-    requestDate: '2025-01-10',
-    lastStatusDate: '2025-01-15',
-    statusDetails: '【2025-01-15】In transit to Germany.',
-    trackingNumber: 'DHL-123456789'
+    crystalType: 'Polycrystalline',
+    productCategory: ['Diamond Ball'],
+    productForm: 'Powder',
+    originalSize: '80um',
+    processedSize: '80um',
+    nickname: 'FastCut-X',
+    isStarredSample: false,
+    isGraded: 'Graded',
+    application: 'Silicon Wafer Dicing',
+    requestDate: dateStr(-15),
+    lastStatusDate: dateStr(-1),
+    nextActionDate: dateStr(5), 
+    upcomingPlan: 'Analyze feedback from engineer regarding cutting speed vs life-time.',
+    statusDetails: '【' + dateStr(-15) + '】Request ||| 【' + dateStr(-1) + '】First results received - very positive speed improvement.',
+    trackingNumber: 'UPS-1234567'
   },
   {
     id: 's3',
     customerId: 'c3',
-    customerName: 'Quantum Optics',
+    customerName: 'Innovative Abrasives Inc',
     sampleIndex: 1,
-    sampleName: '单晶 微米粉 微粉 - 0.25um > 0.25um',
-    productType: 'Powder',
-    specs: '0.25 micron',
-    quantity: '1000 ct',
-    status: '处理中',
+    sampleName: 'Single Crystal Nano Diamond Suspension - 20nm > 20nm (Aerospace Slurry v4)',
+    productType: 'Suspension',
+    specs: '20nm water-based',
+    quantity: '5L',
+    status: 'Processing',
     testStatus: 'Ongoing',
-    crystalType: '单晶',
-    productCategory: ['微米粉'],
-    productForm: '微粉',
-    originalSize: '0.25um',
-    processedSize: '0.25um',
-    isGraded: 'Graded',
-    application: 'Precision Optics',
-    sampleDetails: ' PSD control.',
-    requestDate: '2025-02-01',
-    lastStatusDate: '2025-02-02',
-    statusDetails: '【2025-02-02】Waiting for production batch #404.',
+    crystalType: 'Single Crystal',
+    productCategory: ['Nano Diamond'],
+    productForm: 'Suspension',
+    originalSize: '20nm',
+    processedSize: '20nm',
+    nickname: 'Aerospace Slurry v4',
+    isStarredSample: true, 
+    isGraded: 'Ungraded',
+    application: 'Aerospace Components',
+    requestDate: dateStr(-5),
+    lastStatusDate: dateStr(-2),
+    nextActionDate: dateStr(1), 
+    upcomingPlan: 'Finish mixing Batch 707 and ship by end of week.',
+    statusDetails: '【' + dateStr(-5) + '】Urgent request for high-stability formula.'
   },
   {
     id: 's4',
-    customerId: 'c5',
-    customerName: 'Global Wafer Co.',
-    sampleIndex: 1,
-    sampleName: '多晶 金刚石球 微粉 - 80um > 80um',
-    productType: 'Diamond Ball',
-    specs: '80 micron cluster',
-    quantity: '50g',
-    status: '已申请',
-    testStatus: 'Ongoing',
-    crystalType: '多晶',
-    productCategory: ['金刚石球'],
-    productForm: '微粉',
+    customerId: 'c1',
+    customerName: 'Precision Photonics Ltd',
+    sampleIndex: 2,
+    sampleName: 'Single Crystal Micron Powder - 1um > 1um (Standard G1)',
+    productType: 'Powder',
+    specs: 'Standard Grade',
+    quantity: '100g',
+    status: 'Closed',
+    testStatus: 'Finished',
+    crystalType: 'Single Crystal',
+    productCategory: ['Micron'],
+    productForm: 'Powder',
+    originalSize: '1um',
+    processedSize: '1um',
+    nickname: 'Standard G1',
+    isStarredSample: false,
+    isGraded: 'Graded',
+    application: 'General Polishing',
+    requestDate: dateStr(-60),
+    lastStatusDate: dateStr(-40),
+    statusDetails: '【' + dateStr(-60) + '】Old test ||| 【' + dateStr(-40) + '】Test finished, client prefers the 0.5um version (Sample #1).'
+  }
+];
+
+export const MOCK_MASTER_PRODUCTS: MasterProduct[] = [
+  {
+    id: 'mp1',
+    productName: 'Single Crystal Agglomerated Diamond Powder - 0.5um > 0.5um (SuperPolish A)',
+    crystalType: 'Single Crystal',
+    productCategory: ['Agglomerated Diamond'],
+    productForm: 'Powder',
+    originalSize: '0.5um',
+    processedSize: '0.5um',
+    nickname: 'SuperPolish A'
+  },
+  {
+    id: 'mp2',
+    productName: 'Polycrystalline Diamond Ball Powder - 80um > 80um (FastCut-X)',
+    crystalType: 'Polycrystalline',
+    productCategory: ['Diamond Ball'],
+    productForm: 'Powder',
     originalSize: '80um',
     processedSize: '80um',
-    isGraded: 'Graded',
-    application: 'Wire Saw',
-    sampleDetails: 'Test for new wafer cutting process.',
-    requestDate: '2025-02-06',
-    lastStatusDate: '2025-02-06',
-    statusDetails: '【2025-02-06】New request from Chen.',
+    nickname: 'FastCut-X'
+  },
+  {
+    id: 'mp3',
+    productName: 'Single Crystal Nano Diamond Suspension - 20nm > 20nm (Aerospace Slurry v4)',
+    crystalType: 'Single Crystal',
+    productCategory: ['Nano Diamond'],
+    productForm: 'Suspension',
+    originalSize: '20nm',
+    processedSize: '20nm',
+    nickname: 'Aerospace Slurry v4'
+  },
+  {
+    id: 'mp4',
+    productName: 'Polycrystalline Nano Diamond Powder - 50nm > 50nm',
+    crystalType: 'Polycrystalline',
+    productCategory: ['Nano Diamond'],
+    productForm: 'Powder',
+    originalSize: '50nm',
+    processedSize: '50nm'
   }
 ];

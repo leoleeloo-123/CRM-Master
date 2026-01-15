@@ -12,8 +12,8 @@ interface SampleTrackerProps {
   customers: Customer[];
 }
 
-// User requested fixed order: 从左往右等待中，样品制作中，样品已发出，客户初步测试，客户初步结果
-const FIXED_BOARD_ORDER = ['等待中', '样品制作中', '样品已发出', '客户初步测试', '客户初步结果'];
+// Fixed order for Kanban board columns
+const FIXED_BOARD_ORDER = ['Waiting', 'Processing', 'Sent', 'Testing', 'Feedback Received'];
 
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
   const navigate = useNavigate();
@@ -290,7 +290,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
          <div className="flex flex-wrap gap-2">
             <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                <option value="">Status: All</option>
-               {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any)}</option>)}
+               {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
             </select>
             
             <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterTestFinished} onChange={e => setFilterTestFinished(e.target.value)}>
@@ -302,12 +302,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
 
             <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterCrystal} onChange={e => setFilterCrystal(e.target.value)}>
                <option value="">{t('crystal')}: All</option>
-               {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any)}</option>)}
+               {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any) || c}</option>)}
             </select>
 
             <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterForm} onChange={e => setFilterForm(e.target.value)}>
                <option value="">{t('form')}: All</option>
-               {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any)}</option>)}
+               {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any) || f}</option>)}
             </select>
 
             <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterGrading} onChange={e => setFilterGrading(e.target.value)}>
@@ -397,7 +397,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                 {getGradingBadge(s.isGraded)}
                               </td>
                               <td className="p-4 font-bold text-slate-700 dark:text-slate-300 text-center">{s.quantity}</td>
-                              <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
+                              <td className="p-4"><Badge color="blue">{t(s.status as any) || s.status}</Badge></td>
                               <td className="p-4 text-center">
                                  {s.isStarredSample ? <Star size={16} className="fill-amber-400 text-amber-400 mx-auto" /> : '-'}
                               </td>
@@ -449,7 +449,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                      <div className="flex justify-between items-center mb-5 px-1">
                         <h4 className="font-extrabold uppercase text-sm xl:text-base text-slate-500 flex items-center gap-2 tracking-widest">
                            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                           {t(status as any)} ({colSamples.length})
+                           {t(status as any) || status} ({colSamples.length})
                         </h4>
                      </div>
                      <div className="space-y-5 overflow-y-auto flex-1 pr-1 scrollbar-hide">
@@ -540,7 +540,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                     value={newSample.crystalType}
                     onChange={(e) => setNewSample({...newSample, crystalType: e.target.value})}
                  >
-                    {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any)}</option>)}
+                    {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any) || c}</option>)}
                  </select>
               </div>
 
@@ -551,7 +551,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                     value={newSample.productForm}
                     onChange={(e) => setNewSample({...newSample, productForm: e.target.value})}
                  >
-                    {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any)}</option>)}
+                    {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any) || f}</option>)}
                  </select>
               </div>
 
@@ -569,7 +569,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                         }}
                         className={`px-3 py-1 rounded-full text-xs font-black transition-all ${newSample.productCategory.includes(cat) ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200'}`}
                       >
-                        {t(cat as any)}
+                        {t(cat as any) || cat}
                       </button>
                     ))}
                  </div>
@@ -632,7 +632,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                     value={newSample.status}
                     onChange={(e) => setNewSample({...newSample, status: e.target.value})}
                  >
-                    {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any)}</option>)}
+                    {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
                  </select>
               </div>
             </div>

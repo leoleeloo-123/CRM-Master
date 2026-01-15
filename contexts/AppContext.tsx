@@ -10,8 +10,8 @@ export type FontSize = 'small' | 'medium' | 'large';
 export const parseInteractionSummary = (summary: string) => {
   const result = {
     isStarred: false,
-    typeTag: '无',
-    effectTag: '无',
+    typeTag: 'None',
+    effectTag: 'None',
     content: summary
   };
 
@@ -56,7 +56,7 @@ export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
   let lastCustomerReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
-    if (effectTag === '对方回复' || effectTag === '对方回复及我方跟进') {
+    if (effectTag === 'Customer Reply' || effectTag === 'Customer Reply & Follow-up') {
       lastCustomerReply = int.date;
       break;
     }
@@ -67,7 +67,7 @@ export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
   let lastMyReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
-    if (effectTag === '我方跟进' || effectTag === '对方回复及我方跟进') {
+    if (effectTag === 'Our Follow-up' || effectTag === 'Customer Reply & Follow-up') {
       lastMyReply = int.date;
       break;
     }
@@ -113,13 +113,13 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const DEFAULT_TAGS: TagOptions = {
-  sampleStatus: ['等待中', '样品制作中', '样品已发出', '已送达', '客户初步测试', '客户初步结果', '已关闭'],
-  crystalType: ['单晶', '多晶'],
-  productCategory: ['团聚', '纳米金刚石', '球形金刚石', '金刚石球', '微米粉', 'CVD'],
-  productForm: ['微粉', '悬浮液'],
+  sampleStatus: ['Waiting', 'Processing', 'Sent', 'Delivered', 'Testing', 'Feedback Received', 'Closed'],
+  crystalType: ['Single Crystal', 'Polycrystalline'],
+  productCategory: ['Agglomerated Diamond', 'Nano Diamond', 'Spherical Diamond', 'Diamond Ball', 'Micron', 'CVD'],
+  productForm: ['Powder', 'Suspension'],
   eventSeries: ['Semicon', 'Optical Expo', 'Industrial Fair'],
-  interactionTypes: ['无', '对方邮件', '我方邮件', '双方邮件', '展会相见', '视频会议', '线下会面'],
-  interactionEffects: ['无', '对方回复', '我方跟进', '对方回复及我方跟进']
+  interactionTypes: ['None', 'Customer Email', 'Our Email', 'Both Emails', 'Met at Exhibition', 'Video Call', 'In-person Meeting'],
+  interactionEffects: ['None', 'Customer Reply', 'Our Follow-up', 'Customer Reply & Follow-up']
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
