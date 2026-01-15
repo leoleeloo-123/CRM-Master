@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 
@@ -42,6 +42,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [intEffectTag, setIntEffectTag] = useState('无');
   const [intContent, setIntContent] = useState('');
   
+  // Filtering States for Interaction History
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterType, setFilterType] = useState('all');
+  const [filterEffect, setFilterEffect] = useState('all');
+  const [filterStarred, setFilterStarred] = useState('all'); // all, starred, normal
+
   const [showAllInteractions, setShowAllInteractions] = useState(false);
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState<string[]>([]);
@@ -67,6 +73,26 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     });
   }, [customerSamples]);
 
+  // Derived filtered interactions
+  const processedInteractions = useMemo(() => {
+    if (!customer) return [];
+    return customer.interactions
+      .map(int => ({
+        ...int,
+        parsed: parseInteractionSummary(int.summary)
+      }))
+      .filter(item => {
+        const matchesType = filterType === 'all' || item.parsed.typeTag === filterType;
+        const matchesEffect = filterEffect === 'all' || item.parsed.effectTag === filterEffect;
+        const matchesStarred = filterStarred === 'all' || 
+          (filterStarred === 'starred' && item.parsed.isStarred) || 
+          (filterStarred === 'normal' && !item.parsed.isStarred);
+        return matchesType && matchesEffect && matchesStarred;
+      });
+  }, [customer, filterType, filterEffect, filterStarred]);
+
+  const visibleInteractions = showAllInteractions ? processedInteractions : processedInteractions.slice(0, 3);
+
   useEffect(() => {
     if (editingInteraction) {
       const parsed = parseInteractionSummary(editingInteraction.summary);
@@ -83,7 +109,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     }
   }, [customer]);
 
-  if (!customer) return <div className="p-8 text-center">Customer not found.</div>;
+  if (!customer) return <div className="p-8 text-center font-black uppercase text-slate-400">Customer not found.</div>;
 
   const saveUpdate = (updatedFields: Partial<Customer>) => {
     onUpdateCustomer({ ...customer, ...updatedFields });
@@ -254,10 +280,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       .filter(ex => ex.name.toLowerCase().includes(tagSearchTerm.toLowerCase()));
   }, [exhibitions, tempTags, tagSearchTerm]);
 
-  const visibleInteractions = showAllInteractions ? customer.interactions : customer.interactions.slice(0, 3);
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
-  const cardBaseClass = "p-8 xl:p-10 shadow-sm border border-slate-100 dark:border-slate-800 rounded-[2rem] bg-white dark:bg-slate-900/40 relative overflow-hidden transition-all";
+
+  const resetFilters = () => {
+    setFilterType('all');
+    setFilterEffect('all');
+    setFilterStarred('all');
+  };
+
+  const hasActiveFilters = filterType !== 'all' || filterEffect !== 'all' || filterStarred !== 'all';
 
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
@@ -327,11 +359,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             <Card className="p-6 xl:p-8">
                <div className="flex justify-between items-center mb-6 pb-3 border-b">
                  <h3 className={titleClass}><UserCheck className="w-5 h-5 text-blue-600" /> {t('keyContacts')}</h3>
-                 <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white"><PencilLine size={16}/></button>
+                 <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
                <div className="space-y-4">
                  {customer.contacts.map((c, i) => (
-                   <div key={i} className={`p-4 rounded-xl border-2 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50'}`}>
+                   <div key={i} className={`p-4 rounded-xl border-2 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 dark:border-slate-800'}`}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-black text-slate-900 dark:text-white text-lg xl:text-xl">{c.name}</span>
                         {c.isPrimary && <Star size={16} className="fill-amber-400 text-amber-400" />}
@@ -358,7 +390,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                     <div 
                       key={i} 
                       onClick={() => matchedExhibition && navigate(`/exhibitions/${matchedExhibition.id}`)}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${matchedExhibition ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 hover:border-blue-300 hover:shadow-sm cursor-pointer group' : 'bg-slate-50/50 dark:bg-slate-900/20 border-transparent opacity-60'}`}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${matchedExhibition ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 hover:border-blue-300 hover:shadow-sm cursor-pointer group' : 'bg-slate-50/50 dark:bg-slate-900/20 border-transparent opacity-60'}`}
                     >
                        <span className={`text-sm xl:text-base font-black uppercase truncate flex-1 ${matchedExhibition ? 'text-slate-700 dark:text-slate-300 group-hover:text-blue-600' : 'text-slate-400'}`}>
                          {tag}
@@ -376,7 +408,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                   <h3 className={titleClass}><LinkIcon className="w-6 h-6 text-blue-500" /> {t('fileLinks')}</h3>
                </div>
                <div className="space-y-4">
-                  {/* Add New Link Section */}
                   <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
                      <input 
                         className="w-full p-2.5 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
@@ -398,7 +429,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                      </div>
                   </div>
 
-                  {/* Link List Section */}
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                      {(customer.docLinks || []).length > 0 ? (customer.docLinks || []).map((link, idx) => (
                        <div key={idx} className="space-y-2">
@@ -454,13 +484,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
          <div className="lg:col-span-2 space-y-8">
             <Card className="overflow-hidden border shadow-sm">
-               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b">
+               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
                   <h3 className="font-black text-base flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 text-emerald-600"/> {t('productSummary')}</h3>
-                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white"><PencilLine size={20}/></button>
+                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
                </div>
                <div className="p-6">
                   <p className={contentTextClass}>{customer.productSummary || "No summary."}</p>
-                  <div className="mt-6 pt-4 border-t flex justify-between items-center text-[10px] text-slate-400 font-black uppercase">
+                  <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase">
                      <span>{t('lastUpdated')}: {customer.lastStatusUpdate}</span>
                      <Badge color="green">{customer.status.toUpperCase()}</Badge>
                   </div>
@@ -474,12 +504,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-in fade-in duration-500">
-                <div className={`p-8 rounded-[2rem] border-2 shadow-sm relative overflow-hidden ${getUrgencyLevel(customer.nextActionDate) === 'urgent' ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-200'}`}>
-                  <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="absolute top-6 right-6 p-2 rounded-lg bg-emerald-600 text-white shadow-sm active:scale-95">
+                <div className={`p-8 rounded-[2rem] border-2 shadow-sm relative overflow-hidden ${getUrgencyLevel(customer.nextActionDate) === 'urgent' ? 'bg-rose-50 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/40' : 'bg-slate-50 border-slate-200 dark:bg-slate-900/20 dark:border-slate-800'}`}>
+                  <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="absolute top-6 right-6 p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
                     <PencilLine className="w-5 h-5" />
                   </button>
                   <div className="flex items-center gap-4 mb-4">
-                     <Clock className="w-8 h-8 text-slate-800" />
+                     <Clock className="w-8 h-8 text-slate-800 dark:text-slate-200" />
                      <div>
                         <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest">UPCOMING PLAN</h4>
                         <span className="text-lg xl:text-xl font-black text-slate-900 dark:text-white tracking-tight">DDL: {customer.nextActionDate || 'TBD'}</span>
@@ -489,65 +519,118 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                 </div>
 
                 <div className="space-y-6">
-                   <div className="flex justify-between items-center">
-                     <h3 className={titleClass}><Calendar className="w-6 h-6 text-blue-600"/> {t('interactionHistory')}</h3>
-                     <div className="flex items-center gap-2">
-                        <button 
-                          onClick={handleRefreshDates}
-                          title="Refresh Unreplied / Unfollowed Dates"
-                          className={`p-2.5 rounded-lg border-2 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all active:scale-90 bg-white dark:bg-slate-900 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
-                        >
-                          <RefreshCcw size={18} />
-                        </button>
-                        <Button className="text-[10px] py-2 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest" 
-                            onClick={() => {
-                              setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
-                              setIntIsStarred(false);
-                              setIntTypeTag('无');
-                              setIntEffectTag('无');
-                              setIntContent('');
-                            }}>
-                          <Plus size={14} className="mr-1" /> Log Progress
-                        </Button>
-                     </div>
+                   <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className={titleClass}><Calendar className="w-6 h-6 text-blue-600"/> {t('interactionHistory')}</h3>
+                        <div className="flex items-center gap-2">
+                           <button 
+                             onClick={() => setShowFilters(!showFilters)}
+                             className={`p-2.5 rounded-lg border-2 transition-all active:scale-90 ${showFilters ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100'}`}
+                           >
+                             <Filter size={18} />
+                           </button>
+                           <button 
+                             onClick={handleRefreshDates}
+                             title="Refresh Unreplied / Unfollowed Dates"
+                             className={`p-2.5 rounded-lg border-2 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all active:scale-90 bg-white dark:bg-slate-900 shadow-sm ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
+                           >
+                             <RefreshCcw size={18} />
+                           </button>
+                           <Button className="text-[10px] py-2 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest shadow-lg shadow-blue-600/20" 
+                               onClick={() => {
+                                 setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
+                                 setIntIsStarred(false);
+                                 setIntTypeTag('无');
+                                 setIntEffectTag('无');
+                                 setIntContent('');
+                               }}>
+                             <Plus size={14} className="mr-1" /> Log Progress
+                           </Button>
+                        </div>
+                      </div>
+
+                      {showFilters && (
+                        <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                           <div className="flex flex-wrap items-center gap-4">
+                              <div className="space-y-1">
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">记录类型</label>
+                                 <select 
+                                   className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
+                                   value={filterStarred}
+                                   onChange={e => setFilterStarred(e.target.value)}
+                                 >
+                                    <option value="all">记录: 全部</option>
+                                    <option value="starred">⭐ 标星记录</option>
+                                    <option value="normal">⚪ 一般记录</option>
+                                 </select>
+                              </div>
+                              <div className="space-y-1">
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">流程类型</label>
+                                 <select 
+                                   className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
+                                   value={filterType}
+                                   onChange={e => setFilterType(e.target.value)}
+                                 >
+                                    <option value="all">流程: 全部</option>
+                                    {tagOptions.interactionTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                 </select>
+                              </div>
+                              <div className="space-y-1">
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">作用标签</label>
+                                 <select 
+                                   className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
+                                   value={filterEffect}
+                                   onChange={e => setFilterEffect(e.target.value)}
+                                 >
+                                    <option value="all">作用: 全部</option>
+                                    {tagOptions.interactionEffects.map(t => <option key={t} value={t}>{t}</option>)}
+                                 </select>
+                              </div>
+                              {hasActiveFilters && (
+                                <button onClick={resetFilters} className="mt-5 text-[10px] font-black uppercase text-rose-500 hover:underline">Reset</button>
+                              )}
+                           </div>
+                        </div>
+                      )}
                    </div>
                    
-                   <div className="border-l-2 border-slate-200 ml-4 pl-8 py-4 space-y-8">
-                     {customer.interactions.length > 0 ? (
+                   <div className="border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-8 py-4 space-y-8">
+                     {processedInteractions.length > 0 ? (
                        <>
-                         {visibleInteractions.map((int) => {
-                           const parsed = parseInteractionSummary(int.summary);
+                         {visibleInteractions.map((item) => {
+                           const int = item;
+                           const parsed = item.parsed;
                            return (
                             <div key={int.id} className="relative group">
-                               <div className="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
+                               <div className="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
                                <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-3">
                                     <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
-                                    <Star size={16} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300'} />
-                                    {parsed.typeTag !== '无' && <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.typeTag}</span>}
-                                    {parsed.effectTag !== '无' && <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.effectTag}</span>}
+                                    <Star size={16} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-700'} />
+                                    {parsed.typeTag !== '无' && <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.typeTag}</span>}
+                                    {parsed.effectTag !== '无' && <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.effectTag}</span>}
                                   </div>
                                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <button onClick={() => setEditingInteraction(int)} className="p-1.5 rounded-lg bg-emerald-600 text-white"><PencilLine size={14}/></button>
-                                     <button onClick={() => deleteInteraction(int.id)} className="p-1.5 rounded-lg bg-red-600 text-white"><Trash2 size={14}/></button>
+                                     <button onClick={() => setEditingInteraction(int)} className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-90"><PencilLine size={14}/></button>
+                                     <button onClick={() => deleteInteraction(int.id)} className="p-1.5 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-90"><Trash2 size={14}/></button>
                                   </div>
                                </div>
-                               <Card className="p-4 bg-white shadow-sm border border-slate-100">
-                                  <p className="text-base xl:text-lg font-bold text-slate-800">{parsed.content}</p>
+                               <Card className="p-4 bg-white dark:bg-slate-800/40 shadow-sm border border-slate-100 dark:border-slate-800">
+                                  <p className="text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed">{parsed.content}</p>
                                 </Card>
                             </div>
                            );
                          })}
-                         {customer.interactions.length > 3 && (
+                         {processedInteractions.length > 3 && (
                            <div className="flex justify-center pt-2">
                              <button onClick={() => setShowAllInteractions(!showAllInteractions)} className="text-blue-600 font-black uppercase text-xs tracking-widest flex items-center gap-1">
                                {showAllInteractions ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
-                               {showAllInteractions ? 'View Less' : `View More (${customer.interactions.length - 3})`}
+                               {showAllInteractions ? 'View Less' : `View More (${processedInteractions.length - 3})`}
                              </button>
                            </div>
                          )}
                        </>
-                     ) : <div className="text-slate-400 italic">No history.</div>}
+                     ) : <div className="text-slate-400 italic font-bold py-10 text-center uppercase tracking-widest">No matching history found.</div>}
                    </div>
                 </div>
               </div>
@@ -556,12 +639,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             {activeTab === 'samples' && (
               <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
                  {sortedCustomerSamples.map(sample => (
-                   <Card key={sample.id} className="p-6 hover:shadow-lg border-2 hover:border-blue-500 transition-all cursor-pointer" onClick={() => navigate(`/samples/${sample.id}`)}>
+                   <Card key={sample.id} className="p-6 hover:shadow-lg border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer" onClick={() => navigate(`/samples/${sample.id}`)}>
                       <div className="flex items-center justify-between gap-4">
                          <div className="flex items-center gap-4 min-w-0">
                             <FlaskConical className="text-blue-600 w-8 h-8" />
                             <div className="truncate">
-                               <h4 className="font-black text-lg text-slate-900 truncate">{sample.sampleName}</h4>
+                               <h4 className="font-black text-lg text-slate-900 dark:text-white truncate">{sample.sampleName}</h4>
                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">SKU: {sample.sampleSKU || 'N/A'} | Qty: {sample.quantity}</div>
                             </div>
                          </div>
@@ -572,6 +655,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                       </div>
                    </Card>
                  ))}
+                 {sortedCustomerSamples.length === 0 && <div className="text-slate-400 italic font-bold py-10 text-center uppercase tracking-widest">No samples recorded for this customer.</div>}
               </div>
             )}
          </div>
@@ -598,7 +682,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
        <Modal isOpen={isEditSummaryOpen} onClose={() => setIsEditSummaryOpen(false)} title={t('productSummary')}>
           <div className="space-y-4">
-             <textarea className="w-full h-64 p-4 border-2 rounded-2xl outline-none font-bold text-lg" value={tempSummary} onChange={(e) => setTempSummary(e.target.value)} />
+             <textarea className="w-full h-64 p-4 border-2 rounded-2xl outline-none font-bold text-lg dark:bg-slate-800" value={tempSummary} onChange={(e) => setTempSummary(e.target.value)} />
              <div className="flex justify-end gap-3 pt-2">
                 <Button variant="secondary" onClick={() => setIsEditSummaryOpen(false)}>Cancel</Button>
                 <Button onClick={handleUpdateSummary} className="px-8"><Save size={18} className="mr-1" /> Save Summary</Button>
@@ -662,11 +746,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
           <div className="space-y-4">
              <div className="space-y-2">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Plan Details</label>
-                <textarea className="w-full h-32 p-4 border-2 rounded-2xl outline-none font-bold" value={tempUpcomingPlan} onChange={(e) => setTempUpcomingPlan(e.target.value)} />
+                <textarea className="w-full h-32 p-4 border-2 rounded-2xl outline-none font-bold dark:bg-slate-800" value={tempUpcomingPlan} onChange={(e) => setTempUpcomingPlan(e.target.value)} />
              </div>
              <div className="space-y-2">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Date</label>
-                <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-lg" value={customer.nextActionDate || ''} onChange={(e) => saveUpdate({ nextActionDate: e.target.value })} />
+                <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-lg dark:bg-slate-800" value={customer.nextActionDate || ''} onChange={(e) => saveUpdate({ nextActionDate: e.target.value })} />
              </div>
              <div className="flex justify-end gap-3 pt-4">
                 <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)}>Cancel</Button>
@@ -678,16 +762,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
        <Modal isOpen={isEditContactsOpen} onClose={() => setIsEditContactsOpen(false)} title={t('keyContacts')}>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
              {customer.contacts.map((contact, idx) => (
-               <div key={idx} className="p-4 border-2 rounded-xl space-y-4 bg-slate-50">
+               <div key={idx} className="p-4 border-2 rounded-xl space-y-4 bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Contact #{idx + 1}</span>
                     <button onClick={() => saveUpdate({ contacts: customer.contacts.filter((_, i) => i !== idx) })} className="text-red-500"><Trash2 size={16}/></button>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <input className="p-2 border rounded-lg font-black text-sm" placeholder="Name" value={contact.name} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, name: e.target.value} : c) })} />
-                    <input className="p-2 border rounded-lg font-bold text-sm" placeholder="Title" value={contact.title} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, title: e.target.value} : c) })} />
-                    <input className="p-2 border rounded-lg font-bold text-sm" placeholder="Email" value={contact.email} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, email: e.target.value} : c) })} />
-                    <input className="p-2 border rounded-lg font-bold text-sm" placeholder="Phone" value={contact.phone} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, phone: e.target.value} : c) })} />
+                    <input className="p-2 border rounded-lg font-black text-sm dark:bg-slate-900" placeholder="Name" value={contact.name} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, name: e.target.value} : c) })} />
+                    <input className="p-2 border rounded-lg font-bold text-sm dark:bg-slate-900" placeholder="Title" value={contact.title} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, title: e.target.value} : c) })} />
+                    <input className="p-2 border rounded-lg font-bold text-sm dark:bg-slate-900" placeholder="Email" value={contact.email} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, email: e.target.value} : c) })} />
+                    <input className="p-2 border rounded-lg font-bold text-sm dark:bg-slate-900" placeholder="Phone" value={contact.phone} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, phone: e.target.value} : c) })} />
                   </div>
                   <button onClick={() => saveUpdate({ contacts: customer.contacts.map((c, i) => ({...c, isPrimary: i === idx})) })} className={`text-xs font-black uppercase flex items-center gap-1 ${contact.isPrimary ? 'text-amber-500' : 'text-slate-400'}`}>
                     <Star size={12} fill={contact.isPrimary ? 'currentColor' : 'none'} /> Primary
@@ -709,12 +793,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
-                    <input type="date" className="w-full p-4 border-2 rounded-xl font-black" value={editingInteraction.date} onChange={(e) => setEditingInteraction({...editingInteraction, date: e.target.value})} />
+                    <input type="date" className="w-full p-4 border-2 rounded-xl font-black dark:bg-slate-800" value={editingInteraction.date} onChange={(e) => setEditingInteraction({...editingInteraction, date: e.target.value})} />
                  </div>
                  <div className="flex items-center gap-3 pt-6">
                     <button 
                       onClick={() => setIntIsStarred(!intIsStarred)}
-                      className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-black text-xs uppercase transition-all ${intIsStarred ? 'border-amber-400 bg-amber-50 text-amber-600' : 'border-slate-100 text-slate-400'}`}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-black text-xs uppercase transition-all ${intIsStarred ? 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-900/20' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
                     >
                       <Star size={18} fill={intIsStarred ? 'currentColor' : 'none'} />
                       {intIsStarred ? '标星记录' : '一般记录'}
@@ -742,7 +826,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                   <textarea className="w-full h-40 p-4 border-2 rounded-2xl font-bold outline-none focus:border-blue-500 dark:bg-slate-800" placeholder="Describe the interaction..." value={intContent} onChange={(e) => setIntContent(e.target.value)} />
                </div>
 
-               <div className="flex justify-end gap-3 pt-4 border-t">
+               <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-800">
                   <Button variant="secondary" onClick={() => setEditingInteraction(null)}>Cancel</Button>
                   <Button onClick={() => saveInteraction(editingInteraction)} className="bg-blue-600 px-8"><Save size={18} className="mr-2" /> Save Log</Button>
                </div>
