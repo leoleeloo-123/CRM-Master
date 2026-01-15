@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 
@@ -47,6 +47,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [tempTags, setTempTags] = useState<string[]>([]);
   const [tempUpcomingPlan, setTempUpcomingPlan] = useState('');
   const [tempName, setTempName] = useState('');
+  const [tagSearchTerm, setTagSearchTerm] = useState('');
 
   // Link Management State
   const [newLinkTitle, setNewLinkTitle] = useState('');
@@ -96,6 +97,20 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const handleUpdateTags = () => {
     saveUpdate({ tags: tempTags.filter(t => t.trim()) });
     setIsEditTagsOpen(false);
+    setTagSearchTerm('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    if (window.confirm(`${t('remove')} "${tagToRemove}"?`)) {
+      setTempTags(prev => prev.filter(t => t !== tagToRemove));
+    }
+  };
+
+  const handleAddTag = (tagToAdd: string) => {
+    if (!tempTags.includes(tagToAdd)) {
+      setTempTags(prev => [...prev, tagToAdd]);
+    }
+    setTagSearchTerm('');
   };
 
   const handleUpdateUpcomingPlan = () => {
@@ -233,6 +248,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setEditingLinkIndex(null);
   };
 
+  const availableExhibitionsToAdd = useMemo(() => {
+    return exhibitions
+      .filter(ex => !tempTags.includes(ex.name))
+      .filter(ex => ex.name.toLowerCase().includes(tagSearchTerm.toLowerCase()));
+  }, [exhibitions, tempTags, tagSearchTerm]);
+
   const visibleInteractions = showAllInteractions ? customer.interactions : customer.interactions.slice(0, 3);
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
@@ -328,7 +349,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             <Card className="p-6 xl:p-8">
                <div className="flex justify-between items-center mb-6 pb-3 border-b">
                  <h3 className={titleClass}><List className="w-5 h-5 text-indigo-600" /> {t('exhibitions')}</h3>
-                 <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white"><PencilLine size={16}/></button>
+                 <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
                <div className="space-y-2">
                  {customer.tags.map((tag, i) => {
@@ -583,6 +604,58 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                 <Button onClick={handleUpdateSummary} className="px-8"><Save size={18} className="mr-1" /> Save Summary</Button>
              </div>
           </div>
+       </Modal>
+
+       <Modal isOpen={isEditTagsOpen} onClose={() => setIsEditTagsOpen(false)} title={t('exhibitions')}>
+         <div className="space-y-6">
+            <div className="space-y-4">
+               <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('exhibitions')} Linked</h4>
+               <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700">
+                  {tempTags.length > 0 ? tempTags.map(tag => (
+                    <div key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-700 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm text-sm font-black text-blue-700 dark:text-blue-300 uppercase tracking-tight">
+                       {tag}
+                       <button onClick={() => handleRemoveTag(tag)} className="p-0.5 hover:bg-rose-50 rounded-full transition-colors">
+                          <Trash2 size={12} className="text-rose-500" />
+                       </button>
+                    </div>
+                  )) : (
+                    <span className="text-slate-400 italic text-xs font-bold uppercase tracking-widest">No Exhibitions Selected</span>
+                  )}
+               </div>
+            </div>
+
+            <div className="space-y-4">
+               <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Available Exhibitions</h4>
+               <div className="relative mb-4">
+                  <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                  <input 
+                    className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
+                    placeholder="Search existing exhibitions..."
+                    value={tagSearchTerm}
+                    onChange={e => setTagSearchTerm(e.target.value)}
+                  />
+               </div>
+               <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2">
+                  {availableExhibitionsToAdd.length > 0 ? availableExhibitionsToAdd.map(ex => (
+                    <div 
+                      key={ex.id}
+                      onClick={() => handleAddTag(ex.name)}
+                      className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 border-2 border-slate-50 dark:border-slate-700 rounded-xl hover:border-blue-200 cursor-pointer transition-all group"
+                    >
+                       <span className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight group-hover:text-blue-600">{ex.name}</span>
+                       <Plus size={16} className="text-slate-300 group-hover:text-blue-500" />
+                    </div>
+                  )) : (
+                    <div className="text-center py-8 text-slate-400 italic text-xs uppercase tracking-widest">No matching exhibitions found</div>
+                  )}
+               </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t dark:border-slate-700">
+               <Button variant="secondary" onClick={() => setIsEditTagsOpen(false)}>Cancel</Button>
+               <Button onClick={handleUpdateTags} className="px-10 bg-blue-600">Save Exhibitions</Button>
+            </div>
+         </div>
        </Modal>
 
        <Modal isOpen={isEditUpcomingPlanOpen} onClose={() => setIsEditUpcomingPlanOpen(false)} title="Update Upcoming Plan">
