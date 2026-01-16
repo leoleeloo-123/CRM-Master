@@ -96,6 +96,15 @@ export const translations = {
     editExhibitionName: 'Edit Exhibition Name',
     confirmExhibitionNameChange: 'Are you sure you want to change the exhibition name? This will update the name globally in all customer records.',
     
+    // Interaction UI
+    interactionLog: 'Interaction Log',
+    dateLabel: 'Date',
+    contentLabel: 'Content',
+    saveLog: 'Save Log',
+    normalRecord: 'Normal Record',
+    starredRecord: 'Starred Record',
+    describeInteraction: 'Describe the interaction...',
+
     // Contacts Edit
     addContact: 'Add Contact',
     primaryContact: 'Primary Contact',
@@ -144,7 +153,7 @@ export const translations = {
     colSent: 'Sent / Testing',
     colFeedback: 'Feedback',
 
-    // DATA KEYS
+    // DATA KEYS (Mapping for tags saved in DB)
     '单晶': 'Single Crystal',
     '多晶': 'Polycrystalline',
     '微粉': 'Powder',
@@ -155,6 +164,29 @@ export const translations = {
     '金刚石球': 'Diamond Ball',
     '微米粉': 'Micron',
     'CVD': 'CVD',
+    
+    // Interaction Tag Mapping
+    'None': 'None',
+    'Customer Email': 'Customer Email',
+    'Our Email': 'Our Email',
+    'Both Emails': 'Both Emails',
+    'Met at Exhibition': 'Met at Exhibition',
+    'Video Call': 'Video Call',
+    'In-person Meeting': 'In-person Meeting',
+    'Customer Reply': 'Customer Reply',
+    'Our Follow-up': 'Our Follow-up',
+    'Customer Reply & Follow-up': 'Customer Reply & Follow-up',
+    
+    '无': 'None',
+    '客户邮件': 'Customer Email',
+    '我方邮件': 'Our Email',
+    '双方邮件': 'Both Emails',
+    '展会相见': 'Met at Exhibition',
+    '视频会议': 'Video Call',
+    '面对面会议': 'In-person Meeting',
+    '对方回复': 'Customer Reply',
+    '我方跟进': 'Our Follow-up',
+    '对方回复及我方跟进': 'Customer Reply & Follow-up',
 
     // Status Data Keys
     '等待中': 'Waiting',
@@ -343,6 +375,15 @@ export const translations = {
     editExhibitionName: '编辑展会名称',
     confirmExhibitionNameChange: '您确定要修改展会名称吗？这将全局更新所有关联客户记录中的展会标签。',
 
+    // Interaction UI
+    interactionLog: '互动记录详情',
+    dateLabel: '日期',
+    contentLabel: '详细内容',
+    saveLog: '保存记录',
+    normalRecord: '一般记录',
+    starredRecord: '标星记录',
+    describeInteraction: '请描述此次互动细节...',
+
     // Contacts Edit
     addContact: '添加联系人',
     primaryContact: '主要联系人',
@@ -402,6 +443,29 @@ export const translations = {
     '金刚石球': '金刚石球',
     '微米粉': '微米粉',
     'CVD': 'CVD',
+    
+    // Interaction Tag Mapping
+    'None': '无',
+    'Customer Email': '客户邮件',
+    'Our Email': '我方邮件',
+    'Both Emails': '双方邮件',
+    'Met at Exhibition': '展会相见',
+    'Video Call': '视频会议',
+    'In-person Meeting': '面对面会议',
+    'Customer Reply': '对方回复',
+    'Our Follow-up': '我方跟进',
+    'Customer Reply & Follow-up': '对方回复及我方跟进',
+    
+    '无': '无',
+    '客户邮件': '客户邮件',
+    '我方邮件': '我方邮件',
+    '双方邮件': '双方邮件',
+    '展会相见': '展会相见',
+    '视频会议': '视频会议',
+    '面对面会议': '面对面会议',
+    '对方回复': '对方回复',
+    '我方跟进': '我方跟进',
+    '对方回复及我方跟进': '对方回复及我方跟进',
 
     // Status Data Keys
     '等待中': '等待中',

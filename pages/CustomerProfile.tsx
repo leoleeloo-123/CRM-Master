@@ -38,8 +38,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   // Interaction State
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
   const [intIsStarred, setIntIsStarred] = useState(false);
-  const [intTypeTag, setIntTypeTag] = useState('无');
-  const [intEffectTag, setIntEffectTag] = useState('无');
+  const [intTypeTag, setIntTypeTag] = useState('None');
+  const [intEffectTag, setIntEffectTag] = useState('None');
   const [intContent, setIntContent] = useState('');
   
   // Filtering States for Interaction History
@@ -553,8 +553,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                onClick={() => {
                                  setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
                                  setIntIsStarred(false);
-                                 setIntTypeTag('无');
-                                 setIntEffectTag('无');
+                                 setIntTypeTag('None');
+                                 setIntEffectTag('None');
                                  setIntContent('');
                                }}>
                              <Plus size={14} className="mr-1" /> Log Progress
@@ -566,37 +566,37 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                         <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 space-y-4 animate-in slide-in-from-top-2 duration-200">
                            <div className="flex flex-wrap items-center gap-4">
                               <div className="space-y-1">
-                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">记录类型</label>
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('availableTags')}</label>
                                  <select 
                                    className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
                                    value={filterStarred}
                                    onChange={e => setFilterStarred(e.target.value)}
                                  >
                                     <option value="all">记录: 全部</option>
-                                    <option value="starred">⭐ 标星记录</option>
-                                    <option value="normal">⚪ 一般记录</option>
+                                    <option value="starred">⭐ {t('starredRecord')}</option>
+                                    <option value="normal">⚪ {t('normalRecord')}</option>
                                  </select>
                               </div>
                               <div className="space-y-1">
-                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">流程类型</label>
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('interactionType')}</label>
                                  <select 
                                    className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
                                    value={filterType}
                                    onChange={e => setFilterType(e.target.value)}
                                  >
                                     <option value="all">流程: 全部</option>
-                                    {tagOptions.interactionTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                    {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
                                  </select>
                               </div>
                               <div className="space-y-1">
-                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">作用标签</label>
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('interactionEffect')}</label>
                                  <select 
                                    className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
                                    value={filterEffect}
                                    onChange={e => setFilterEffect(e.target.value)}
                                  >
                                     <option value="all">作用: 全部</option>
-                                    {tagOptions.interactionEffects.map(t => <option key={t} value={t}>{t}</option>)}
+                                    {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
                                  </select>
                               </div>
                               {hasActiveFilters && (
@@ -620,8 +620,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                   <div className="flex items-center gap-3">
                                     <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
                                     <Star size={16} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-700'} />
-                                    {parsed.typeTag !== '无' && <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.typeTag}</span>}
-                                    {parsed.effectTag !== '无' && <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.effectTag}</span>}
+                                    {parsed.typeTag !== '无' && parsed.typeTag !== 'None' && <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.typeTag as any) || parsed.typeTag}</span>}
+                                    {parsed.effectTag !== '无' && parsed.effectTag !== 'None' && <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.effectTag as any) || parsed.effectTag}</span>}
                                   </div>
                                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                      <button onClick={() => setEditingInteraction(int)} className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-90"><PencilLine size={14}/></button>
@@ -757,8 +757,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                 />
              </div>
              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="secondary" onClick={() => setIsEditNameModalOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateName} className="bg-blue-600 px-8"><Save size={18} className="mr-1" /> Save Name</Button>
+                <Button variant="secondary" onClick={() => setIsEditNameModalOpen(false)}>{t('cancel')}</Button>
+                <Button onClick={handleUpdateName} className="bg-blue-600 px-8"><Save size={18} className="mr-1" /> {t('save')}</Button>
              </div>
           </div>
        </Modal>
@@ -767,8 +767,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
           <div className="space-y-4">
              <textarea className="w-full h-64 p-4 border-2 rounded-2xl outline-none font-bold text-lg dark:bg-slate-800" value={tempSummary} onChange={(e) => setTempSummary(e.target.value)} />
              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="secondary" onClick={() => setIsEditSummaryOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateSummary} className="px-8"><Save size={18} className="mr-1" /> Save Summary</Button>
+                <Button variant="secondary" onClick={() => setIsEditSummaryOpen(false)}>{t('cancel')}</Button>
+                <Button onClick={handleUpdateSummary} className="px-8"><Save size={18} className="mr-1" /> {t('save')}</Button>
              </div>
           </div>
        </Modal>
@@ -819,8 +819,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             </div>
 
             <div className="flex justify-end gap-3 pt-6 border-t dark:border-slate-700">
-               <Button variant="secondary" onClick={() => setIsEditTagsOpen(false)}>Cancel</Button>
-               <Button onClick={handleUpdateTags} className="px-10 bg-blue-600">Save Exhibitions</Button>
+               <Button variant="secondary" onClick={() => setIsEditTagsOpen(false)}>{t('cancel')}</Button>
+               <Button onClick={handleUpdateTags} className="px-10 bg-blue-600">{t('save')}</Button>
             </div>
          </div>
        </Modal>
@@ -836,8 +836,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                 <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-lg dark:bg-slate-800" value={customer.nextActionDate || ''} onChange={(e) => saveUpdate({ nextActionDate: e.target.value })} />
              </div>
              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateUpcomingPlan} className="px-8">Save Plan</Button>
+                <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)}>{t('cancel')}</Button>
+                <Button onClick={handleUpdateUpcomingPlan} className="px-8">{t('save')}</Button>
              </div>
           </div>
        </Modal>
@@ -871,11 +871,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
        </Modal>
 
        {editingInteraction && (
-         <Modal isOpen={true} onClose={() => setEditingInteraction(null)} title="Interaction Log">
+         <Modal isOpen={true} onClose={() => setEditingInteraction(null)} title={t('interactionLog')}>
             <div className="space-y-6">
                <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('dateLabel')}</label>
                     <input type="date" className="w-full p-4 border-2 rounded-xl font-black dark:bg-slate-800" value={editingInteraction.date} onChange={(e) => setEditingInteraction({...editingInteraction, date: e.target.value})} />
                  </div>
                  <div className="flex items-center gap-3 pt-6">
@@ -884,34 +884,34 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                       className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-black text-xs uppercase transition-all ${intIsStarred ? 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-900/20' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
                     >
                       <Star size={18} fill={intIsStarred ? 'currentColor' : 'none'} />
-                      {intIsStarred ? '标星记录' : '一般记录'}
+                      {intIsStarred ? t('starredRecord') : t('normalRecord')}
                     </button>
                  </div>
                </div>
 
                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">对接流程类型 (Type)</label>
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('interactionType')} (TYPE)</label>
                      <select className="w-full p-4 border-2 rounded-xl font-bold bg-white dark:bg-slate-800 outline-none focus:border-blue-500" value={intTypeTag} onChange={e => setIntTypeTag(e.target.value)}>
-                        {tagOptions.interactionTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                        {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
                      </select>
                   </div>
                   <div className="space-y-1">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">流程作用标签 (Effect)</label>
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('interactionEffect')} (EFFECT)</label>
                      <select className="w-full p-4 border-2 rounded-xl font-bold bg-white dark:bg-slate-800 outline-none focus:border-blue-500" value={intEffectTag} onChange={e => setIntEffectTag(e.target.value)}>
-                        {tagOptions.interactionEffects.map(t => <option key={t} value={t}>{t}</option>)}
+                        {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
                      </select>
                   </div>
                </div>
 
                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Content</label>
-                  <textarea className="w-full h-40 p-4 border-2 rounded-2xl font-bold outline-none focus:border-blue-500 dark:bg-slate-800" placeholder="Describe the interaction..." value={intContent} onChange={(e) => setIntContent(e.target.value)} />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('contentLabel')}</label>
+                  <textarea className="w-full h-40 p-4 border-2 rounded-2xl font-bold outline-none focus:border-blue-500 dark:bg-slate-800" placeholder={t('describeInteraction')} value={intContent} onChange={(e) => setIntContent(e.target.value)} />
                </div>
 
                <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-800">
-                  <Button variant="secondary" onClick={() => setEditingInteraction(null)}>Cancel</Button>
-                  <Button onClick={() => saveInteraction(editingInteraction)} className="bg-blue-600 px-8"><Save size={18} className="mr-2" /> Save Log</Button>
+                  <Button variant="secondary" onClick={() => setEditingInteraction(null)}>{t('cancel')}</Button>
+                  <Button onClick={() => saveInteraction(editingInteraction)} className="bg-blue-600 px-8"><Save size={18} className="mr-2" /> {t('saveLog')}</Button>
                </div>
             </div>
          </Modal>
