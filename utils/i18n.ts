@@ -187,6 +187,10 @@ export const translations = {
     '客户初步测试': 'Testing',
     '客户初步结果': 'Feedback Received',
     '已关闭': 'Closed',
+    'My Turn': 'My Turn',
+    'Waiting for Customer': 'Waiting for Customer',
+    'No Action': 'No Action',
+    'Scheduled': 'Scheduled',
 
     // Test Status Keys
     'Ongoing': 'Ongoing',
@@ -457,6 +461,10 @@ export const translations = {
     '客户初步测试': '客户初步测试',
     '客户初步结果': '客户初步结果',
     '已关闭': '已关闭',
+    'My Turn': '我方跟进',
+    'Waiting for Customer': '等待对方',
+    'No Action': '暂无',
+    'Scheduled': '已排期',
 
     // Test Status Keys
     'Ongoing': '测试进行中',

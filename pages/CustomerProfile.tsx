@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2 } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 import { translateToZh } from '../utils/i18n';
@@ -852,34 +852,51 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          </div>
        </Modal>
 
-       <Modal isOpen={isEditUpcomingPlanOpen} onClose={() => setIsEditUpcomingPlanOpen(false)} title="Update Upcoming Plan">
+       <Modal isOpen={isEditUpcomingPlanOpen} onClose={() => setIsEditUpcomingPlanOpen(false)} title="UPDATE UPCOMING PLAN">
           <div className="space-y-6">
              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Status / 跟进状态</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status / 跟进状态</label>
                 <div className="flex gap-2">
-                  {['My Turn', 'Waiting for Customer', 'No Action'].map(opt => (
+                  {[
+                    { id: 'My Turn', icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
+                    { id: 'Waiting for Customer', icon: <Clock className="w-4 h-4 text-amber-500" /> },
+                    { id: 'No Action', icon: <div className="w-2 h-2 rounded-full bg-slate-300" /> }
+                  ].map(opt => (
                     <button 
-                      key={opt}
-                      onClick={() => setTempStatus(opt as FollowUpStatus)}
-                      className={`flex-1 py-3 px-2 rounded-xl border-2 font-black text-[10px] xl:text-xs uppercase transition-all flex items-center justify-center gap-2 ${tempStatus === opt ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
+                      key={opt.id}
+                      onClick={() => setTempStatus(opt.id as FollowUpStatus)}
+                      className={`flex-1 py-3 px-2 rounded-xl border-2 font-black text-[10px] xl:text-xs uppercase transition-all flex items-center justify-center gap-2 ${
+                        tempStatus === opt.id 
+                          ? 'border-blue-600 text-blue-700 bg-white shadow-md' 
+                          : 'border-slate-100 dark:border-slate-800 text-slate-400 bg-white dark:bg-slate-900'
+                      }`}
                     >
-                      <StatusIcon status={opt} />
-                      {t(opt as any) || opt}
+                      {opt.icon}
+                      {t(opt.id as any) || opt.id}
                     </button>
                   ))}
                 </div>
              </div>
              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Plan Details / 详细计划</label>
-                <textarea className="w-full h-40 p-4 border-2 rounded-2xl outline-none font-bold dark:bg-slate-800" value={tempUpcomingPlan} onChange={(e) => setTempUpcomingPlan(e.target.value)} />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Plan Details / 详细计划</label>
+                <textarea 
+                  className="w-full h-40 p-4 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm xl:text-base dark:bg-slate-800 focus:border-blue-500 transition-all shadow-inner" 
+                  value={tempUpcomingPlan} 
+                  onChange={(e) => setTempUpcomingPlan(e.target.value)} 
+                />
              </div>
              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Date / 关键日期 (DDL)</label>
-                <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-lg dark:bg-slate-800" value={tempDDL} onChange={(e) => setTempDDL(e.target.value)} />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Target Date / 关键日期 (DDL)</label>
+                <input 
+                  type="date" 
+                  className="w-full p-4 border-2 border-slate-100 rounded-xl font-black text-base xl:text-lg dark:bg-slate-800 focus:border-blue-500 outline-none transition-all shadow-inner" 
+                  value={tempDDL} 
+                  onChange={(e) => setTempDDL(e.target.value)} 
+                />
              </div>
-             <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
-                <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)}>{t('cancel')}</Button>
-                <Button onClick={handleUpdateUpcomingPlan} className="px-8">{t('save')}</Button>
+             <div className="flex justify-end gap-3 pt-4">
+                <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)} className="px-8 border-2">{t('cancel')}</Button>
+                <Button onClick={handleUpdateUpcomingPlan} className="px-10 bg-blue-600 shadow-lg shadow-blue-600/20">{t('save')}</Button>
              </div>
           </div>
        </Modal>
