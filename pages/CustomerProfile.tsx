@@ -47,7 +47,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
   const [intIsStarred, setIntIsStarred] = useState(false);
   const [intTypeTag, setIntTypeTag] = useState('None');
-  const [intExhibitionTag, setIntExhibitionTag] = useState('None'); // New State
+  const [intExhibitionTag, setIntExhibitionTag] = useState('None'); 
   const [intEffectTag, setIntEffectTag] = useState('None');
   const [intContent, setIntContent] = useState('');
   
@@ -65,6 +65,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState<string[]>([]);
   const [tempUpcomingPlan, setTempUpcomingPlan] = useState('');
+  const [tempDDL, setTempDDL] = useState('');
+  const [tempStatus, setTempStatus] = useState<FollowUpStatus>('No Action');
   const [tempName, setTempName] = useState('');
   const [tagSearchTerm, setTagSearchTerm] = useState('');
 
@@ -170,7 +172,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const handleUpdateUpcomingPlan = () => {
-    saveUpdate({ upcomingPlan: tempUpcomingPlan });
+    saveUpdate({ 
+      upcomingPlan: tempUpcomingPlan, 
+      nextActionDate: tempDDL, 
+      followUpStatus: tempStatus 
+    });
     setIsEditUpcomingPlanOpen(false);
   };
 
@@ -325,6 +331,35 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const urgency = getUrgencyLevel(customer.nextActionDate);
 
+  // Helper for the compact aging counters card
+  const MiniDaysCounter = ({ date, label, onDateChange }: { date?: string, label: string, onDateChange: (d: string) => void }) => {
+    const targetDate = date ? parseLocalDate(date) : null;
+    const daysDiff = targetDate && isValid(targetDate) ? differenceInDays(startOfDay(new Date()), startOfDay(targetDate)) : 0;
+    
+    let colorClass = "text-slate-700 dark:text-slate-200";
+    if (targetDate && isValid(targetDate)) {
+      if (daysDiff < 7) colorClass = "text-emerald-500";
+      else if (daysDiff <= 21) colorClass = "text-amber-500";
+      else colorClass = "text-red-500";
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center py-4 flex-1 border-r last:border-r-0 border-slate-100 dark:border-slate-800 relative group">
+        <div className={`font-black text-2xl xl:text-3xl ${colorClass}`}>
+          {!date ? '-' : Math.abs(daysDiff)}
+        </div>
+        <span className="text-[9px] xl:text-[10px] text-slate-400 font-black uppercase tracking-widest text-center mt-1">{label}</span>
+        
+        <input 
+          type="date" 
+          className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full" 
+          value={date || ''} 
+          onChange={(e) => onDateChange(e.target.value)} 
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
        <div className="flex items-center justify-between gap-6">
@@ -363,33 +398,29 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          </div>
        </div>
 
-       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <Card className="p-5 border-l-4 border-l-blue-600 flex flex-col justify-between h-40 shadow-sm">
-             <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('status')}</span>
-             <div className="flex items-center gap-3 my-2">
-                 <StatusIcon status={customer.followUpStatus} />
-                 <span className="font-black text-xl xl:text-2xl text-slate-900 dark:text-white truncate tracking-tight uppercase">
-                   {customer.followUpStatus}
-                 </span>
-             </div>
-             <div className="flex gap-2.5 mt-auto">
-               {['My Turn', 'Waiting for Customer', 'No Action'].map(opt => (
-                 <button 
-                  key={opt} 
-                  onClick={() => saveUpdate({ followUpStatus: opt as FollowUpStatus })} 
-                  className={`w-4 h-4 xl:w-5 xl:h-5 rounded-full border-2 transition-all ${customer.followUpStatus === opt ? 'bg-blue-600 border-blue-200 scale-125' : 'bg-slate-100 border-transparent hover:bg-slate-200 dark:bg-slate-700'}`} 
-                 />
-               ))}
-             </div>
-          </Card>
-          <DaysCounter date={customer.nextActionDate} label={t('daysUntilDDL')} type="remaining" onDateChange={(d) => saveUpdate({ nextActionDate: d })} />
-          <DaysCounter date={customer.lastStatusUpdate} label={t('daysSinceUpdate')} type="elapsed" onDateChange={(d) => saveUpdate({ lastStatusUpdate: d })} />
-          <DaysCounter date={customer.lastCustomerReplyDate} label={t('unrepliedDays')} type="elapsed" onDateChange={(d) => saveUpdate({ lastCustomerReplyDate: d })} />
-          <DaysCounter date={customer.lastMyReplyDate} label={t('unfollowedDays')} type="elapsed" onDateChange={(d) => saveUpdate({ lastMyReplyDate: d })} />
-       </div>
+       {/* Removed top grid row grid-cols-5. Contents are now merged into sidebar and plan cards. */}
 
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
          <div className="space-y-8">
+            {/* Merged Aging Counters Card */}
+            <Card className="overflow-hidden border shadow-sm flex items-center bg-white dark:bg-slate-900/40">
+               <MiniDaysCounter 
+                  date={customer.lastStatusUpdate} 
+                  label={t('daysSinceUpdate')} 
+                  onDateChange={(d) => saveUpdate({ lastStatusUpdate: d })} 
+               />
+               <MiniDaysCounter 
+                  date={customer.lastCustomerReplyDate} 
+                  label={t('unrepliedDays')} 
+                  onDateChange={(d) => saveUpdate({ lastCustomerReplyDate: d })} 
+               />
+               <MiniDaysCounter 
+                  date={customer.lastMyReplyDate} 
+                  label={t('unfollowedDays')} 
+                  onDateChange={(d) => saveUpdate({ lastMyReplyDate: d })} 
+               />
+            </Card>
+
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
                  <h3 className={titleClass}><UserCheck className="w-5 h-5 text-blue-600" /> {t('keyContacts')}</h3>
@@ -418,8 +449,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                             <Phone size={12} className="text-slate-400 group-hover/contact:text-blue-500" />
                           </div>
                         )}
-                        {/* Mobile view fallback: show first character or tooltip for tiny screens if needed, 
-                            but above icons handle basic display well */}
                       </div>
                    </div>
                  ))}
@@ -485,14 +514,27 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
                   <h3 className={titleClass}><Clock className="w-5 h-5 text-blue-600"/> {t('upcomingPlanHeader')}</h3>
-                  <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
+                  <button onClick={() => { 
+                    setTempUpcomingPlan(customer.upcomingPlan || ''); 
+                    setTempDDL(customer.nextActionDate || '');
+                    setTempStatus(customer.followUpStatus || 'No Action');
+                    setIsEditUpcomingPlanOpen(true); 
+                  }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
                </div>
                <div className="p-6">
-                  <p className={contentTextClass}>{customer.upcomingPlan || "No plan logged."}</p>
+                  <div className="flex items-start justify-between mb-6">
+                     <p className={contentTextClass + " flex-1"}>{customer.upcomingPlan || "No plan logged."}</p>
+                     <div className="ml-6 shrink-0 flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-2">
+                           <StatusIcon status={customer.followUpStatus} />
+                           <span className="font-black text-lg xl:text-xl text-slate-800 dark:text-white uppercase tracking-tight">{t(customer.followUpStatus as any) || customer.followUpStatus}</span>
+                        </div>
+                     </div>
+                  </div>
                   <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase">
                      <div className="flex items-center gap-3">
                         <Calendar size={14} className="text-slate-400" />
-                        <span className="font-black text-slate-900 dark:text-white">DDL: {customer.nextActionDate || 'TBD'}</span>
+                        <span className="font-black text-slate-900 dark:text-white text-xs xl:text-sm">DDL: {customer.nextActionDate || 'TBD'}</span>
                         {daysRemaining !== null && (
                            <Badge color={urgency === 'urgent' ? 'red' : urgency === 'warning' ? 'yellow' : 'green'}>
                               {Math.abs(daysRemaining)} {daysRemaining < 0 ? (language === 'en' ? 'Days Overdue' : '天逾期') : (language === 'en' ? 'Days Remaining' : '天剩余')}
@@ -831,16 +873,31 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
        </Modal>
 
        <Modal isOpen={isEditUpcomingPlanOpen} onClose={() => setIsEditUpcomingPlanOpen(false)} title="Update Upcoming Plan">
-          <div className="space-y-4">
+          <div className="space-y-6">
              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Plan Details</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Status / 跟进状态</label>
+                <div className="flex gap-2">
+                  {['My Turn', 'Waiting for Customer', 'No Action'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => setTempStatus(opt as FollowUpStatus)}
+                      className={`flex-1 py-3 px-2 rounded-xl border-2 font-black text-[10px] xl:text-xs uppercase transition-all flex items-center justify-center gap-2 ${tempStatus === opt ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
+                    >
+                      <StatusIcon status={opt} />
+                      {t(opt as any) || opt}
+                    </button>
+                  ))}
+                </div>
+             </div>
+             <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Plan Details / 详细计划</label>
                 <textarea className="w-full h-32 p-4 border-2 rounded-2xl outline-none font-bold dark:bg-slate-800" value={tempUpcomingPlan} onChange={(e) => setTempUpcomingPlan(e.target.value)} />
              </div>
              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Date</label>
-                <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-lg dark:bg-slate-800" value={customer.nextActionDate || ''} onChange={(e) => saveUpdate({ nextActionDate: e.target.value })} />
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Date / 关键日期 (DDL)</label>
+                <input type="date" className="w-full p-4 border-2 rounded-xl font-black text-lg dark:bg-slate-800" value={tempDDL} onChange={(e) => setTempDDL(e.target.value)} />
              </div>
-             <div className="flex justify-end gap-3 pt-4">
+             <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
                 <Button variant="secondary" onClick={() => setIsEditUpcomingPlanOpen(false)}>{t('cancel')}</Button>
                 <Button onClick={handleUpdateUpcomingPlan} className="px-8">{t('save')}</Button>
              </div>
