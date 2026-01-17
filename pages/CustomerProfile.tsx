@@ -29,7 +29,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t, exhibitions, tagOptions, setCustomers, setSamples } = useApp();
+  const { t, exhibitions, tagOptions, setCustomers, setSamples, language } = useApp();
   
   const [activeTab, setActiveTab] = useState<'overview' | 'samples'>(
     searchParams.get('tab') === 'samples' ? 'samples' : 'overview'
@@ -76,6 +76,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
+
+  const daysRemaining = useMemo(() => {
+    if (!customer?.nextActionDate) return null;
+    const targetDate = parseLocalDate(customer.nextActionDate);
+    if (!isValid(targetDate)) return null;
+    return differenceInDays(startOfDay(targetDate), startOfDay(new Date()));
+  }, [customer?.nextActionDate]);
 
   const sortedCustomerSamples = useMemo(() => {
     return [...customerSamples].sort((a, b) => {
@@ -313,6 +320,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const hasActiveFilters = filterType !== 'all' || filterEffect !== 'all' || filterStarred !== 'all';
 
+  const urgency = getUrgencyLevel(customer.nextActionDate);
+
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
        <div className="flex items-center justify-between gap-6">
@@ -507,6 +516,28 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          <div className="lg:col-span-2 space-y-8">
             <Card className="overflow-hidden border shadow-sm">
                <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
+                  <h3 className="font-black text-base flex items-center gap-3 uppercase tracking-wider"><Clock className="w-5 h-5 text-blue-600"/> UPCOMING PLAN</h3>
+                  <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
+               </div>
+               <div className="p-6">
+                  <p className={contentTextClass}>{customer.upcomingPlan || "No plan logged."}</p>
+                  <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase">
+                     <div className="flex items-center gap-3">
+                        <Calendar size={14} className="text-slate-400" />
+                        <span className="font-black text-slate-900 dark:text-white">DDL: {customer.nextActionDate || 'TBD'}</span>
+                        {daysRemaining !== null && (
+                           <Badge color={urgency === 'urgent' ? 'red' : urgency === 'warning' ? 'yellow' : 'green'}>
+                              {Math.abs(daysRemaining)} {daysRemaining < 0 ? (language === 'en' ? 'Days Overdue' : '天逾期') : (language === 'en' ? 'Days Remaining' : '天剩余')}
+                           </Badge>
+                        )}
+                     </div>
+                     <Badge color="blue">{customer.followUpStatus.toUpperCase()}</Badge>
+                  </div>
+               </div>
+            </Card>
+
+            <Card className="overflow-hidden border shadow-sm">
+               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
                   <h3 className="font-black text-base flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 text-emerald-600"/> {t('productSummary')}</h3>
                   <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
                </div>
@@ -526,22 +557,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-in fade-in duration-500">
-                <div className={`p-8 rounded-[2rem] border-2 shadow-sm relative overflow-hidden ${getUrgencyLevel(customer.nextActionDate) === 'urgent' ? 'bg-rose-50 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/40' : 'bg-slate-50 border-slate-200 dark:bg-slate-900/20 dark:border-slate-800'}`}>
-                  <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="absolute top-6 right-6 p-3 rounded-2xl bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition-all active:scale-95">
-                    <PencilLine className="w-5 h-5" />
-                  </button>
-                  <div className="flex items-center gap-4 mb-4">
-                     <Clock className="w-8 h-8 text-slate-800 dark:text-slate-200" />
-                     <div>
-                        <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest">UPCOMING PLAN</h4>
-                        <div className="flex items-center gap-3">
-                           <span className="text-lg xl:text-xl font-black text-slate-900 dark:text-white tracking-tight">DDL: {customer.nextActionDate || 'TBD'}</span>
-                        </div>
-                     </div>
-                  </div>
-                  <p className={contentTextClass}>{customer.upcomingPlan || "No plan logged."}</p>
-                </div>
-
                 <div className="space-y-6">
                    <div className="flex flex-col gap-4">
                       <div className="flex justify-between items-center">
@@ -737,7 +752,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                             <LinkIcon size={8} /> {link.title}
                                           </a>
                                         ))}
-                                        {(sample.docLinks || []).length > 2 && (
+                                        {(customer.docLinks || []).length > 2 && (
                                            <span className="text-[8px] font-black text-slate-400">...</span>
                                         )}
                                      </div>
