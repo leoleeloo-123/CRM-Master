@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
+import { useApp, parseInteractionSummary } from '../contexts/AppContext';
 import { Card, Button, Badge, RankStars, Modal } from '../components/Common';
-import { ArrowLeft, MapPin, Calendar, ExternalLink, Users, ArrowRight, PencilLine, Save, Tag, Plus, Trash2, Link as LinkIcon, X, FileText } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, ExternalLink, Users, ArrowRight, PencilLine, Save, Tag, Plus, Trash2, Link as LinkIcon, X, FileText, ClipboardList } from 'lucide-react';
 import { format } from 'date-fns';
 import { Exhibition } from '../types';
 
@@ -319,31 +320,72 @@ const ExhibitionProfile: React.FC = () => {
                   </h3>
                </div>
                
-               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-hide">
-                  {associatedCustomers.map(c => (
-                     <div 
-                        key={c.id} 
-                        onClick={() => navigate(`/customers/${c.id}`)}
-                        className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/40 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-blue-300 dark:hover:border-blue-900 cursor-pointer group transition-all"
-                     >
-                        <div className="flex items-center gap-6">
-                           <div className="w-12 h-12 bg-white dark:bg-slate-900 border-2 rounded-xl flex items-center justify-center font-black text-lg text-slate-700 dark:text-slate-300">
-                              {(c.name || '?').charAt(0)}
-                           </div>
-                           <div>
-                              <h4 className="font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors uppercase tracking-tight">{c.name}</h4>
-                              <div className="flex items-center gap-3 mt-1">
-                                 <RankStars rank={c.rank} />
-                                 <span className="text-[10px] font-black text-slate-400 uppercase">{(c.region || []).join(', ')}</span>
-                              </div>
-                           </div>
+               <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 scrollbar-hide">
+                  {associatedCustomers.map(c => {
+                    const relevantLogs = c.interactions.filter(int => {
+                        const parsed = parseInteractionSummary(int.summary);
+                        return parsed.exhibitionTag === exhibition.name;
+                    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                    return (
+                        <div 
+                            key={c.id} 
+                            className="flex flex-col p-6 bg-slate-50 dark:bg-slate-800/40 border-2 border-slate-100 dark:border-slate-800 rounded-3xl group transition-all"
+                        >
+                            <div className="flex items-center justify-between cursor-pointer" onClick={() => navigate(`/customers/${c.id}`)}>
+                                <div className="flex items-center gap-6">
+                                    <div className="w-12 h-12 bg-white dark:bg-slate-900 border-2 rounded-xl flex items-center justify-center font-black text-lg text-slate-700 dark:text-slate-300">
+                                        {(c.name || '?').charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors uppercase tracking-tight">{c.name}</h4>
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <RankStars rank={c.rank} />
+                                            <span className="text-[10px] font-black text-slate-400 uppercase">{(c.region || []).join(', ')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <Badge color="blue">{c.status}</Badge>
+                                    <ArrowRight size={20} className="text-slate-300 group-hover:text-blue-600 transition-all group-hover:translate-x-1" />
+                                </div>
+                            </div>
+
+                            {relevantLogs.length > 0 && (
+                                <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 space-y-4">
+                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                                        <ClipboardList size={12} className="text-blue-500" /> Interaction History at this Event
+                                    </div>
+                                    <div className="space-y-3">
+                                        {relevantLogs.map(log => {
+                                            const parsed = parseInteractionSummary(log.summary);
+                                            return (
+                                                <div key={log.id} className="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-lg">{log.date}</span>
+                                                        {parsed.typeTag !== '无' && (
+                                                            <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded text-[8px] font-black uppercase border border-purple-100 dark:border-purple-800">
+                                                                {t(parsed.typeTag as any) || parsed.typeTag}
+                                                            </span>
+                                                        )}
+                                                        {parsed.effectTag !== '无' && (
+                                                            <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[8px] font-black uppercase border border-emerald-100 dark:border-emerald-800">
+                                                                {t(parsed.effectTag as any) || parsed.effectTag}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs xl:text-sm text-slate-700 dark:text-slate-300 font-bold leading-relaxed tracking-tight">
+                                                        {parsed.content}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-center gap-4">
-                           <Badge color="blue">{c.status}</Badge>
-                           <ArrowRight size={20} className="text-slate-300 group-hover:text-blue-600 transition-all group-hover:translate-x-1" />
-                        </div>
-                     </div>
-                  ))}
+                    );
+                  })}
                   {associatedCustomers.length === 0 && (
                      <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest italic opacity-40">
                         No customers linked to this event yet.
