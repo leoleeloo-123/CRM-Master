@@ -551,10 +551,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
                <div className="p-6">
                   <div className={contentTextClass + " whitespace-pre-wrap"}>{customer.productSummary || "No summary."}</div>
-                  <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase">
-                     <span>{t('lastUpdated')}: {customer.lastStatusUpdate}</span>
-                     <Badge color="green">{customer.status.toUpperCase()}</Badge>
-                  </div>
                </div>
             </Card>
 
@@ -814,7 +810,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          <div className="space-y-6">
             <div className="space-y-4">
                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('exhibitions')} Linked</h4>
-               <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700">
+               <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-100 dark:border-slate-700">
                   {tempTags.length > 0 ? tempTags.map(tag => (
                     <div key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-700 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm text-sm font-black text-blue-700 dark:text-blue-300 uppercase tracking-tight">
                        {tag}
