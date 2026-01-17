@@ -562,8 +562,30 @@ export const translations = {
   }
 };
 
+/**
+ * Ensures a key is translated to its Chinese equivalent if a mapping exists.
+ * Used for Excel exports to maintain consistency as requested.
+ */
+export const translateToZh = (key: string): string => {
+  if (!key) return '';
+  const zhMap = translations.zh as Record<string, string>;
+  return zhMap[key] || key;
+};
+
+/**
+ * Attempts to map a value (potentially Chinese) back to its canonical English key.
+ * Used for Excel imports to maintain consistency as requested.
+ */
+export const translateToEn = (val: string): string => {
+  if (!val) return '';
+  const zhMap = translations.zh as Record<string, string>;
+  // Find key that maps to this value
+  const entry = Object.entries(zhMap).find(([k, v]) => v === val.trim());
+  return entry ? entry[0] : val.trim();
+};
+
 export const getCanonicalTag = (term: string): string => {
   if (!term) return '';
-  // Directly return the trimmed string without language mapping to respect original database text
-  return term.trim();
+  // Map Chinese value back to canonical English if possible, else keep as is
+  return translateToEn(term);
 };

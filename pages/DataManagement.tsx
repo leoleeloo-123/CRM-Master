@@ -7,7 +7,7 @@ import { useApp } from '../contexts/AppContext';
 // Fixed: Added 'format' to imports from date-fns
 import { differenceInDays, isValid, format } from 'date-fns';
 import * as XLSX from 'xlsx';
-import { getCanonicalTag } from '../utils/i18n';
+import { getCanonicalTag, translateToZh } from '../utils/i18n';
 
 interface DataManagementProps {
   onImportCustomers: (newCustomers: Customer[], override?: boolean) => void;
@@ -89,7 +89,9 @@ const DataManagement: React.FC<DataManagementProps> = ({
   };
 
   const mapStatusToExport = (status: string | undefined): string => {
-    return status || 'No Action';
+    // Ensuring Excel export uses Chinese for standard status options
+    if (!status) return '暂无';
+    return translateToZh(status);
   };
 
   // --- PARSING LOGIC ---
@@ -379,23 +381,24 @@ const DataManagement: React.FC<DataManagementProps> = ({
          daysSince = String(differenceInDays(new Date(), new Date(s.lastStatusDate)));
        }
        
-       let exportTestVal = "No";
-       if (s.testStatus === 'Finished') exportTestVal = "Yes";
-       else if (s.testStatus === 'Terminated') exportTestVal = "Terminated";
+       let exportTestVal = "未完成";
+       if (s.testStatus === 'Finished') exportTestVal = "完成";
+       else if (s.testStatus === 'Terminated') exportTestVal = "项目终止";
 
        const docLinkTitlesStr = (s.docLinks || []).map(l => l.title).join(' ||| ');
        const docLinkUrlsStr = (s.docLinks || []).map(l => l.url).join(' ||| ');
 
+       // Ensure sample dropdown fields are exported in Chinese for consistency
        return [
          s.customerName,
-         s.status,
+         translateToZh(s.status || ''),
          exportTestVal,
-         s.crystalType,
-         s.productCategory?.join(', '),
-         s.productForm,
+         translateToZh(s.crystalType || ''),
+         (s.productCategory || []).map(c => translateToZh(c)).join(', '),
+         translateToZh(s.productForm || ''),
          s.originalSize,
          s.processedSize,
-         s.isGraded,
+         translateToZh(s.isGraded || ''),
          s.sampleSKU,
          s.sampleDetails,
          s.quantity,

@@ -6,11 +6,12 @@ import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS } from '../services/
 
 export type FontSize = 'small' | 'medium' | 'large';
 
-// Helper to handle the serialized summary format: (StarStatus)<TypeTag>{EffectTag}Content
+// Helper to handle the serialized summary format: (StarStatus)<TypeTag>//ExhibitionTag{EffectTag}Content
 export const parseInteractionSummary = (summary: string) => {
   const result = {
     isStarred: false,
     typeTag: 'None',
+    exhibitionTag: 'None', // New tag
     effectTag: 'None',
     content: summary
   };
@@ -32,6 +33,13 @@ export const parseInteractionSummary = (summary: string) => {
     result.content = result.content.replace(typeMatch[0], '');
   }
 
+  // Exhibition Tag //... (Matches until it hits { or end of string)
+  const exhMatch = result.content.match(/^\/\/(.*?)(?=\{|$)/);
+  if (exhMatch) {
+    result.exhibitionTag = exhMatch[1];
+    result.content = result.content.replace(`//${result.exhibitionTag}`, '');
+  }
+
   // Effect Tag {...}
   const effectMatch = result.content.match(/^{(.*?)}/);
   if (effectMatch) {
@@ -43,6 +51,10 @@ export const parseInteractionSummary = (summary: string) => {
   return result;
 };
 
+// Constant arrays for bilingual tag matching in date logic
+const REPLY_TAGS = ['Customer Reply', 'Customer Reply & Follow-up', '对方回复', '对方回复及我方跟进'];
+const FOLLOWUP_TAGS = ['Our Follow-up', 'Customer Reply & Follow-up', '我方跟进', '对方回复及我方跟进'];
+
 // Helper: Recalculate dynamic dates based on full interaction history
 export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
   // Sort all logs by date descending (newest first)
@@ -52,22 +64,22 @@ export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
   const lastContact = sorted.length > 0 ? sorted[0].date : undefined;
 
   // 2. Last Customer Reply Date (Unreplied)
-  // Most recent date where Effect Tag is 'Customer Reply' or 'Customer Reply & Follow-up'
+  // Most recent date where Effect Tag indicates customer response
   let lastCustomerReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
-    if (effectTag === 'Customer Reply' || effectTag === 'Customer Reply & Follow-up') {
+    if (REPLY_TAGS.includes(effectTag)) {
       lastCustomerReply = int.date;
       break;
     }
   }
 
   // 3. Last My Reply Date (Unfollowed)
-  // Most recent date where Effect Tag is 'Our Follow-up' or 'Customer Reply & Follow-up'
+  // Most recent date where Effect Tag indicates our follow-up
   let lastMyReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
-    if (effectTag === 'Our Follow-up' || effectTag === 'Customer Reply & Follow-up') {
+    if (FOLLOWUP_TAGS.includes(effectTag)) {
       lastMyReply = int.date;
       break;
     }

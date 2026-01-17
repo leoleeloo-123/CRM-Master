@@ -6,6 +6,7 @@ import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLeve
 import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
+import { translateToZh } from '../utils/i18n';
 
 interface CustomerProfileProps {
   customers: Customer[];
@@ -13,9 +14,15 @@ interface CustomerProfileProps {
   onUpdateCustomer: (updated: Customer) => void;
 }
 
-const formatInteractionSummary = (isStarred: boolean, typeTag: string, effectTag: string, content: string) => {
+const formatInteractionSummary = (isStarred: boolean, typeTag: string, exhibitionTag: string, effectTag: string, content: string) => {
   const starStr = isStarred ? '(标星记录)' : '(一般记录)';
-  return `${starStr}<${typeTag}>{${effectTag}}${content}`;
+  const exhStr = exhibitionTag && exhibitionTag !== 'None' ? `//${exhibitionTag}` : '';
+  
+  // Requirement: Ensure serialized tags in the summary string use Chinese if available for Excel consistency
+  const typeZh = translateToZh(typeTag);
+  const effectZh = translateToZh(effectTag);
+  
+  return `${starStr}<${typeZh}>${exhStr}{${effectZh}}${content}`;
 };
 
 const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, onUpdateCustomer }) => {
@@ -39,6 +46,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
   const [intIsStarred, setIntIsStarred] = useState(false);
   const [intTypeTag, setIntTypeTag] = useState('None');
+  const [intExhibitionTag, setIntExhibitionTag] = useState('None'); // New State
   const [intEffectTag, setIntEffectTag] = useState('None');
   const [intContent, setIntContent] = useState('');
   
@@ -111,6 +119,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       const parsed = parseInteractionSummary(editingInteraction.summary);
       setIntIsStarred(parsed.isStarred);
       setIntTypeTag(parsed.typeTag);
+      setIntExhibitionTag(parsed.exhibitionTag || 'None');
       setIntEffectTag(parsed.effectTag);
       setIntContent(parsed.content);
     }
@@ -203,7 +212,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const saveInteraction = (interactionToSave: Interaction) => {
     const isNew = !customer.interactions.some(i => i.id === interactionToSave.id);
-    const finalSummary = formatInteractionSummary(intIsStarred, intTypeTag, intEffectTag, intContent);
+    const finalSummary = formatInteractionSummary(intIsStarred, intTypeTag, intExhibitionTag, intEffectTag, intContent);
     const updatedInt = { ...interactionToSave, summary: finalSummary };
 
     let newInteractions = isNew 
@@ -556,6 +565,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                  setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
                                  setIntIsStarred(false);
                                  setIntTypeTag('None');
+                                 setIntExhibitionTag('None');
                                  setIntEffectTag('None');
                                  setIntContent('');
                                }}>
@@ -619,10 +629,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                             <div key={int.id} className="relative group">
                                <div className="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center gap-3">
+                                  <div className="flex flex-wrap items-center gap-3">
                                     <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
                                     <Star size={16} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-700'} />
                                     {parsed.typeTag !== '无' && parsed.typeTag !== 'None' && <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.typeTag as any) || parsed.typeTag}</span>}
+                                    {parsed.exhibitionTag !== '无' && parsed.exhibitionTag !== 'None' && <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.exhibitionTag}</span>}
                                     {parsed.effectTag !== '无' && parsed.effectTag !== 'None' && <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.effectTag as any) || parsed.effectTag}</span>}
                                   </div>
                                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -908,11 +919,19 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                      </select>
                   </div>
                   <div className="space-y-1">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('interactionEffect')} (EFFECT)</label>
-                     <select className="w-full p-4 border-2 rounded-xl font-bold bg-white dark:bg-slate-800 outline-none focus:border-blue-500" value={intEffectTag} onChange={e => setIntEffectTag(e.target.value)}>
-                        {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">关联展会 (EXHIBITION)</label>
+                     <select className="w-full p-4 border-2 rounded-xl font-bold bg-white dark:bg-slate-800 outline-none focus:border-blue-500" value={intExhibitionTag} onChange={e => setIntExhibitionTag(e.target.value)}>
+                        <option value="None">无 / None</option>
+                        {customer.tags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                      </select>
                   </div>
+               </div>
+
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('interactionEffect')} (EFFECT)</label>
+                  <select className="w-full p-4 border-2 rounded-xl font-bold bg-white dark:bg-slate-800 outline-none focus:border-blue-500" value={intEffectTag} onChange={e => setIntEffectTag(e.target.value)}>
+                     {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                  </select>
                </div>
 
                <div className="space-y-1">
