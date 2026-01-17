@@ -565,44 +565,38 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
               <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="space-y-6">
                    <div className="flex flex-col gap-4">
-                      <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 space-y-4">
-                         <div className="flex flex-wrap items-center gap-6">
-                            <div className="space-y-1">
-                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('availableTags')}</label>
-                               <select 
-                                 className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
-                                 value={filterStarred}
-                                 onChange={e => setFilterStarred(e.target.value)}
-                               >
-                                  <option value="all">记录: 全部</option>
-                                  <option value="starred">⭐ {t('starredRecord')}</option>
-                                  <option value="normal">⚪ {t('normalRecord')}</option>
-                               </select>
-                            </div>
-                            <div className="space-y-1">
-                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('interactionType')}</label>
-                               <select 
-                                 className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
-                                 value={filterType}
-                                 onChange={e => setFilterType(e.target.value)}
-                               >
-                                  <option value="all">流程: 全部</option>
-                                  {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-1">
-                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('interactionEffect')}</label>
-                               <select 
-                                 className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
-                                 value={filterEffect}
-                                 onChange={e => setFilterEffect(e.target.value)}
-                               >
-                                  <option value="all">作用: 全部</option>
-                                  {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
-                               </select>
-                            </div>
+                      <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-white dark:bg-slate-900/40 shadow-sm rounded-2xl">
+                         <div className="flex flex-wrap items-center gap-6 w-full">
+                            <select 
+                              className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
+                              value={filterStarred}
+                              onChange={e => setFilterStarred(e.target.value)}
+                            >
+                               <option value="all">记录: 全部</option>
+                               <option value="starred">⭐ {t('starredRecord')}</option>
+                               <option value="normal">⚪ {t('normalRecord')}</option>
+                            </select>
+                            
+                            <select 
+                              className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
+                              value={filterType}
+                              onChange={e => setFilterType(e.target.value)}
+                            >
+                               <option value="all">流程: 全部</option>
+                               {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                             </select>
+                            
+                            <select 
+                              className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
+                              value={filterEffect}
+                              onChange={e => setFilterEffect(e.target.value)}
+                            >
+                               <option value="all">作用: 全部</option>
+                               {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                            </select>
+                            
                             {hasActiveFilters && (
-                              <button onClick={resetFilters} className="mt-5 text-[10px] font-black uppercase text-rose-500 hover:underline">Reset</button>
+                              <button onClick={resetFilters} className="text-sm font-black uppercase text-rose-500 hover:underline">Reset</button>
                             )}
 
                             {/* Unified Buttons Group integrated into filter card */}
@@ -627,7 +621,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                </Button>
                             </div>
                          </div>
-                      </div>
+                      </Card>
                    </div>
                    
                    <div className="border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-8 py-4 space-y-8">
@@ -676,22 +670,19 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             {activeTab === 'samples' && (
               <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
                  {/* Sample List Filters */}
-                 <div className="flex flex-wrap items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800">
-                    <div className="space-y-1">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Current Status</label>
+                 <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-white dark:bg-slate-900/40 shadow-sm rounded-2xl">
+                    <div className="flex flex-wrap items-center gap-6 w-full">
                        <select 
-                         className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500 shadow-sm"
+                         className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
                          value={sampleStatusFilter}
                          onChange={e => setSampleStatusFilter(e.target.value)}
                        >
                           <option value="all">全部Status</option>
                           {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
                        </select>
-                    </div>
-                    <div className="space-y-1">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Test Status</label>
+                       
                        <select 
-                         className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500 shadow-sm"
+                         className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
                          value={sampleTestStatusFilter}
                          onChange={e => setSampleTestStatusFilter(e.target.value)}
                        >
@@ -700,14 +691,15 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                           <option value="Finished">测试完成</option>
                           <option value="Terminated">项目终止</option>
                        </select>
+                       
+                       { (sampleStatusFilter !== 'all' || sampleTestStatusFilter !== 'Ongoing') && (
+                          <button onClick={() => { setSampleStatusFilter('all'); setSampleTestStatusFilter('Ongoing'); }} className="text-sm font-black uppercase text-blue-600 hover:underline">Reset Filters</button>
+                       )}
+                       <div className="ml-auto text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                          Showing {filteredCustomerSamples.length} Samples
+                       </div>
                     </div>
-                    { (sampleStatusFilter !== 'all' || sampleTestStatusFilter !== 'Ongoing') && (
-                       <button onClick={() => { setSampleStatusFilter('all'); setSampleTestStatusFilter('Ongoing'); }} className="mt-5 text-[10px] font-black uppercase text-blue-600 hover:underline">Reset Filters</button>
-                    )}
-                    <div className="ml-auto mt-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                       Showing {filteredCustomerSamples.length} Samples
-                    </div>
-                 </div>
+                 </Card>
 
                  <div className="space-y-2">
                     {filteredCustomerSamples.map(sample => (
@@ -810,7 +802,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          <div className="space-y-6">
             <div className="space-y-4">
                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('exhibitions')} Linked</h4>
-               <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-100 dark:border-slate-700">
+               <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700">
                   {tempTags.length > 0 ? tempTags.map(tag => (
                     <div key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-700 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm text-sm font-black text-blue-700 dark:text-blue-300 uppercase tracking-tight">
                        {tag}
