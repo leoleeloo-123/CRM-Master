@@ -52,7 +52,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [intContent, setIntContent] = useState('');
   
   // Filtering States for Interaction History
-  const [showFilters, setShowFilters] = useState(false);
   const [filterType, setFilterType] = useState('all');
   const [filterEffect, setFilterEffect] = useState('all');
   const [filterStarred, setFilterStarred] = useState('all'); // all, starred, normal
@@ -560,7 +559,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             </Card>
 
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-              <button onClick={() => setActiveTab('overview')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider transition-all ${activeTab === 'overview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>{t('overview')}</button>
+              <button onClick={() => setActiveTab('overview')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider transition-all ${activeTab === 'overview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
+                {t('interactionHistory')} ({processedInteractions.length})
+              </button>
               <button onClick={() => setActiveTab('samples')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider transition-all ${activeTab === 'samples' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>{t('samples')} ({customerSamples.length})</button>
             </div>
 
@@ -568,79 +569,69 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
               <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="space-y-6">
                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className={titleClass}><Calendar className="w-6 h-6 text-blue-600"/> {t('interactionHistory')}</h3>
-                        <div className="flex items-center gap-2">
-                           <button 
-                             onClick={() => setShowFilters(!showFilters)}
-                             className={`p-2.5 rounded-lg border-2 transition-all active:scale-90 ${showFilters ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100'}`}
-                           >
-                             <Filter size={18} />
-                           </button>
-                           <button 
-                             onClick={handleRefreshDates}
-                             title="Refresh Unreplied / Unfollowed Dates"
-                             className={`p-2.5 rounded-lg border-2 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all active:scale-90 bg-white dark:bg-slate-900 shadow-sm ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
-                           >
-                             <RefreshCcw size={18} />
-                           </button>
-                           <Button className="text-[10px] py-2 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest shadow-lg shadow-blue-600/20" 
-                               onClick={() => {
-                                 setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
-                                 setIntIsStarred(false);
-                                 setIntTypeTag('None');
-                                 setIntExhibitionTag('None');
-                                 setIntEffectTag('None');
-                                 setIntContent('');
-                               }}>
-                             <Plus size={14} className="mr-1" /> Log Progress
-                           </Button>
-                        </div>
-                      </div>
+                      <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 space-y-4">
+                         <div className="flex flex-wrap items-center gap-6">
+                            <div className="space-y-1">
+                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('availableTags')}</label>
+                               <select 
+                                 className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
+                                 value={filterStarred}
+                                 onChange={e => setFilterStarred(e.target.value)}
+                               >
+                                  <option value="all">记录: 全部</option>
+                                  <option value="starred">⭐ {t('starredRecord')}</option>
+                                  <option value="normal">⚪ {t('normalRecord')}</option>
+                               </select>
+                            </div>
+                            <div className="space-y-1">
+                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('interactionType')}</label>
+                               <select 
+                                 className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
+                                 value={filterType}
+                                 onChange={e => setFilterType(e.target.value)}
+                               >
+                                  <option value="all">流程: 全部</option>
+                                  {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('interactionEffect')}</label>
+                               <select 
+                                 className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
+                                 value={filterEffect}
+                                 onChange={e => setFilterEffect(e.target.value)}
+                               >
+                                  <option value="all">作用: 全部</option>
+                                  {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                               </select>
+                            </div>
+                            {hasActiveFilters && (
+                              <button onClick={resetFilters} className="mt-5 text-[10px] font-black uppercase text-rose-500 hover:underline">Reset</button>
+                            )}
 
-                      {showFilters && (
-                        <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 space-y-4 animate-in slide-in-from-top-2 duration-200">
-                           <div className="flex flex-wrap items-center gap-4">
-                              <div className="space-y-1">
-                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('availableTags')}</label>
-                                 <select 
-                                   className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
-                                   value={filterStarred}
-                                   onChange={e => setFilterStarred(e.target.value)}
-                                 >
-                                    <option value="all">记录: 全部</option>
-                                    <option value="starred">⭐ {t('starredRecord')}</option>
-                                    <option value="normal">⚪ {t('normalRecord')}</option>
-                                 </select>
-                              </div>
-                              <div className="space-y-1">
-                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('interactionType')}</label>
-                                 <select 
-                                   className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
-                                   value={filterType}
-                                   onChange={e => setFilterType(e.target.value)}
-                                 >
-                                    <option value="all">流程: 全部</option>
-                                    {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
-                                 </select>
-                              </div>
-                              <div className="space-y-1">
-                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t('interactionEffect')}</label>
-                                 <select 
-                                   className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 outline-none focus:border-blue-500"
-                                   value={filterEffect}
-                                   onChange={e => setFilterEffect(e.target.value)}
-                                 >
-                                    <option value="all">作用: 全部</option>
-                                    {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
-                                 </select>
-                              </div>
-                              {hasActiveFilters && (
-                                <button onClick={resetFilters} className="mt-5 text-[10px] font-black uppercase text-rose-500 hover:underline">Reset</button>
-                              )}
-                           </div>
-                        </div>
-                      )}
+                            {/* Unified Buttons Group integrated into filter card */}
+                            <div className="ml-auto flex items-center gap-3 self-end">
+                               <button 
+                                 onClick={handleRefreshDates}
+                                 title="Refresh Unreplied / Unfollowed Dates"
+                                 className={`p-2.5 rounded-lg border-2 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all active:scale-90 bg-white dark:bg-slate-900 shadow-sm ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
+                               >
+                                 <RefreshCcw size={18} />
+                               </button>
+                               <Button className="text-[10px] py-2.5 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest shadow-lg shadow-blue-600/20" 
+                                   onClick={() => {
+                                     setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
+                                     setIntIsStarred(false);
+                                     setIntTypeTag('None');
+                                     setIntExhibitionTag('None');
+                                     setIntEffectTag('None');
+                                     setIntContent('');
+                                   }}>
+                                 <Plus size={14} className="mr-1" /> Log Progress
+                               </Button>
+                            </div>
+                         </div>
+                      </div>
                    </div>
                    
                    <div className="border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-8 py-4 space-y-8">
