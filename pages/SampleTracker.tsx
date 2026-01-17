@@ -17,7 +17,7 @@ const FIXED_BOARD_ORDER = ['Waiting', 'Processing', 'Sent', 'Testing', 'Feedback
 
 const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
   const navigate = useNavigate();
-  const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions } = useApp();
+  const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions, language } = useApp();
   
   // Default to list view as requested
   const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
@@ -287,7 +287,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
             </div>
          </div>
          
-         <div className="flex flex-wrap gap-2">
+         <div className="flex flex-wrap items-center gap-2">
             <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                <option value="">Status: All</option>
                {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
@@ -315,6 +315,12 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                <option value="Graded">{t('graded')}</option>
                <option value="Ungraded">{t('ungraded')}</option>
             </select>
+
+            <div className="ml-auto text-[10px] font-black uppercase text-slate-400 tracking-widest whitespace-nowrap">
+               {language === 'en' 
+                 ? `Showing ${filteredSamples.length} Samples | ${samples.length} Samples in Total`
+                 : `显示 ${filteredSamples.length} 个样品 | 共 ${samples.length} 个样品`}
+            </div>
          </div>
       </Card>
 
