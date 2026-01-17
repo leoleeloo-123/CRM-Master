@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity, ClipboardList } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 import { translateToZh } from '../utils/i18n';
@@ -82,6 +81,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const customer = customers.find(c => c.id === id);
   const customerSamples = samples.filter(s => s.customerId === id);
 
+  const urgency = getUrgencyLevel(customer?.nextActionDate);
+
   const daysRemaining = useMemo(() => {
     if (!customer?.nextActionDate) return null;
     const targetDate = parseLocalDate(customer.nextActionDate);
@@ -105,6 +106,14 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       return matchesStatus && matchesTest;
     });
   }, [sortedCustomerSamples, sampleStatusFilter, sampleTestStatusFilter]);
+
+  // Fix: Added availableExhibitionsToAdd memo to handle exhibition selection in the tags modal
+  const availableExhibitionsToAdd = useMemo(() => {
+    return exhibitions.filter(ex => 
+      !tempTags.includes(ex.name) && 
+      ex.name.toLowerCase().includes(tagSearchTerm.toLowerCase())
+    );
+  }, [exhibitions, tempTags, tagSearchTerm]);
 
   // Derived filtered interactions
   const processedInteractions = useMemo(() => {
@@ -278,31 +287,17 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     }
   };
 
-  // Link Actions
+  // Fix: Added handleAddLink function for managing customer document links
   const handleAddLink = () => {
     if (!newLinkUrl.trim() || !customer) return;
     let url = newLinkUrl.trim();
     if (!url.startsWith('http')) url = 'https://' + url;
-    const title = newLinkTitle.trim() || `Link ${ (customer.docLinks || []).length + 1 }`;
+    const title = newLinkTitle.trim() || `Link ${(customer.docLinks || []).length + 1}`;
     const newLink: SampleDocLink = { title, url };
     const currentLinks = customer.docLinks || [];
     saveUpdate({ docLinks: [...currentLinks, newLink] });
     setNewLinkUrl('');
     setNewLinkTitle('');
-  };
-
-  const handleDeleteLink = (index: number) => {
-    if (!customer) return;
-    if (confirm('Delete this link?')) {
-      const updatedLinks = (customer.docLinks || []).filter((_, i) => i !== index);
-      saveUpdate({ docLinks: updatedLinks });
-    }
-  };
-
-  const handleStartEditLink = (index: number, link: SampleDocLink) => {
-    setEditingLinkIndex(index);
-    setEditLinkTitle(link.title);
-    setEditLinkUrl(link.url);
   };
 
   const handleSaveEditLink = () => {
@@ -326,12 +321,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setTempRegions(tempRegions.filter((_, i) => i !== idx));
   };
 
-  const availableExhibitionsToAdd = useMemo(() => {
-    return exhibitions
-      .filter(ex => !tempTags.includes(ex.name))
-      .filter(ex => ex.name.toLowerCase().includes(tagSearchTerm.toLowerCase()));
-  }, [exhibitions, tempTags, tagSearchTerm]);
-
   // Unified Title Style for all cards
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
@@ -344,8 +333,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const hasActiveFilters = filterType !== 'all' || filterEffect !== 'all' || filterStarred !== 'all';
-
-  const urgency = getUrgencyLevel(customer.nextActionDate);
 
   // Helper for the compact aging counters card
   const MiniDaysCounter = ({ date, label, onDateChange }: { date?: string, label: string, onDateChange: (d: string) => void }) => {
@@ -570,220 +557,255 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
             </Card>
 
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-              <button onClick={() => setActiveTab('overview')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider transition-all ${activeTab === 'overview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
-                {t('interactionHistory')} ({processedInteractions.length})
-              </button>
-              <button onClick={() => setActiveTab('samples')} className={`px-6 py-2 rounded-lg font-black text-xs uppercase tracking-wider transition-all ${activeTab === 'samples' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>{t('samples')} ({customerSamples.length})</button>
-            </div>
+            <Card className="overflow-hidden border shadow-sm flex flex-col mt-4">
+              <div className={headerClass}>
+                <div className="flex gap-8">
+                  <button 
+                    onClick={() => setActiveTab('overview')} 
+                    className={`transition-all relative flex items-center gap-3 ${
+                      activeTab === 'overview' 
+                        ? 'text-blue-600' 
+                        : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    <ClipboardList className={`w-5 h-5 ${activeTab === 'overview' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`} />
+                    <span className="font-black text-base xl:text-lg uppercase tracking-wider">
+                      {t('interactionHistory')} ({processedInteractions.length})
+                    </span>
+                    {activeTab === 'overview' && (
+                      <div className="absolute bottom-[-18px] left-0 right-0 h-1 bg-blue-600 rounded-full" />
+                    )}
+                  </button>
 
-            {activeTab === 'overview' && (
-              <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="space-y-6">
-                   <div className="flex flex-col gap-4">
-                      <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-white dark:bg-slate-900/40 shadow-sm rounded-2xl">
-                         <div className="flex flex-wrap items-center gap-6 w-full">
-                            <select 
-                              className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
-                              value={filterStarred}
-                              onChange={e => setFilterStarred(e.target.value)}
-                            >
-                               <option value="all">记录: 全部</option>
-                               <option value="starred">⭐ {t('starredRecord')}</option>
-                               <option value="normal">⚪ {t('normalRecord')}</option>
-                            </select>
-                            
-                            <select 
-                              className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
-                              value={filterType}
-                              onChange={e => setFilterType(e.target.value)}
-                            >
-                               <option value="all">流程: 全部</option>
-                               {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
-                             </select>
-                            
-                            <select 
-                              className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
-                              value={filterEffect}
-                              onChange={e => setFilterEffect(e.target.value)}
-                            >
-                               <option value="all">作用: 全部</option>
-                               {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
-                            </select>
-                            
-                            {hasActiveFilters && (
-                              <button onClick={resetFilters} className="text-sm font-black uppercase text-rose-500 hover:underline">Reset</button>
-                            )}
-
-                            {/* Unified Buttons Group integrated into filter card */}
-                            <div className="ml-auto flex items-center gap-3 self-end">
-                               <button 
-                                 onClick={handleRefreshDates}
-                                 title="Refresh Unreplied / Unfollowed Dates"
-                                 className={`p-2.5 rounded-lg border-2 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all active:scale-90 bg-white dark:bg-slate-900 shadow-sm ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
-                               >
-                                 <RefreshCcw size={18} />
-                               </button>
-                               <Button className="text-[10px] py-2.5 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest shadow-lg shadow-blue-600/20" 
-                                   onClick={() => {
-                                     setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
-                                     setIntIsStarred(false);
-                                     setIntTypeTag('None');
-                                     setIntExhibitionTag('None');
-                                     setIntEffectTag('None');
-                                     setIntContent('');
-                                   }}>
-                                 <Plus size={14} className="mr-1" /> Log Progress
-                               </Button>
-                            </div>
-                         </div>
-                      </Card>
-                   </div>
-                   
-                   <div className="border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-8 py-4 space-y-8">
-                     {processedInteractions.length > 0 ? (
-                       <>
-                         {visibleInteractions.map((item) => {
-                           const int = item;
-                           const parsed = item.parsed;
-                           return (
-                            <div key={int.id} className="relative group">
-                               <div className="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
-                               <div className="flex items-center justify-between mb-3">
-                                  <div className="flex flex-wrap items-center gap-3">
-                                    <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
-                                    <Star size={16} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-700'} />
-                                    {parsed.typeTag !== '无' && parsed.typeTag !== 'None' && <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.typeTag as any) || parsed.typeTag}</span>}
-                                    {parsed.exhibitionTag !== '无' && parsed.exhibitionTag !== 'None' && <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.exhibitionTag}</span>}
-                                    {parsed.effectTag !== '无' && parsed.effectTag !== 'None' && <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.effectTag as any) || parsed.effectTag}</span>}
-                                  </div>
-                                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <button onClick={() => setEditingInteraction(int)} className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-90"><PencilLine size={14}/></button>
-                                     <button onClick={() => deleteInteraction(int.id)} className="p-1.5 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-90"><Trash2 size={14}/></button>
-                                  </div>
-                               </div>
-                               <Card className="p-4 bg-white dark:bg-slate-800/40 shadow-sm border border-slate-100 dark:border-slate-800">
-                                  <p className="text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{parsed.content}</p>
-                                </Card>
-                            </div>
-                           );
-                         })}
-                         {processedInteractions.length > 3 && (
-                           <div className="flex justify-center pt-2">
-                             <button onClick={() => setShowAllInteractions(!showAllInteractions)} className="text-blue-600 font-black uppercase text-xs tracking-widest flex items-center gap-1">
-                               {showAllInteractions ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
-                               {showAllInteractions ? 'View Less' : `View More (${processedInteractions.length - 3})`}
-                             </button>
-                           </div>
-                         )}
-                       </>
-                     ) : <div className="text-slate-400 italic font-bold py-10 text-center uppercase tracking-widest">No matching history found.</div>}
-                   </div>
+                  <button 
+                    onClick={() => setActiveTab('samples')} 
+                    className={`transition-all relative flex items-center gap-3 ${
+                      activeTab === 'samples' 
+                        ? 'text-blue-600' 
+                        : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    <FlaskConical className={`w-5 h-5 ${activeTab === 'samples' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`} />
+                    <span className="font-black text-base xl:text-lg uppercase tracking-wider">
+                      {t('sampleSummary')} ({customerSamples.length})
+                    </span>
+                    {activeTab === 'samples' && (
+                      <div className="absolute bottom-[-18px] left-0 right-0 h-1 bg-blue-600 rounded-full" />
+                    )}
+                  </button>
                 </div>
               </div>
-            )}
 
-            {activeTab === 'samples' && (
-              <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
-                 {/* Sample List Filters */}
-                 <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-white dark:bg-slate-900/40 shadow-sm rounded-2xl">
-                    <div className="flex flex-wrap items-center gap-6 w-full">
-                       <select 
-                         className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
-                         value={sampleStatusFilter}
-                         onChange={e => setSampleStatusFilter(e.target.value)}
-                       >
-                          <option value="all">全部Status</option>
-                          {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
-                       </select>
+              <div className="p-6 bg-slate-50/50 dark:bg-slate-900/20">
+                {activeTab === 'overview' && (
+                  <div className="space-y-8 animate-in fade-in duration-500">
+                    <div className="space-y-6">
+                       <div className="flex flex-col gap-4">
+                          <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-white dark:bg-slate-900/40 shadow-sm rounded-2xl">
+                             <div className="flex flex-wrap items-center gap-6 w-full">
+                                <select 
+                                  className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
+                                  value={filterStarred}
+                                  onChange={e => setFilterStarred(e.target.value)}
+                                >
+                                   <option value="all">记录: 全部</option>
+                                   <option value="starred">⭐ {t('starredRecord')}</option>
+                                   <option value="normal">⚪ {t('normalRecord')}</option>
+                                </select>
+                                
+                                <select 
+                                  className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
+                                  value={filterType}
+                                  onChange={e => setFilterType(e.target.value)}
+                                >
+                                   <option value="all">流程: 全部</option>
+                                   {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                                 </select>
+                                
+                                <select 
+                                  className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
+                                  value={filterEffect}
+                                  onChange={e => setFilterEffect(e.target.value)}
+                                >
+                                   <option value="all">作用: 全部</option>
+                                   {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                                </select>
+                                
+                                {hasActiveFilters && (
+                                  <button onClick={resetFilters} className="text-sm font-black uppercase text-rose-500 hover:underline">Reset</button>
+                                )}
+
+                                {/* Unified Buttons Group integrated into filter card */}
+                                <div className="ml-auto flex items-center gap-3 self-end">
+                                   <button 
+                                     onClick={handleRefreshDates}
+                                     title="Refresh Unreplied / Unfollowed Dates"
+                                     className={`p-2.5 rounded-lg border-2 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-100 transition-all active:scale-90 bg-white dark:bg-slate-900 shadow-sm ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
+                                   >
+                                     <RefreshCcw size={18} />
+                                   </button>
+                                   <Button className="text-[10px] py-2.5 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest shadow-lg shadow-blue-600/20" 
+                                       onClick={() => {
+                                         setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
+                                         setIntIsStarred(false);
+                                         setIntTypeTag('None');
+                                         setIntExhibitionTag('None');
+                                         setIntEffectTag('None');
+                                         setIntContent('');
+                                       }}>
+                                     <Plus size={14} className="mr-1" /> Log Progress
+                                   </Button>
+                                </div>
+                             </div>
+                          </Card>
+                       </div>
                        
-                       <select 
-                         className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
-                         value={sampleTestStatusFilter}
-                         onChange={e => setSampleTestStatusFilter(e.target.value)}
-                       >
-                          <option value="all">Test: 全部</option>
-                          <option value="Ongoing">样品测试中</option>
-                          <option value="Finished">测试完成</option>
-                          <option value="Terminated">项目终止</option>
-                       </select>
-                       
-                       { (sampleStatusFilter !== 'all' || sampleTestStatusFilter !== 'Ongoing') && (
-                          <button onClick={() => { setSampleStatusFilter('all'); setSampleTestStatusFilter('Ongoing'); }} className="text-sm font-black uppercase text-blue-600 hover:underline">Reset Filters</button>
-                       )}
-                       <div className="ml-auto text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                          {language === 'en' 
-                            ? `Showing ${filteredCustomerSamples.length} Samples | ${customerSamples.length} Samples in Total`
-                            : `显示 ${filteredCustomerSamples.length} 个样品 | 共 ${customerSamples.length} 个样品`}
+                       <div className="border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-8 py-4 space-y-8">
+                         {processedInteractions.length > 0 ? (
+                           <>
+                             {visibleInteractions.map((item) => {
+                               const int = item;
+                               const parsed = item.parsed;
+                               return (
+                                <div key={int.id} className="relative group">
+                                   <div className="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
+                                   <div className="flex items-center justify-between mb-3">
+                                      <div className="flex flex-wrap items-center gap-3">
+                                        <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
+                                        <Star size={16} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-700'} />
+                                        {parsed.typeTag !== '无' && parsed.typeTag !== 'None' && <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.typeTag as any) || parsed.typeTag}</span>}
+                                        {parsed.exhibitionTag !== '无' && parsed.exhibitionTag !== 'None' && <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.exhibitionTag}</span>}
+                                        {parsed.effectTag !== '无' && parsed.effectTag !== 'None' && <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.effectTag as any) || parsed.effectTag}</span>}
+                                      </div>
+                                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                         <button onClick={() => setEditingInteraction(int)} className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-90"><PencilLine size={14}/></button>
+                                         <button onClick={() => deleteInteraction(int.id)} className="p-1.5 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-90"><Trash2 size={14}/></button>
+                                      </div>
+                                   </div>
+                                   <Card className="p-4 bg-white dark:bg-slate-800/40 shadow-sm border border-slate-100 dark:border-slate-800">
+                                      <p className="text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{parsed.content}</p>
+                                    </Card>
+                                </div>
+                               );
+                             })}
+                             {processedInteractions.length > 3 && (
+                               <div className="flex justify-center pt-2">
+                                 <button onClick={() => setShowAllInteractions(!showAllInteractions)} className="text-blue-600 font-black uppercase text-xs tracking-widest flex items-center gap-1">
+                                   {showAllInteractions ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+                                   {showAllInteractions ? 'View Less' : `View More (${processedInteractions.length - 3})`}
+                                 </button>
+                               </div>
+                             )}
+                           </>
+                         ) : <div className="text-slate-400 italic font-bold py-10 text-center uppercase tracking-widest">No matching history found.</div>}
                        </div>
                     </div>
-                 </Card>
+                  </div>
+                )}
 
-                 <div className="space-y-2">
-                    {filteredCustomerSamples.map(sample => (
-                      <Card key={sample.id} className="p-3 xl:p-4 hover:shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer group" onClick={() => navigate(`/samples/${sample.id}`)}>
-                         <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-4 min-w-0 flex-1">
-                               <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 group-hover:scale-110 transition-transform shrink-0">
-                                  <FlaskConical className="w-5 h-5 xl:w-6 xl:h-6" />
-                               </div>
-                               <div className="flex flex-col flex-1 min-w-0">
-                                  <div className="flex items-center gap-3">
-                                     <h4 className="font-black text-sm xl:text-base text-slate-900 dark:text-white truncate uppercase tracking-tight">{sample.sampleName}</h4>
-                                     <span className="hidden sm:inline bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border dark:border-slate-700 text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                                        SKU: {sample.sampleSKU || 'N/A'}
-                                     </span>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-4 mt-0.5">
-                                     <div className="flex items-center gap-2">
-                                        <Badge color={sample.testStatus === 'Finished' ? 'green' : sample.testStatus === 'Terminated' ? 'red' : 'yellow'}>
-                                          <span className="text-[9px]">{t(sample.testStatus as any) || sample.testStatus}</span>
-                                        </Badge>
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                                           Qty: {sample.quantity}
-                                        </span>
-                                     </div>
-                                     
-                                     <div className="hidden md:flex items-center gap-2">
-                                        {(sample.docLinks || []).slice(0, 2).map((link, idx) => (
-                                          <a 
-                                            key={idx} 
-                                            href={link.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
-                                            onClick={e => e.stopPropagation()}
-                                            className="flex items-center gap-1 text-[9px] font-black uppercase text-blue-600 hover:text-blue-700 hover:underline bg-blue-50/50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/50"
-                                          >
-                                            <LinkIcon size={8} /> {link.title}
-                                          </a>
-                                        ))}
-                                        {(customer.docLinks || []).length > 2 && (
-                                           <span className="text-[8px] font-black text-slate-400">...</span>
-                                        )}
-                                     </div>
-                                  </div>
-                               </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-6 shrink-0">
-                               <div className="text-right">
-                                  <Badge color="blue">
-                                     <span className="text-[10px]">{t(sample.status as any) || sample.status}</span>
-                                  </Badge>
-                                  <div className="text-[10px] font-black text-slate-400 uppercase mt-0.5 tracking-widest">
-                                     DDL: <span className="text-slate-600 dark:text-slate-300">{sample.nextActionDate || 'TBD'}</span>
-                                  </div>
-                               </div>
-                               <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-all group-hover:translate-x-1" />
-                            </div>
-                         </div>
-                      </Card>
-                    ))}
-                    {filteredCustomerSamples.length === 0 && <div className="text-slate-400 italic font-bold py-16 text-center uppercase tracking-widest border-2 border-dashed rounded-3xl opacity-50">No samples matching filter.</div>}
-                 </div>
+                {activeTab === 'samples' && (
+                  <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
+                     {/* Sample List Filters */}
+                     <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-white dark:bg-slate-900/40 shadow-sm rounded-2xl">
+                        <div className="flex flex-wrap items-center gap-6 w-full">
+                           <select 
+                             className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
+                             value={sampleStatusFilter}
+                             onChange={e => setSampleStatusFilter(e.target.value)}
+                           >
+                              <option value="all">全部Status</option>
+                              {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
+                           </select>
+                           
+                           <select 
+                             className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
+                             value={sampleTestStatusFilter}
+                             onChange={e => setSampleTestStatusFilter(e.target.value)}
+                           >
+                              <option value="all">Test: 全部</option>
+                              <option value="Ongoing">样品测试中</option>
+                              <option value="Finished">测试完成</option>
+                              <option value="Terminated">项目终止</option>
+                           </select>
+                           
+                           { (sampleStatusFilter !== 'all' || sampleTestStatusFilter !== 'Ongoing') && (
+                              <button onClick={() => { setSampleStatusFilter('all'); setSampleTestStatusFilter('Ongoing'); }} className="text-sm font-black uppercase text-blue-600 hover:underline">Reset Filters</button>
+                           )}
+                           <div className="ml-auto text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                              {language === 'en' 
+                                ? `Showing ${filteredCustomerSamples.length} Samples | ${customerSamples.length} Samples in Total`
+                                : `显示 ${filteredCustomerSamples.length} 个样品 | 共 ${customerSamples.length} 个样品`}
+                           </div>
+                        </div>
+                     </Card>
+
+                     <div className="space-y-2">
+                        {filteredCustomerSamples.map(sample => (
+                          <Card key={sample.id} className="p-3 xl:p-4 hover:shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer group" onClick={() => navigate(`/samples/${sample.id}`)}>
+                             <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4 min-w-0 flex-1">
+                                   <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 group-hover:scale-110 transition-transform shrink-0">
+                                      <FlaskConical className="w-5 h-5 xl:w-6 xl:h-6" />
+                                   </div>
+                                   <div className="flex flex-col flex-1 min-w-0">
+                                      <div className="flex items-center gap-3">
+                                         <h4 className="font-black text-sm xl:text-base text-slate-900 dark:text-white truncate uppercase tracking-tight">{sample.sampleName}</h4>
+                                         <span className="hidden sm:inline bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border dark:border-slate-700 text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                            SKU: {sample.sampleSKU || 'N/A'}
+                                         </span>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-4 mt-0.5">
+                                         <div className="flex items-center gap-2">
+                                            <Badge color={sample.testStatus === 'Finished' ? 'green' : sample.testStatus === 'Terminated' ? 'red' : 'yellow'}>
+                                              <span className="text-[9px]">{t(sample.testStatus as any) || sample.testStatus}</span>
+                                            </Badge>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                               Qty: {sample.quantity}
+                                            </span>
+                                         </div>
+                                         
+                                         <div className="hidden md:flex items-center gap-2">
+                                            {(sample.docLinks || []).slice(0, 2).map((link, idx) => (
+                                              <a 
+                                                key={idx} 
+                                                href={link.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                onClick={e => e.stopPropagation()}
+                                                className="flex items-center gap-1 text-[9px] font-black uppercase text-blue-600 hover:text-blue-700 hover:underline bg-blue-50/50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/50"
+                                              >
+                                                <LinkIcon size={8} /> {link.title}
+                                              </a>
+                                            ))}
+                                            {(customer.docLinks || []).length > 2 && (
+                                               <span className="text-[8px] font-black text-slate-400">...</span>
+                                            )}
+                                         </div>
+                                      </div>
+                                   </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-6 shrink-0">
+                                   <div className="text-right">
+                                      <Badge color="blue">
+                                         <span className="text-[10px]">{t(sample.status as any) || sample.status}</span>
+                                      </Badge>
+                                      <div className="text-[10px] font-black text-slate-400 uppercase mt-0.5 tracking-widest">
+                                         DDL: <span className="text-slate-600 dark:text-slate-300">{sample.nextActionDate || 'TBD'}</span>
+                                      </div>
+                                   </div>
+                                   <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-all group-hover:translate-x-1" />
+                                </div>
+                             </div>
+                          </Card>
+                        ))}
+                        {filteredCustomerSamples.length === 0 && <div className="text-slate-400 italic font-bold py-16 text-center uppercase tracking-widest border-2 border-dashed rounded-3xl opacity-50">No samples matching filter.</div>}
+                     </div>
+                  </div>
+                )}
               </div>
-            )}
+            </Card>
          </div>
        </div>
 
@@ -1036,10 +1058,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                 </div>
                              </div>
                              <div className="flex items-center gap-1 shrink-0">
-                                <button onClick={() => handleStartEditLink(idx, link)} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-all">
+                                <button onClick={() => { setEditingLinkIndex(idx); setEditLinkTitle(link.title); setEditLinkUrl(link.url); }} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-all">
                                    <PencilLine size={16} />
                                 </button>
-                                <button onClick={() => handleDeleteLink(idx)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all">
+                                <button onClick={() => { if(confirm('Delete?')) { const updated = (customer.docLinks || []).filter((_, i) => i !== idx); saveUpdate({ docLinks: updated }); } }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all">
                                    <Trash2 size={16} />
                                 </button>
                              </div>
