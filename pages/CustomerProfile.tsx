@@ -426,7 +426,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                         onClick={() => matchedExhibition && navigate(`/exhibitions/${matchedExhibition.id}`)}
                         className={`px-3 py-1.5 rounded-xl border text-[10px] xl:text-xs font-black uppercase transition-all flex items-center gap-2 ${matchedExhibition ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 cursor-pointer shadow-sm' : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400 cursor-default opacity-60'}`}
                       >
-                         <span className="truncate max-w-[120px]">{tag}</span>
+                         <span>{tag}</span>
                          {matchedExhibition && <ArrowRight size={10} className="opacity-40" />}
                       </button>
                      );
