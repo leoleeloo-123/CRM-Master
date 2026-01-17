@@ -41,7 +41,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isEditUpcomingPlanOpen, setIsEditUpcomingPlanOpen] = useState(false);
   const [isEditLinksOpen, setIsEditLinksOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isEditNameModalOpen, setIsEditNameModalOpen] = useState(false);
+  const [isEditCustomerModalOpen, setIsEditCustomerModalOpen] = useState(false);
   
   // Interaction State
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
@@ -67,6 +67,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [tempDDL, setTempDDL] = useState('');
   const [tempStatus, setTempStatus] = useState<FollowUpStatus>('No Action');
   const [tempName, setTempName] = useState('');
+  const [tempRegions, setTempRegions] = useState<string[]>([]);
+  const [newRegionInput, setNewRegionInput] = useState('');
+  const [editingRegionIndex, setEditingRegionIndex] = useState<number | null>(null);
   const [tagSearchTerm, setTagSearchTerm] = useState('');
 
   // Link Management State
@@ -137,6 +140,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   useEffect(() => {
     if (customer) {
       setTempName(customer.name);
+      setTempRegions(Array.isArray(customer.region) ? [...customer.region] : [customer.region]);
     }
   }, [customer]);
 
@@ -179,20 +183,23 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setIsEditUpcomingPlanOpen(false);
   };
 
-  const handleUpdateName = () => {
+  const handleUpdateCustomerInfo = () => {
     if (!tempName.trim()) return;
-    if (confirm(t('confirmNameChange'))) {
-      const oldName = customer.name;
-      const newName = tempName.trim();
-      
-      // Update customer name
-      saveUpdate({ name: newName });
-      
-      // Update name in samples globally
+    const oldName = customer.name;
+    const newName = tempName.trim();
+    
+    // Update customer info
+    saveUpdate({ 
+      name: newName,
+      region: tempRegions.filter(r => r.trim())
+    });
+    
+    // Update name in samples globally if changed
+    if (oldName !== newName) {
       setSamples(prev => prev.map(s => s.customerId === id ? { ...s, customerName: newName } : s));
-      
-      setIsEditNameModalOpen(false);
     }
+    
+    setIsEditCustomerModalOpen(false);
   };
 
   const handleDeleteCustomer = () => {
@@ -309,6 +316,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setEditingLinkIndex(null);
   };
 
+  const handleAddRegion = () => {
+    if (!newRegionInput.trim()) return;
+    setTempRegions([...tempRegions, newRegionInput.trim()]);
+    setNewRegionInput('');
+  };
+
+  const handleRemoveRegion = (idx: number) => {
+    setTempRegions(tempRegions.filter((_, i) => i !== idx));
+  };
+
   const availableExhibitionsToAdd = useMemo(() => {
     return exhibitions
       .filter(ex => !tempTags.includes(ex.name))
@@ -383,13 +400,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
              </div>
              <div className="flex items-center gap-3 mt-3 text-slate-400 font-black uppercase text-xs tracking-widest">
-               <MapPin className="w-4 h-4" /> <span>{customer.region.join(', ')}</span>
+               <MapPin className="w-4 h-4" /> <span>{Array.isArray(customer.region) ? customer.region.join(', ') : customer.region}</span>
              </div>
            </div>
          </div>
          
          <div className="flex items-center gap-3">
-           <Button variant="secondary" onClick={() => { setTempName(customer.name); setIsEditNameModalOpen(true); }} className="flex items-center gap-2">
+           <Button variant="secondary" onClick={() => { setIsEditCustomerModalOpen(true); }} className="flex items-center gap-2">
              <PencilLine className="w-4 h-4" /> {t('edit')}
            </Button>
            <Button variant="danger" onClick={handleDeleteCustomer} className="flex items-center gap-2">
@@ -772,20 +789,79 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
        </div>
 
        {/* --- Modals --- */}
-       <Modal isOpen={isEditNameModalOpen} onClose={() => setIsEditNameModalOpen(false)} title={t('editCustomerName')}>
-          <div className="space-y-6">
+       <Modal isOpen={isEditCustomerModalOpen} onClose={() => setIsEditCustomerModalOpen(false)} title={t('editCustomerName')}>
+          <div className="space-y-8">
              <div className="space-y-2">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('contactName')}</label>
                 <input 
-                  className="w-full p-4 border-2 rounded-2xl font-black text-lg dark:bg-slate-800 outline-none focus:border-blue-500 transition-all" 
+                  className="w-full p-4 border-2 rounded-2xl font-black text-lg dark:bg-slate-800 outline-none focus:border-blue-500 transition-all shadow-inner" 
                   value={tempName} 
                   onChange={(e) => setTempName(e.target.value)} 
                   autoFocus
                 />
              </div>
-             <div className="flex justify-end gap-3 pt-2">
-                <Button variant="secondary" onClick={() => setIsEditNameModalOpen(false)}>{t('cancel')}</Button>
-                <Button onClick={handleUpdateName} className="bg-blue-600 px-8"><Save size={18} className="mr-1" /> {t('save')}</Button>
+
+             <div className="space-y-4">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                   <MapPin size={14} /> Region / Locations (地点管理)
+                </label>
+                
+                <div className="space-y-3">
+                   {tempRegions.map((region, idx) => (
+                      <div key={idx} className="flex items-center gap-2 animate-in slide-in-from-left-2 duration-200">
+                         {editingRegionIndex === idx ? (
+                            <div className="flex-1 flex gap-2">
+                               <input 
+                                 className="flex-1 p-3 border-2 border-blue-200 dark:border-blue-800 rounded-xl font-bold bg-white dark:bg-slate-900 outline-none shadow-inner"
+                                 defaultValue={region}
+                                 autoFocus
+                                 onBlur={(e) => {
+                                    const next = [...tempRegions];
+                                    next[idx] = e.target.value.trim();
+                                    setTempRegions(next.filter(r => r));
+                                    setEditingRegionIndex(null);
+                                 }}
+                                 onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                       const next = [...tempRegions];
+                                       next[idx] = (e.target as HTMLInputElement).value.trim();
+                                       setTempRegions(next.filter(r => r));
+                                       setEditingRegionIndex(null);
+                                    }
+                                 }}
+                               />
+                               <button className="p-3 bg-emerald-100 text-emerald-700 rounded-xl shadow-sm"><Check size={20}/></button>
+                            </div>
+                         ) : (
+                            <div className="flex-1 flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 rounded-2xl group">
+                               <span className="font-bold text-slate-800 dark:text-slate-200 px-2">{region}</span>
+                               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => setEditingRegionIndex(idx)} className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"><PencilLine size={16}/></button>
+                                  <button onClick={() => handleRemoveRegion(idx)} className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"><Trash2 size={16}/></button>
+                               </div>
+                            </div>
+                         )}
+                      </div>
+                   ))}
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-50 dark:border-slate-800">
+                   <input 
+                      className="flex-1 p-3 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-inner"
+                      placeholder="Add new location..."
+                      value={newRegionInput}
+                      onChange={(e) => setNewRegionInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddRegion()}
+                   />
+                   <button onClick={handleAddRegion} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 active:scale-90">
+                      <Plus size={20} />
+                   </button>
+                </div>
+             </div>
+
+             <div className="flex justify-end gap-3 pt-4">
+                <Button variant="secondary" onClick={() => setIsEditCustomerModalOpen(false)}>{t('cancel')}</Button>
+                <Button onClick={handleUpdateCustomerInfo} className="bg-blue-600 px-8 shadow-xl shadow-blue-600/20"><Save size={18} className="mr-2" /> {t('save')}</Button>
              </div>
           </div>
        </Modal>
