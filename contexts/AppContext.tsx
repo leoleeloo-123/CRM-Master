@@ -10,9 +10,9 @@ export type FontSize = 'small' | 'medium' | 'large';
 export const parseInteractionSummary = (summary: string) => {
   const result = {
     isStarred: false,
-    typeTag: 'None',
-    exhibitionTag: 'None', // New tag
-    effectTag: 'None',
+    typeTag: '无',
+    exhibitionTag: 'None', 
+    effectTag: '无',
     content: summary
   };
 
@@ -52,6 +52,7 @@ export const parseInteractionSummary = (summary: string) => {
 };
 
 // Constant arrays for bilingual tag matching in date logic
+// Strictly recognizes both standard English internal keys and the user's specific Chinese strings
 const REPLY_TAGS = ['Customer Reply', 'Customer Reply & Follow-up', '对方回复', '对方回复及我方跟进'];
 const FOLLOWUP_TAGS = ['Our Follow-up', 'Customer Reply & Follow-up', '我方跟进', '对方回复及我方跟进'];
 
@@ -130,8 +131,9 @@ const DEFAULT_TAGS: TagOptions = {
   productCategory: ['Agglomerated Diamond', 'Nano Diamond', 'Spherical Diamond', 'Diamond Ball', 'Micron', 'CVD'],
   productForm: ['Powder', 'Suspension'],
   eventSeries: ['Semicon', 'Optical Expo', 'Industrial Fair'],
-  interactionTypes: ['None', 'Customer Email', 'Our Email', 'Both Emails', 'Met at Exhibition', 'Video Call', 'In-person Meeting'],
-  interactionEffects: ['None', 'Customer Reply', 'Our Follow-up', 'Customer Reply & Follow-up']
+  // Reverted to user's strict Chinese strings
+  interactionTypes: ['无', '对方邮件', '我方邮件', '双方邮件', '展会相见', '视频会议', '线下会面'],
+  interactionEffects: ['无', '对方回复', '我方跟进', '对方回复及我方跟进']
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
