@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 import { translateToZh } from '../utils/i18n';
@@ -418,22 +418,27 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
          <div className="space-y-8">
             {/* Merged Aging Counters Card */}
-            <Card className="overflow-hidden border shadow-sm flex items-center bg-white dark:bg-slate-900/40">
-               <MiniDaysCounter 
-                  date={customer.lastStatusUpdate} 
-                  label={t('daysSinceUpdate')} 
-                  onDateChange={(d) => saveUpdate({ lastStatusUpdate: d })} 
-               />
-               <MiniDaysCounter 
-                  date={customer.lastCustomerReplyDate} 
-                  label={t('unrepliedDays')} 
-                  onDateChange={(d) => saveUpdate({ lastCustomerReplyDate: d })} 
-               />
-               <MiniDaysCounter 
-                  date={customer.lastMyReplyDate} 
-                  label={t('unfollowedDays')} 
-                  onDateChange={(d) => saveUpdate({ lastMyReplyDate: d })} 
-               />
+            <Card className="overflow-hidden border shadow-sm flex flex-col">
+               <div className={headerClass}>
+                  <h3 className={titleClass}><Activity className="w-5 h-5 text-blue-600" /> {t('statusUpdateHeader')}</h3>
+               </div>
+               <div className="flex items-center bg-white dark:bg-slate-900/40">
+                 <MiniDaysCounter 
+                    date={customer.lastStatusUpdate} 
+                    label={t('daysSinceUpdate')} 
+                    onDateChange={(d) => saveUpdate({ lastStatusUpdate: d })} 
+                 />
+                 <MiniDaysCounter 
+                    date={customer.lastCustomerReplyDate} 
+                    label={t('unrepliedDays')} 
+                    onDateChange={(d) => saveUpdate({ lastCustomerReplyDate: d })} 
+                 />
+                 <MiniDaysCounter 
+                    date={customer.lastMyReplyDate} 
+                    label={t('unfollowedDays')} 
+                    onDateChange={(d) => saveUpdate({ lastMyReplyDate: d })} 
+                 />
+               </div>
             </Card>
 
             <Card className="overflow-hidden border shadow-sm">
