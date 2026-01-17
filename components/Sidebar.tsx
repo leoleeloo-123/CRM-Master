@@ -34,13 +34,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
         isCollapsed ? 'w-20' : 'w-80 xl:w-96'
       } bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 h-screen flex flex-col fixed left-0 top-0 z-10 transition-all duration-300 shadow-xl`}
     >
-      {/* Toggle Button */}
+      {/* Toggle Button - Adjusted size and icon proportion */}
       <button
         onClick={toggleSidebar}
-        className="absolute -right-3 top-24 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full p-1.5 shadow-md text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors z-20"
+        className={`absolute -right-4 top-24 w-8 h-8 xl:w-9 xl:h-9 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center shadow-lg text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-all z-20 hover:scale-110 active:scale-90`}
         title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
       >
-        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
       </button>
 
       {/* App Brand Header */}

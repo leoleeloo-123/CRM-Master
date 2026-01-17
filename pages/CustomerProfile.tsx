@@ -518,14 +518,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-in fade-in duration-500">
                 <div className={`p-8 rounded-[2rem] border-2 shadow-sm relative overflow-hidden ${getUrgencyLevel(customer.nextActionDate) === 'urgent' ? 'bg-rose-50 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/40' : 'bg-slate-50 border-slate-200 dark:bg-slate-900/20 dark:border-slate-800'}`}>
-                  <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="absolute top-6 right-6 p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95">
+                  <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="absolute top-6 right-6 p-3 rounded-2xl bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition-all active:scale-95">
                     <PencilLine className="w-5 h-5" />
                   </button>
                   <div className="flex items-center gap-4 mb-4">
                      <Clock className="w-8 h-8 text-slate-800 dark:text-slate-200" />
                      <div>
                         <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest">UPCOMING PLAN</h4>
-                        <span className="text-lg xl:text-xl font-black text-slate-900 dark:text-white tracking-tight">DDL: {customer.nextActionDate || 'TBD'}</span>
+                        <div className="flex items-center gap-3">
+                           <span className="text-lg xl:text-xl font-black text-slate-900 dark:text-white tracking-tight">DDL: {customer.nextActionDate || 'TBD'}</span>
+                        </div>
                      </div>
                   </div>
                   <p className={contentTextClass}>{customer.upcomingPlan || "No plan logged."}</p>
@@ -650,9 +652,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             )}
 
             {activeTab === 'samples' && (
-              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+              <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
                  {/* Sample List Filters */}
-                 <div className="flex flex-wrap items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800">
+                 <div className="flex flex-wrap items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800">
                     <div className="space-y-1">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Current Status</label>
                        <select 
@@ -681,58 +683,67 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                        <button onClick={() => { setSampleStatusFilter('all'); setSampleTestStatusFilter('Ongoing'); }} className="mt-5 text-[10px] font-black uppercase text-blue-600 hover:underline">Reset Filters</button>
                     )}
                     <div className="ml-auto mt-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                       Showing {filteredCustomerSamples.length} {filteredCustomerSamples.length === 1 ? 'sample' : 'samples'} | {customerSamples.length} {customerSamples.length === 1 ? 'sample' : 'samples'} in total
+                       Showing {filteredCustomerSamples.length} Samples
                     </div>
                  </div>
 
-                 <div className="space-y-4">
+                 <div className="space-y-2">
                     {filteredCustomerSamples.map(sample => (
-                      <Card key={sample.id} className="p-6 xl:p-8 hover:shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer group" onClick={() => navigate(`/samples/${sample.id}`)}>
-                         <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-4 min-w-0">
-                               <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl text-blue-600 group-hover:scale-110 transition-transform mt-1 shrink-0">
-                                  <FlaskConical className="w-6 h-6 xl:w-8 xl:h-8" />
+                      <Card key={sample.id} className="p-3 xl:p-4 hover:shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer group" onClick={() => navigate(`/samples/${sample.id}`)}>
+                         <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                               <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 group-hover:scale-110 transition-transform shrink-0">
+                                  <FlaskConical className="w-5 h-5 xl:w-6 xl:h-6" />
                                </div>
-                               <div className="truncate">
-                                  <h4 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white truncate uppercase tracking-tight leading-tight">{sample.sampleName}</h4>
-                                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-3">
-                                     <span className="bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded border dark:border-slate-700">SKU: {sample.sampleSKU || 'N/A'}</span>
-                                     <span className="w-1 h-1 rounded-full bg-slate-300" />
-                                     <span>Qty: {sample.quantity}</span>
-                                     {sample.lastStatusDate && (
-                                       <>
-                                         <span className="w-1 h-1 rounded-full bg-slate-300" />
-                                         <span className="text-slate-500">Updated {differenceInDays(new Date(), parseLocalDate(sample.lastStatusDate))}d ago</span>
-                                       </>
-                                     )}
+                               <div className="flex flex-col flex-1 min-w-0">
+                                  <div className="flex items-center gap-3">
+                                     <h4 className="font-black text-sm xl:text-base text-slate-900 dark:text-white truncate uppercase tracking-tight">{sample.sampleName}</h4>
+                                     <span className="hidden sm:inline bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border dark:border-slate-700 text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                        SKU: {sample.sampleSKU || 'N/A'}
+                                     </span>
                                   </div>
                                   
-                                  <div className="flex flex-wrap gap-2 mt-4">
-                                     <div className="scale-90 origin-left">
+                                  <div className="flex items-center gap-4 mt-0.5">
+                                     <div className="flex items-center gap-2">
                                         <Badge color={sample.testStatus === 'Finished' ? 'green' : sample.testStatus === 'Terminated' ? 'red' : 'yellow'}>
-                                          {t(sample.testStatus as any) || sample.testStatus}
+                                          <span className="text-[9px]">{t(sample.testStatus as any) || sample.testStatus}</span>
                                         </Badge>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                           Qty: {sample.quantity}
+                                        </span>
                                      </div>
-                                     {(sample.docLinks || []).map((link, idx) => (
-                                       <a 
-                                         key={idx} 
-                                         href={link.url} 
-                                         target="_blank" 
-                                         rel="noopener noreferrer" 
-                                         onClick={e => e.stopPropagation()}
-                                         className="flex items-center gap-1.5 text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 hover:underline bg-blue-50/50 dark:bg-blue-900/20 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50 shadow-sm transition-all"
-                                       >
-                                         <LinkIcon size={10} /> {link.title}
-                                       </a>
-                                     ))}
+                                     
+                                     <div className="hidden md:flex items-center gap-2">
+                                        {(sample.docLinks || []).slice(0, 2).map((link, idx) => (
+                                          <a 
+                                            key={idx} 
+                                            href={link.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            onClick={e => e.stopPropagation()}
+                                            className="flex items-center gap-1 text-[9px] font-black uppercase text-blue-600 hover:text-blue-700 hover:underline bg-blue-50/50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/50"
+                                          >
+                                            <LinkIcon size={8} /> {link.title}
+                                          </a>
+                                        ))}
+                                        {(sample.docLinks || []).length > 2 && (
+                                           <span className="text-[8px] font-black text-slate-400">...</span>
+                                        )}
+                                     </div>
                                   </div>
                                </div>
                             </div>
-                            <div className="flex flex-col items-end shrink-0 gap-2 text-right">
-                               <Badge color="blue">{t(sample.status as any) || sample.status}</Badge>
-                               <div className="text-[10px] font-black text-slate-400 uppercase mt-1 tracking-widest">
-                                  DDL: <span className="text-slate-600 dark:text-slate-300">{sample.nextActionDate || 'TBD'}</span>
+                            
+                            <div className="flex items-center gap-6 shrink-0">
+                               <div className="text-right">
+                                  <Badge color="blue">
+                                     <span className="text-[10px]">{t(sample.status as any) || sample.status}</span>
+                                  </Badge>
+                                  <div className="text-[10px] font-black text-slate-400 uppercase mt-0.5 tracking-widest">
+                                     DDL: <span className="text-slate-600 dark:text-slate-300">{sample.nextActionDate || 'TBD'}</span>
+                                  </div>
                                </div>
+                               <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-all group-hover:translate-x-1" />
                             </div>
                          </div>
                       </Card>
