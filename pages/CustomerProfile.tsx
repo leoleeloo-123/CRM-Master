@@ -539,12 +539,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                <div className="p-6">
                   <div className="flex items-start justify-between mb-6">
                      <div className={contentTextClass + " flex-1 whitespace-pre-wrap"}>{customer.upcomingPlan || "No plan logged."}</div>
-                     <div className="ml-6 shrink-0 flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
-                           <StatusIcon status={customer.followUpStatus} />
-                           <span className="font-black text-lg xl:text-xl text-slate-800 dark:text-white uppercase tracking-tight">{t(customer.followUpStatus as any) || customer.followUpStatus}</span>
-                        </div>
-                     </div>
                   </div>
                   <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase">
                      <div className="flex items-center gap-3">
