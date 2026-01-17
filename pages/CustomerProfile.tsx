@@ -309,8 +309,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       .filter(ex => ex.name.toLowerCase().includes(tagSearchTerm.toLowerCase()));
   }, [exhibitions, tempTags, tagSearchTerm]);
 
+  // Unified Title Style for all cards
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
+  const headerClass = "px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800";
 
   const resetFilters = () => {
     setFilterType('all');
@@ -387,12 +389,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
          <div className="space-y-8">
-            <Card className="p-6 xl:p-8">
-               <div className="flex justify-between items-center mb-6 pb-3 border-b">
+            <Card className="overflow-hidden border shadow-sm">
+               <div className={headerClass}>
                  <h3 className={titleClass}><UserCheck className="w-5 h-5 text-blue-600" /> {t('keyContacts')}</h3>
                  <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
-               <div className="space-y-4">
+               <div className="p-6 space-y-4">
                  {customer.contacts.map((c, i) => (
                    <div key={i} className={`p-4 rounded-xl border-2 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 dark:border-slate-800'}`}>
                       <div className="flex items-center justify-between mb-1">
@@ -409,12 +411,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
             </Card>
 
-            <Card className="p-6 xl:p-8">
-               <div className="flex justify-between items-center mb-6 pb-3 border-b">
+            <Card className="overflow-hidden border shadow-sm">
+               <div className={headerClass}>
                  <h3 className={titleClass}><List className="w-5 h-5 text-indigo-600" /> {t('exhibitions')}</h3>
                  <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
-               <div className="space-y-2">
+               <div className="p-6 space-y-2">
                  {customer.tags.map((tag, i) => {
                    const matchedExhibition = exhibitions.find(e => e.name === tag);
                    return (
@@ -434,11 +436,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
             </Card>
 
-            <Card className="p-6 xl:p-8">
-               <div className="flex justify-between items-center mb-8 pb-3 border-b border-slate-50 dark:border-slate-800">
-                  <h3 className={titleClass}><LinkIcon className="w-6 h-6 text-blue-500" /> {t('fileLinks')}</h3>
+            <Card className="overflow-hidden border shadow-sm">
+               <div className={headerClass}>
+                  <h3 className={titleClass}><LinkIcon className="w-5 h-5 text-blue-500" /> {t('fileLinks')}</h3>
                </div>
-               <div className="space-y-4">
+               <div className="p-6 space-y-4">
                   <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
                      <input 
                         className="w-full p-2.5 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500"
@@ -515,8 +517,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
          <div className="lg:col-span-2 space-y-8">
             <Card className="overflow-hidden border shadow-sm">
-               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
-                  <h3 className="font-black text-base flex items-center gap-3 uppercase tracking-wider"><Clock className="w-5 h-5 text-blue-600"/> UPCOMING PLAN</h3>
+               <div className={headerClass}>
+                  <h3 className={titleClass}><Clock className="w-5 h-5 text-blue-600"/> {t('upcomingPlanHeader')}</h3>
                   <button onClick={() => { setTempUpcomingPlan(customer.upcomingPlan || ''); setIsEditUpcomingPlanOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
                </div>
                <div className="p-6">
@@ -531,14 +533,14 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                            </Badge>
                         )}
                      </div>
-                     <Badge color="blue">{customer.followUpStatus.toUpperCase()}</Badge>
+                     <Badge color="blue">{t(customer.followUpStatus as any) || customer.followUpStatus}</Badge>
                   </div>
                </div>
             </Card>
 
             <Card className="overflow-hidden border shadow-sm">
-               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
-                  <h3 className="font-black text-base flex items-center gap-3 uppercase tracking-wider"><Box className="w-5 h-5 text-emerald-600"/> {t('productSummary')}</h3>
+               <div className={headerClass}>
+                  <h3 className={titleClass}><Box className="w-5 h-5 text-emerald-600"/> {t('productSummary')}</h3>
                   <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
                </div>
                <div className="p-6">
