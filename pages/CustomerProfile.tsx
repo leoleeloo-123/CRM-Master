@@ -416,23 +416,23 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                  <h3 className={titleClass}><List className="w-5 h-5 text-indigo-600" /> {t('exhibitions')}</h3>
                  <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
-               <div className="p-6 space-y-2">
-                 {customer.tags.map((tag, i) => {
-                   const matchedExhibition = exhibitions.find(e => e.name === tag);
-                   return (
-                    <div 
-                      key={i} 
-                      onClick={() => matchedExhibition && navigate(`/exhibitions/${matchedExhibition.id}`)}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${matchedExhibition ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 hover:border-blue-300 hover:shadow-sm cursor-pointer group' : 'bg-slate-50/50 dark:bg-slate-900/20 border-transparent opacity-60'}`}
-                    >
-                       <span className={`text-sm xl:text-base font-black uppercase truncate flex-1 ${matchedExhibition ? 'text-slate-700 dark:text-slate-300 group-hover:text-blue-600' : 'text-slate-400'}`}>
-                         {tag}
-                       </span>
-                       {matchedExhibition && <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-500 transition-all" />}
-                    </div>
-                   );
-                 })}
-                 {customer.tags.length === 0 && <div className="text-slate-400 italic text-sm">{t('noExhibitions')}</div>}
+               <div className="p-5">
+                 <div className="flex flex-wrap gap-2">
+                   {customer.tags.map((tag, i) => {
+                     const matchedExhibition = exhibitions.find(e => e.name === tag);
+                     return (
+                      <button 
+                        key={i} 
+                        onClick={() => matchedExhibition && navigate(`/exhibitions/${matchedExhibition.id}`)}
+                        className={`px-3 py-1.5 rounded-xl border text-[10px] xl:text-xs font-black uppercase transition-all flex items-center gap-2 ${matchedExhibition ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 cursor-pointer shadow-sm' : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400 cursor-default opacity-60'}`}
+                      >
+                         <span className="truncate max-w-[120px]">{tag}</span>
+                         {matchedExhibition && <ArrowRight size={10} className="opacity-40" />}
+                      </button>
+                     );
+                   })}
+                 </div>
+                 {customer.tags.length === 0 && <div className="text-slate-400 italic text-[10px] font-black uppercase tracking-widest">{t('noExhibitions')}</div>}
                </div>
             </Card>
 

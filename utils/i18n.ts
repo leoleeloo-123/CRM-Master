@@ -77,6 +77,7 @@ export const translations = {
     docLinks: 'Document Links',
     exhibitions: 'Exhibitions',
     addExhibition: 'Add Exhibition',
+    noExhibitions: 'No linked exhibitions.',
     upcomingPlanHeader: 'Upcoming Plan',
     productSummary: 'Status & Product Summary',
     lastUpdated: 'Last Updated',
@@ -346,6 +347,7 @@ export const translations = {
     docLinks: '文档链接',
     exhibitions: '展会信息',
     addExhibition: '添加展会',
+    noExhibitions: '暂无关联展会。',
     upcomingPlanHeader: '后续计划',
     productSummary: '状态与产品总结',
     lastUpdated: '最后更新',
@@ -543,29 +545,42 @@ export const translations = {
 };
 
 /**
- * Ensures a key is translated to its Chinese equivalent if a mapping exists.
- * Used for Excel exports to maintain consistency as requested.
+ * Normalizes an input value to a canonical tag (key) used in the translations object.
  */
-export const translateToZh = (key: string): string => {
-  if (!key) return '';
-  const zhMap = translations.zh as Record<string, string>;
-  return zhMap[key] || key;
+export const getCanonicalTag = (val: string): string => {
+  if (!val) return val;
+  const trimmed = val.trim();
+  
+  // 1. Check if it's already a key in translations.en
+  if (translations.en.hasOwnProperty(trimmed)) return trimmed;
+  
+  // 2. Search through values in en and zh
+  for (const key of Object.keys(translations.en) as Array<keyof typeof translations.en>) {
+    if (translations.en[key] === trimmed || translations.zh[key] === trimmed) {
+      return key;
+    }
+  }
+  
+  return trimmed;
 };
 
 /**
- * Attempts to map a value (potentially Chinese) back to its canonical English key.
- * Used for Excel imports to maintain consistency as requested.
+ * Translates a canonical tag or its English value into its Chinese equivalent.
  */
-export const translateToEn = (val: string): string => {
-  if (!val) return '';
-  const zhMap = translations.zh as Record<string, string>;
-  // Find key that maps to this value
-  const entry = Object.entries(zhMap).find(([k, v]) => v === val.trim());
-  return entry ? entry[0] : val.trim();
-};
-
-export const getCanonicalTag = (term: string): string => {
-  if (!term) return '';
-  // Map Chinese value back to canonical English if possible, else keep as is
-  return translateToEn(term);
+export const translateToZh = (keyOrVal: string): string => {
+  if (!keyOrVal) return keyOrVal;
+  
+  // 1. If it's a key in zh, return that translation
+  if (translations.zh.hasOwnProperty(keyOrVal)) {
+    return translations.zh[keyOrVal as keyof typeof translations.zh];
+  }
+  
+  // 2. If it's a value in en, find the corresponding key and return zh[key]
+  for (const k of Object.keys(translations.en) as Array<keyof typeof translations.en>) {
+    if (translations.en[k] === keyOrVal) {
+      return translations.zh[k];
+    }
+  }
+  
+  return keyOrVal;
 };
