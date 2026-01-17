@@ -338,8 +338,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     
     let colorClass = "text-slate-700 dark:text-slate-200";
     if (targetDate && isValid(targetDate)) {
-      if (daysDiff < 7) colorClass = "text-emerald-500";
-      else if (daysDiff <= 21) colorClass = "text-amber-500";
+      const absDays = Math.abs(daysDiff);
+      if (absDays < 7) colorClass = "text-emerald-500";
+      else if (absDays <= 21) colorClass = "text-amber-500";
       else colorClass = "text-red-500";
     }
 
@@ -368,9 +369,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
            </button>
            <div className="flex-1">
-             <div className="flex items-center gap-6">
+             <div className="flex items-center gap-4 xl:gap-6">
                <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{customer.name}</h1>
-               <div className="text-[1.2em]">
+               <div className="text-[1.1em] xl:text-[1.2em] shrink-0">
                  <RankStars 
                    rank={customer.rank} 
                    editable 
@@ -398,8 +399,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          </div>
        </div>
 
-       {/* Removed top grid row grid-cols-5. Contents are now merged into sidebar and plan cards. */}
-
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
          <div className="space-y-8">
             {/* Merged Aging Counters Card */}
@@ -426,27 +425,27 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                  <h3 className={titleClass}><UserCheck className="w-5 h-5 text-blue-600" /> {t('keyContacts')}</h3>
                  <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
-               <div className="p-6 space-y-3">
+               <div className="p-6 space-y-4">
                  {customer.contacts.map((c, i) => (
-                   <div key={i} className={`p-3 xl:p-4 rounded-xl border-2 flex items-center justify-between gap-4 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 dark:border-slate-800'}`}>
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                   <div key={i} className={`p-4 rounded-2xl border-2 flex flex-col gap-2 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 dark:border-slate-800'}`}>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 min-w-0">
                            <span className="font-black text-slate-900 dark:text-white text-base xl:text-lg truncate">{c.name}</span>
                            {c.isPrimary && <Star size={14} className="fill-amber-400 text-amber-400 shrink-0" />}
                         </div>
-                        <p className="text-[10px] xl:text-xs font-black text-blue-600 uppercase truncate">{c.title}</p>
-                      </div>
-                      <div className="text-right shrink-0 space-y-0.5">
                         {c.email && (
-                          <div className="flex items-center justify-end gap-1.5 text-slate-500 font-bold text-[10px] xl:text-xs group/contact transition-colors">
-                            <span className="truncate max-w-[140px] hidden xl:inline group-hover/contact:text-blue-600 transition-colors" title={c.email}>{c.email}</span>
-                            <Mail size={12} className="text-slate-400 group-hover/contact:text-blue-500" />
+                          <div className="flex items-center gap-1.5 text-slate-500 font-bold text-[10px] xl:text-xs">
+                             <span className="break-all">{c.email}</span>
+                             <Mail size={12} className="text-slate-400 shrink-0" />
                           </div>
                         )}
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-[10px] xl:text-xs font-black text-blue-600 uppercase truncate">{c.title}</p>
                         {c.phone && (
-                          <div className="flex items-center justify-end gap-1.5 text-slate-500 font-bold text-[10px] xl:text-xs group/contact transition-colors">
-                            <span className="hidden xl:inline group-hover/contact:text-blue-600 transition-colors">{c.phone}</span>
-                            <Phone size={12} className="text-slate-400 group-hover/contact:text-blue-500" />
+                          <div className="flex items-center gap-1.5 text-slate-500 font-bold text-[10px] xl:text-xs">
+                            <span>{c.phone}</span>
+                            <Phone size={12} className="text-slate-400 shrink-0" />
                           </div>
                         )}
                       </div>
@@ -523,7 +522,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
                <div className="p-6">
                   <div className="flex items-start justify-between mb-6">
-                     <p className={contentTextClass + " flex-1"}>{customer.upcomingPlan || "No plan logged."}</p>
+                     <div className={contentTextClass + " flex-1 whitespace-pre-wrap"}>{customer.upcomingPlan || "No plan logged."}</div>
                      <div className="ml-6 shrink-0 flex flex-col items-end gap-2">
                         <div className="flex items-center gap-2">
                            <StatusIcon status={customer.followUpStatus} />
@@ -552,7 +551,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                   <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
                </div>
                <div className="p-6">
-                  <p className={contentTextClass}>{customer.productSummary || "No summary."}</p>
+                  <div className={contentTextClass + " whitespace-pre-wrap"}>{customer.productSummary || "No summary."}</div>
                   <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase">
                      <span>{t('lastUpdated')}: {customer.lastStatusUpdate}</span>
                      <Badge color="green">{customer.status.toUpperCase()}</Badge>
@@ -667,7 +666,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                   </div>
                                </div>
                                <Card className="p-4 bg-white dark:bg-slate-800/40 shadow-sm border border-slate-100 dark:border-slate-800">
-                                  <p className="text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed">{parsed.content}</p>
+                                  <p className="text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{parsed.content}</p>
                                 </Card>
                             </div>
                            );
@@ -891,7 +890,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
              </div>
              <div className="space-y-2">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Plan Details / 详细计划</label>
-                <textarea className="w-full h-32 p-4 border-2 rounded-2xl outline-none font-bold dark:bg-slate-800" value={tempUpcomingPlan} onChange={(e) => setTempUpcomingPlan(e.target.value)} />
+                <textarea className="w-full h-40 p-4 border-2 rounded-2xl outline-none font-bold dark:bg-slate-800" value={tempUpcomingPlan} onChange={(e) => setTempUpcomingPlan(e.target.value)} />
              </div>
              <div className="space-y-2">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Date / 关键日期 (DDL)</label>
