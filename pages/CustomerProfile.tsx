@@ -395,17 +395,31 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                  <h3 className={titleClass}><UserCheck className="w-5 h-5 text-blue-600" /> {t('keyContacts')}</h3>
                  <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
-               <div className="p-6 space-y-4">
+               <div className="p-6 space-y-3">
                  {customer.contacts.map((c, i) => (
-                   <div key={i} className={`p-4 rounded-xl border-2 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 dark:border-slate-800'}`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-black text-slate-900 dark:text-white text-lg xl:text-xl">{c.name}</span>
-                        {c.isPrimary && <Star size={16} className="fill-amber-400 text-amber-400" />}
+                   <div key={i} className={`p-3 xl:p-4 rounded-xl border-2 flex items-center justify-between gap-4 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 dark:border-slate-800'}`}>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                           <span className="font-black text-slate-900 dark:text-white text-base xl:text-lg truncate">{c.name}</span>
+                           {c.isPrimary && <Star size={14} className="fill-amber-400 text-amber-400 shrink-0" />}
+                        </div>
+                        <p className="text-[10px] xl:text-xs font-black text-blue-600 uppercase truncate">{c.title}</p>
                       </div>
-                      <p className="text-sm font-black text-blue-600 uppercase mb-2">{c.title}</p>
-                      <div className="text-sm space-y-1.5 text-slate-500 font-bold">
-                        {c.email && <div className="flex items-center gap-2"><Mail size={14}/> {c.email}</div>}
-                        {c.phone && <div className="flex items-center gap-2"><Phone size={14}/> {c.phone}</div>}
+                      <div className="text-right shrink-0 space-y-0.5">
+                        {c.email && (
+                          <div className="flex items-center justify-end gap-1.5 text-slate-500 font-bold text-[10px] xl:text-xs group/contact transition-colors">
+                            <span className="truncate max-w-[140px] hidden xl:inline group-hover/contact:text-blue-600 transition-colors" title={c.email}>{c.email}</span>
+                            <Mail size={12} className="text-slate-400 group-hover/contact:text-blue-500" />
+                          </div>
+                        )}
+                        {c.phone && (
+                          <div className="flex items-center justify-end gap-1.5 text-slate-500 font-bold text-[10px] xl:text-xs group/contact transition-colors">
+                            <span className="hidden xl:inline group-hover/contact:text-blue-600 transition-colors">{c.phone}</span>
+                            <Phone size={12} className="text-slate-400 group-hover/contact:text-blue-500" />
+                          </div>
+                        )}
+                        {/* Mobile view fallback: show first character or tooltip for tiny screens if needed, 
+                            but above icons handle basic display well */}
                       </div>
                    </div>
                  ))}
