@@ -36,6 +36,7 @@ export const translations = {
     add: 'Add',
     remove: 'Remove',
     other: 'Other Info',
+    results: 'Results',
     
     // Dashboard
     totalCustomers: 'Total Customers',
@@ -106,6 +107,23 @@ export const translations = {
     editExhibitionName: 'Edit Exhibition Name',
     confirmExhibitionNameChange: 'Are you sure you want to change the exhibition name? This will update the name globally in all customer records.',
     
+    // Exhibition List
+    exhibitionSearchPlaceholder: 'Search by exhibition name or location...',
+    allSeries: 'All Series',
+    allYears: 'All Years',
+    allCustomers: 'All Customers',
+    collapseAll: 'Collapse All',
+    expandAll: 'Expand All',
+    colExhibitionSeries: 'Exhibition / Series',
+    colLocation: 'Location',
+    colDate: 'Date',
+    colOfficialLink: 'Official Link',
+    colLinkedCustomers: 'Linked Customers',
+    colEventSummary: 'Event Summary',
+    untaggedEvents: 'Untagged Events',
+    noLink: 'No link',
+    noSummary: 'No summary.',
+
     // Interaction UI
     interactionLog: 'Interaction Log',
     dateLabel: 'Date',
@@ -297,7 +315,7 @@ export const translations = {
     manageClients: '管理所有客户关系、等级和状态更新。',
     monitorSamples: '监控样品生产和客户反馈。',
     exhibitionDesc: '管理展会链接及详细记录。',
-    dataManagementDesc: '用于数据库维护的批量导入和导出工具。',
+    dataManagementDesc: '用于数据库维护的批量导入 and 导出工具。',
     settingsDesc: '自定义您的应用程序体验。',
 
     // Common
@@ -318,6 +336,7 @@ export const translations = {
     add: '添加',
     remove: '移除',
     other: '其它',
+    results: '结果',
 
     // Dashboard
     totalCustomers: '客户总数',
@@ -387,6 +406,23 @@ export const translations = {
     confirmDeleteExhibition: '您确定要删除此展会记录吗？这将从所有关联客户的标签中移除该展会。',
     editExhibitionName: '编辑展会名称',
     confirmExhibitionNameChange: '您确定要修改展会名称吗？这将全局更新所有关联客户记录中的展会标签。',
+
+    // Exhibition List
+    exhibitionSearchPlaceholder: '搜索展会名称或地点...',
+    allSeries: '所有系列',
+    allYears: '所有年份',
+    allCustomers: '所有客户',
+    collapseAll: '折叠全部',
+    expandAll: '展开全部',
+    colExhibitionSeries: '展会 / 系列',
+    colLocation: '地点',
+    colDate: '日期',
+    colOfficialLink: '官网链接',
+    colLinkedCustomers: '关联客户',
+    colEventSummary: '展会总结',
+    untaggedEvents: '未标记展会',
+    noLink: '暂无链接',
+    noSummary: '暂无总结',
 
     // Interaction UI
     interactionLog: '互动记录详情',

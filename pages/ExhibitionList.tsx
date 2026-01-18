@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, Button, Modal, Badge } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
 import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Tag, X, Filter, User, ChevronDown, ChevronRight, Globe, Maximize2, Minimize2 } from 'lucide-react';
@@ -47,8 +48,15 @@ const ExhibitionList: React.FC = () => {
     return groups;
   }, [filteredExhibitions, tagOptions.eventSeries]);
 
-  // Folding state - default to collapsed (empty set)
+  // Folding state - default to expanded (all visible groups)
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
+
+  // Default expand all on mount once grouping is available
+  useEffect(() => {
+    if (groupedExhibitions.length > 0) {
+      setExpandedSeries(new Set(groupedExhibitions.map(g => g.series)));
+    }
+  }, [groupedExhibitions.length]);
 
   // Derived: Are all currently visible groups expanded?
   const isAllExpanded = useMemo(() => {
@@ -171,7 +179,8 @@ const ExhibitionList: React.FC = () => {
     setFilterSeries('');
     setFilterYear('');
     setFilterCustomer('');
-    setExpandedSeries(new Set());
+    // Expand all on filter reset
+    setExpandedSeries(new Set(groupedExhibitions.map(g => g.series)));
   };
 
   const hasActiveFilters = searchTerm !== '' || filterSeries !== '' || filterYear !== '' || filterCustomer !== '';
@@ -185,7 +194,7 @@ const ExhibitionList: React.FC = () => {
         </div>
         <Button onClick={() => { setEditingExhibition(null); setFormData({name:'', date:'', location:'', link:'', eventSeries:[], summary: ''}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-8 py-3 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
            <Plus size={20} />
-           <span className="font-black uppercase tracking-widest text-sm">Add Exhibition</span>
+           <span className="font-black uppercase tracking-widest text-sm">{t('addExhibition')}</span>
         </Button>
       </div>
 
@@ -196,7 +205,7 @@ const ExhibitionList: React.FC = () => {
             <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
             <input 
               className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all shadow-sm"
-              placeholder="Search by exhibition name or location..."
+              placeholder={t('exhibitionSearchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -211,7 +220,7 @@ const ExhibitionList: React.FC = () => {
                   value={filterSeries}
                   onChange={e => setFilterSeries(e.target.value)}
                 >
-                  <option value="">All Series</option>
+                  <option value="">{t('allSeries')}</option>
                   {tagOptions.eventSeries.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
              </div>
@@ -223,7 +232,7 @@ const ExhibitionList: React.FC = () => {
                   value={filterYear}
                   onChange={e => setFilterYear(e.target.value)}
                 >
-                  <option value="">All Years</option>
+                  <option value="">{t('allYears')}</option>
                   {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
              </div>
@@ -235,7 +244,7 @@ const ExhibitionList: React.FC = () => {
                   value={filterCustomer}
                   onChange={e => setFilterCustomer(e.target.value)}
                 >
-                  <option value="">All Customers</option>
+                  <option value="">{t('allCustomers')}</option>
                   {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
              </div>
@@ -252,7 +261,7 @@ const ExhibitionList: React.FC = () => {
               }`}
              >
                {isAllExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-               {isAllExpanded ? 'Collapse All' : 'Expand All'}
+               {isAllExpanded ? t('collapseAll') : t('expandAll')}
              </button>
 
              {hasActiveFilters && (
@@ -260,13 +269,13 @@ const ExhibitionList: React.FC = () => {
                 onClick={resetFilters}
                 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors ml-2"
                >
-                 <X size={14} /> Clear
+                 <X size={14} /> {t('cancel')}
                </button>
              )}
 
              <div className="ml-auto">
                <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
-                 Results: {filteredExhibitions.length}
+                 {t('results')}: {filteredExhibitions.length}
                </span>
              </div>
           </div>
@@ -277,12 +286,12 @@ const ExhibitionList: React.FC = () => {
           <table className="w-full text-left">
             <thead className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-slate-500 uppercase text-[10px] font-black tracking-widest">
               <tr>
-                <th className="p-6">Exhibition / Series</th>
-                <th className="p-6">Location</th>
-                <th className="p-6">Date</th>
-                <th className="p-6">Official Link</th>
-                <th className="p-6 text-center">Linked Customers</th>
-                <th className="p-6">Event Summary</th>
+                <th className="p-6">{t('colExhibitionSeries')}</th>
+                <th className="p-6">{t('colLocation')}</th>
+                <th className="p-6">{t('colDate')}</th>
+                <th className="p-6">{t('colOfficialLink')}</th>
+                <th className="p-6 text-center">{t('colLinkedCustomers')}</th>
+                <th className="p-6">{t('colEventSummary')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -300,7 +309,7 @@ const ExhibitionList: React.FC = () => {
                           <div className="flex items-center gap-4">
                             {isExpanded ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
                             <span className={`font-black uppercase tracking-[0.1em] text-sm ${group.series === 'NA' ? 'text-slate-400 italic' : 'text-blue-600'}`}>
-                              {group.series === 'NA' ? 'Untagged Events' : group.series}
+                              {group.series === 'NA' ? t('untaggedEvents') : group.series}
                             </span>
                             <Badge color={group.series === 'NA' ? 'gray' : 'blue'}>{group.items.length}</Badge>
                           </div>
@@ -347,7 +356,7 @@ const ExhibitionList: React.FC = () => {
                                 <ExternalLink size={14} /> Link Ready
                               </div>
                             ) : (
-                              <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">No Link</span>
+                              <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">{t('noLink')}</span>
                             )}
                           </td>
                           <td className="p-6 text-center">
@@ -358,7 +367,7 @@ const ExhibitionList: React.FC = () => {
                           </td>
                           <td className="p-6 relative">
                             <div className="text-xs text-slate-600 dark:text-slate-300 font-bold line-clamp-2 max-w-[200px]">
-                               {exh.summary || <span className="text-slate-300 italic">No summary.</span>}
+                               {exh.summary || <span className="text-slate-300 italic">{t('noSummary')}</span>}
                             </div>
                             <div className="absolute inset-y-0 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-white dark:from-slate-900 pl-4" onClick={e => e.stopPropagation()}>
                               <button 
@@ -367,7 +376,6 @@ const ExhibitionList: React.FC = () => {
                               >
                                 <PencilLine size={16} />
                               </button>
-                              {/* Fix: Pass 'exh.id' and 'exh.name' instead of undefined variables 'id' and 'name' */}
                               <button 
                                 onClick={(e) => handleDelete(exh.id, exh.name, e)} 
                                 className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90"
@@ -492,7 +500,7 @@ const ExhibitionList: React.FC = () => {
             </div>
 
             <div className="flex justify-end gap-3 pt-6">
-               <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+               <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>{t('cancel')}</Button>
                <Button onClick={handleSave} className="bg-blue-600 px-10 shadow-lg shadow-blue-600/30">Save Exhibition</Button>
             </div>
          </div>
