@@ -211,7 +211,7 @@ const ExhibitionList: React.FC = () => {
             />
           </div>
 
-          {/* Filter Bar - Enlarged by approx 15% (text-xs -> text-sm, increased padding and icons) */}
+          {/* Filter Bar */}
           <div className="flex flex-wrap items-center gap-4">
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Tag size={18} className="text-slate-400" />
@@ -251,7 +251,7 @@ const ExhibitionList: React.FC = () => {
 
              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
 
-             {/* Global Collapse/Expand Toggle Button - Enlarged slightly */}
+             {/* Global Collapse/Expand Toggle Button */}
              <button 
               onClick={toggleAllExpansion}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 text-xs font-black uppercase tracking-widest transition-all ${
@@ -282,9 +282,9 @@ const ExhibitionList: React.FC = () => {
         </div>
 
         {/* Grouped List View */}
-        <div className="mt-10 overflow-hidden border-2 rounded-[2rem] border-slate-100 dark:border-slate-800">
+        <div className="mt-6 overflow-hidden border-2 rounded-[2rem] border-slate-100 dark:border-slate-800">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-slate-500 uppercase text-sm font-black tracking-widest">
+            <thead className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white uppercase text-sm font-black tracking-widest">
               <tr>
                 <th className="p-6">{t('colExhibitionSeries')}</th>
                 <th className="p-6">{t('colLocation')}</th>
