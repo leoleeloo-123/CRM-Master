@@ -57,7 +57,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [sampleTestStatusFilter, setSampleTestStatusFilter] = useState('Ongoing');
 
   const [showAllInteractions, setShowAllInteractions] = useState(false);
-  const [showAllContacts, setShowAllContacts] = useState(false); // New state for contacts folding
+  const [showAllContacts, setShowAllContacts] = useState(false); 
 
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState<string[]>([]);
@@ -455,9 +455,20 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
             </Card>
 
+            {/* Status Summary moved here from the right column */}
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
-                 <h3 className={titleClass}><List className="w-5 h-5 text-blue-600" /> EXHIBITIONS</h3>
+                  <h3 className={titleClass}><Box className="w-5 h-5 text-blue-600"/> {t('productSummary')}</h3>
+                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
+               </div>
+               <div className="p-6">
+                  <div className={contentTextClass + " whitespace-pre-wrap"}>{customer.productSummary || "No summary."}</div>
+               </div>
+            </Card>
+
+            <Card className="overflow-hidden border shadow-sm">
+               <div className={headerClass}>
+                 <h3 className={titleClass}><List className="w-5 h-5 text-blue-600" /> {t('exhibitions').toUpperCase()}</h3>
                  <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
                <div className="p-6">
@@ -482,7 +493,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
             <Card className="overflow-hidden border shadow-sm flex flex-col">
                <div className={headerClass}>
-                  <h3 className={titleClass}><LinkIcon className="w-5 h-5 text-blue-600" /> FILE LINKS</h3>
+                  <h3 className={titleClass}><LinkIcon className="w-5 h-5 text-blue-600" /> {t('docLinks').toUpperCase()}</h3>
                   <button onClick={() => setIsEditLinksOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
                <div className={`p-6 ${(!customer.docLinks || customer.docLinks.length === 0) ? 'py-4' : ''}`}>
@@ -535,16 +546,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                      </div>
                      <Badge color="blue">{t(customer.followUpStatus as any) || customer.followUpStatus}</Badge>
                   </div>
-               </div>
-            </Card>
-
-            <Card className="overflow-hidden border shadow-sm">
-               <div className={headerClass}>
-                  <h3 className={titleClass}><Box className="w-5 h-5 text-blue-600"/> {t('productSummary')}</h3>
-                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
-               </div>
-               <div className="p-6">
-                  <div className={contentTextClass + " whitespace-pre-wrap"}>{customer.productSummary || "No summary."}</div>
                </div>
             </Card>
 
