@@ -309,6 +309,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
   const headerClass = "px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800";
+  // Subtle Edit Button style to blend in with page style
+  const editBtnStyle = "p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-blue-600 hover:shadow-sm transition-all active:scale-90 shadow-none";
 
   const resetFilters = () => {
     setFilterType('all');
@@ -413,7 +415,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
                  <h3 className={titleClass}><UserCheck className="w-5 h-5 text-blue-600" /> {t('keyContacts')}</h3>
-                 <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
+                 <button onClick={() => setIsEditContactsOpen(true)} className={editBtnStyle}><PencilLine size={16}/></button>
                </div>
                <div className="p-6 space-y-4">
                  {visibleContacts.map((c, i) => (
@@ -459,7 +461,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
                   <h3 className={titleClass}><Box className="w-5 h-5 text-blue-600"/> {t('productSummary')}</h3>
-                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
+                  <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className={editBtnStyle}><PencilLine size={16}/></button>
                </div>
                <div className="p-6">
                   <div className={contentTextClass + " whitespace-pre-wrap"}>{customer.productSummary || "No summary."}</div>
@@ -469,7 +471,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
                  <h3 className={titleClass}><List className="w-5 h-5 text-blue-600" /> {t('exhibitions').toUpperCase()}</h3>
-                 <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
+                 <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className={editBtnStyle}><PencilLine size={16}/></button>
                </div>
                <div className="p-6">
                  <div className="flex flex-wrap gap-2">
@@ -494,7 +496,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             <Card className="overflow-hidden border shadow-sm flex flex-col">
                <div className={headerClass}>
                   <h3 className={titleClass}><LinkIcon className="w-5 h-5 text-blue-600" /> {t('docLinks').toUpperCase()}</h3>
-                  <button onClick={() => setIsEditLinksOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
+                  <button onClick={() => setIsEditLinksOpen(true)} className={editBtnStyle}><PencilLine size={16}/></button>
                </div>
                <div className={`p-6 ${(!customer.docLinks || customer.docLinks.length === 0) ? 'py-4' : ''}`}>
                   <div className="flex flex-wrap gap-3">
@@ -528,7 +530,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                     setTempDDL(customer.nextActionDate || '');
                     setTempStatus(customer.followUpStatus || 'No Action');
                     setIsEditUpcomingPlanOpen(true); 
-                  }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
+                  }} className={editBtnStyle}><PencilLine size={20}/></button>
                </div>
                <div className="p-6">
                   <div className="flex items-start justify-between mb-6">
@@ -553,7 +555,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
               <div className="px-4 pt-4 bg-slate-50 dark:bg-slate-800 flex gap-1 border-b border-slate-100 dark:border-slate-800">
                 <button 
                   onClick={() => setActiveTab('overview')} 
-                  className={`transition-all px-10 py-5 rounded-t-3xl font-black text-sm xl:text-base uppercase tracking-wider flex items-center gap-3 relative ${
+                  className={`transition-all px-10 py-5 rounded-t-3xl font-black text-lg xl:text-xl uppercase tracking-wider flex items-center gap-3 relative ${
                     activeTab === 'overview' 
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.05)] z-10 -mb-[2px]' 
                       : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 hover:bg-slate-100/50'
@@ -565,7 +567,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
                 <button 
                   onClick={() => setActiveTab('samples')} 
-                  className={`transition-all px-10 py-5 rounded-t-3xl font-black text-sm xl:text-base uppercase tracking-wider flex items-center gap-3 relative ${
+                  className={`transition-all px-10 py-5 rounded-t-3xl font-black text-lg xl:text-xl uppercase tracking-wider flex items-center gap-3 relative ${
                     activeTab === 'samples' 
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.05)] z-10 -mb-[2px]' 
                       : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 hover:bg-slate-100/50'
