@@ -439,10 +439,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
-                 <h3 className={titleClass}><List className="w-5 h-5 text-indigo-600" /> {t('exhibitions')}</h3>
+                 <h3 className={titleClass}><List className="w-5 h-5 text-blue-600" /> EXHIBITIONS</h3>
                  <button onClick={() => { setTempTags([...customer.tags]); setIsEditTagsOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
-               <div className="p-5">
+               <div className="p-6">
                  <div className="flex flex-wrap gap-2">
                    {customer.tags.map((tag, i) => {
                      const matchedExhibition = exhibitions.find(e => e.name === tag);
@@ -450,10 +450,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                       <button 
                         key={i} 
                         onClick={() => matchedExhibition && navigate(`/exhibitions/${matchedExhibition.id}`)}
-                        className={`px-3 py-1.5 rounded-xl border text-[10px] xl:text-xs font-black uppercase transition-all flex items-center gap-2 ${matchedExhibition ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 cursor-pointer shadow-sm' : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400 cursor-default opacity-60'}`}
+                        className={`px-4 py-2 rounded-full border text-[10px] xl:text-xs font-black uppercase transition-all flex items-center gap-2 bg-blue-50/50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 cursor-pointer shadow-sm`}
                       >
                          <span>{tag}</span>
-                         {matchedExhibition && <ArrowRight size={10} className="opacity-40" />}
+                         <ArrowRight size={10} className="opacity-40" />
                       </button>
                      );
                    })}
@@ -462,28 +462,26 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
             </Card>
 
-            <Card className="overflow-hidden border shadow-sm">
+            <Card className="overflow-hidden border shadow-sm flex flex-col">
                <div className={headerClass}>
-                  <h3 className={titleClass}><LinkIcon className="w-5 h-5 text-blue-500" /> {t('fileLinks')}</h3>
+                  <h3 className={titleClass}><LinkIcon className="w-5 h-5 text-blue-600" /> FILE LINKS</h3>
                   <button onClick={() => setIsEditLinksOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
-               <div className="p-6 space-y-4">
-                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+               <div className={`p-6 ${(!customer.docLinks || customer.docLinks.length === 0) ? 'py-4' : ''}`}>
+                  <div className="flex flex-wrap gap-3">
                      {(customer.docLinks || []).length > 0 ? (customer.docLinks || []).map((link, idx) => (
-                       <div key={idx} className="space-y-2">
-                          <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 group shadow-sm">
-                             <a 
-                                href={link.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1 pr-2"
-                             >
-                                <ExternalLink size={14} className="shrink-0" /> <span className="truncate">{link.title}</span>
-                             </a>
-                          </div>
-                       </div>
+                       <a 
+                          key={idx}
+                          href={link.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="px-5 py-3 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 text-blue-600 dark:text-blue-400 font-black text-xs xl:text-sm flex items-center gap-2 hover:border-blue-300 transition-all shadow-sm"
+                       >
+                          <ExternalLink size={14} className="shrink-0" />
+                          <span className="whitespace-nowrap">{link.title}</span>
+                       </a>
                      )) : (
-                       <div className="text-center py-10 text-slate-300 italic text-xs xl:text-sm border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-3xl">
+                       <div className="w-full text-center py-2 text-slate-300 italic text-xs xl:text-sm border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-2xl">
                           No links added yet.
                        </div>
                      )}
@@ -1034,37 +1032,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                 </div>
              </div>
 
-             <div className="flex justify-end pt-4 border-t dark:border-slate-800">
+             <div className="flex justify-end pt-4 border-t dark:border-slate-700">
                 <Button onClick={() => setIsEditLinksOpen(false)} className="px-12 bg-slate-900 text-white">Done</Button>
              </div>
-          </div>
-       </Modal>
-
-       <Modal isOpen={isEditContactsOpen} onClose={() => setIsEditContactsOpen(false)} title={t('keyContacts')}>
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-             {customer.contacts.map((contact, idx) => (
-               <div key={idx} className="p-4 border-2 rounded-xl space-y-4 bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Contact #{idx + 1}</span>
-                    <button onClick={() => saveUpdate({ contacts: customer.contacts.filter((_, i) => i !== idx) })} className="text-red-500"><Trash2 size={16}/></button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <input className="p-2 border rounded-lg font-black text-sm dark:bg-slate-900" placeholder="Name" value={contact.name} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, name: e.target.value} : c) })} />
-                    <input className="p-2 border rounded-lg font-bold text-sm dark:bg-slate-900" placeholder="Title" value={contact.title} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, title: e.target.value} : c) })} />
-                    <input className="p-2 border rounded-lg font-bold text-sm dark:bg-slate-900" placeholder="Email" value={contact.email} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, email: e.target.value} : c) })} />
-                    <input className="p-2 border rounded-lg font-bold text-sm dark:bg-slate-900" placeholder="Phone" value={contact.phone} onChange={(e) => saveUpdate({ contacts: customer.contacts.map((c, i) => i === idx ? {...c, phone: e.target.value} : c) })} />
-                  </div>
-                  <button onClick={() => saveUpdate({ contacts: customer.contacts.map((c, i) => ({...c, isPrimary: i === idx})) })} className={`text-xs font-black uppercase flex items-center gap-1 ${contact.isPrimary ? 'text-amber-500' : 'text-slate-400'}`}>
-                    <Star size={12} fill={contact.isPrimary ? 'currentColor' : 'none'} /> Primary
-                  </button>
-               </div>
-             ))}
-             <button className="w-full py-4 border-2 border-dashed rounded-xl text-slate-400 font-black uppercase text-xs" onClick={() => saveUpdate({ contacts: [...customer.contacts, {name: '', title: '', isPrimary: false}] })}>
-               + Add Contact
-             </button>
-          </div>
-          <div className="mt-4 flex justify-end">
-             <Button onClick={() => setIsEditContactsOpen(false)} className="px-8">Done</Button>
           </div>
        </Modal>
 
