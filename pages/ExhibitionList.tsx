@@ -48,15 +48,8 @@ const ExhibitionList: React.FC = () => {
     return groups;
   }, [filteredExhibitions, tagOptions.eventSeries]);
 
-  // Folding state - default to expanded (all visible groups)
+  // Folding state - default to collapsed (empty set)
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
-
-  // Default expand all on mount once grouping is available
-  useEffect(() => {
-    if (groupedExhibitions.length > 0) {
-      setExpandedSeries(new Set(groupedExhibitions.map(g => g.series)));
-    }
-  }, [groupedExhibitions.length]);
 
   // Derived: Are all currently visible groups expanded?
   const isAllExpanded = useMemo(() => {
@@ -179,8 +172,8 @@ const ExhibitionList: React.FC = () => {
     setFilterSeries('');
     setFilterYear('');
     setFilterCustomer('');
-    // Expand all on filter reset
-    setExpandedSeries(new Set(groupedExhibitions.map(g => g.series)));
+    // Remain collapsed on filter reset as per new default
+    setExpandedSeries(new Set());
   };
 
   const hasActiveFilters = searchTerm !== '' || filterSeries !== '' || filterYear !== '' || filterCustomer !== '';
@@ -198,22 +191,22 @@ const ExhibitionList: React.FC = () => {
         </Button>
       </div>
 
-      <Card className="p-6 xl:p-8 border-2">
-        <div className="space-y-6">
-          {/* Main Search */}
+      <Card className="p-6 xl:p-8 border-2 rounded-2xl">
+        <div className="space-y-4">
+          {/* Main Search - bg-slate-100 preserved as requested */}
           <div className="relative">
             <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
             <input 
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all shadow-sm"
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50 outline-none focus:border-blue-500 font-bold transition-all shadow-inner"
               placeholder={t('exhibitionSearchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          {/* Filter Bar */}
+          {/* Filter Bar - Background updated to bg-slate-100 to match profile headers */}
           <div className="flex flex-wrap items-center gap-4">
-             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Tag size={18} className="text-slate-400" />
                 <select 
                   className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
@@ -225,7 +218,7 @@ const ExhibitionList: React.FC = () => {
                 </select>
              </div>
 
-             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Calendar size={18} className="text-slate-400" />
                 <select 
                   className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
@@ -237,7 +230,7 @@ const ExhibitionList: React.FC = () => {
                 </select>
              </div>
 
-             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <User size={18} className="text-slate-400" />
                 <select 
                   className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300 max-w-[180px]"
@@ -281,10 +274,10 @@ const ExhibitionList: React.FC = () => {
           </div>
         </div>
 
-        {/* Grouped List View */}
-        <div className="mt-6 overflow-hidden border-2 rounded-[2rem] border-slate-100 dark:border-slate-800">
+        {/* Grouped List View - Corners reduced to rounded-2xl to match application standards */}
+        <div className="mt-6 overflow-hidden border-2 rounded-2xl border-slate-100 dark:border-slate-800">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white uppercase text-sm font-black tracking-widest">
+            <thead className="bg-slate-100 dark:bg-slate-800/80 border-b-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase text-sm font-black tracking-widest">
               <tr>
                 <th className="p-6">{t('colExhibitionSeries')}</th>
                 <th className="p-6">{t('colLocation')}</th>
