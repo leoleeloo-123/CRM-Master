@@ -35,6 +35,7 @@ export const translations = {
     daysAgo: 'Days Ago',
     add: 'Add',
     remove: 'Remove',
+    other: 'Other Info',
     
     // Dashboard
     totalCustomers: 'Total Customers',
@@ -84,6 +85,7 @@ export const translations = {
     lastUpdated: 'Last Updated',
     statusUpdateHeader: 'Status Updates',
     daysSinceUpdate: 'Days Since Update',
+    updateStatus: 'Update Status',
     daysUntilDDL: 'Days Until DDL',
     unrepliedDays: 'Customer Unreplied Days',
     unfollowedDays: 'Our Unfollowed Days',
@@ -311,6 +313,7 @@ export const translations = {
     daysAgo: '天前',
     add: '添加',
     remove: '移除',
+    other: '其它',
 
     // Dashboard
     totalCustomers: '客户总数',
@@ -360,6 +363,7 @@ export const translations = {
     lastUpdated: '最后更新',
     statusUpdateHeader: '状态更新',
     daysSinceUpdate: '距更新天数',
+    updateStatus: '更新状态',
     daysUntilDDL: 'DDL剩余天数',
     unrepliedDays: '客户未回复天数',
     unfollowedDays: '我方未跟进天数',

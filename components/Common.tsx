@@ -109,13 +109,13 @@ export const DaysCounter: React.FC<{
   label: string; 
   type: 'elapsed' | 'remaining';
   onDateChange?: (newDate: string) => void;
-}> = ({ date, label, type, onDateChange }) => {
+  title?: string;
+}> = ({ date, label, type, onDateChange, title }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onDateChange) onDateChange(e.target.value);
   };
 
   const isInteractive = !!onDateChange;
-  // Fix: Use parseLocalDate for consistent timezone handling
   const targetDate = date ? parseLocalDate(date) : null;
   const daysDiff = targetDate && isValid(targetDate) ? differenceInDays(startOfDay(new Date()), startOfDay(targetDate)) : 0;
   const displayDays = type === 'elapsed' ? daysDiff : -daysDiff; 
@@ -133,8 +133,8 @@ export const DaysCounter: React.FC<{
     }
   }
 
-  return (
-    <div className={`flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 min-w-[120px] h-32 xl:h-40 shadow-sm relative group transition-all hover:shadow-md ${isInteractive ? 'hover:border-blue-400' : ''}`}>
+  const content = (
+    <div className={`flex flex-col items-center justify-center p-4 min-w-[120px] h-32 xl:h-40 relative group transition-all`}>
       <div className={`font-black text-3xl xl:text-5xl mb-1 ${colorClass}`}>
         {!date ? '-' : Math.abs(displayDays)}
       </div>
@@ -153,6 +153,23 @@ export const DaysCounter: React.FC<{
            />
         </div>
       )}
+    </div>
+  );
+
+  if (title) {
+    return (
+      <Card className="overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/40">
+        <div className="px-6 py-4 bg-slate-100 dark:bg-slate-800/80 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
+          <h3 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider">{title}</h3>
+        </div>
+        {content}
+      </Card>
+    );
+  }
+
+  return (
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm relative group transition-all hover:shadow-md ${isInteractive ? 'hover:border-blue-400' : ''}`}>
+      {content}
     </div>
   );
 };
@@ -176,7 +193,6 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
 
 export const getUrgencyLevel = (dateStr?: string): 'urgent' | 'warning' | 'safe' | 'none' => {
   if (!dateStr) return 'none';
-  // Fix: Use parseLocalDate
   const target = parseLocalDate(dateStr);
   if (!isValid(target)) return 'none';
   const diff = differenceInDays(startOfDay(target), startOfDay(new Date()));
