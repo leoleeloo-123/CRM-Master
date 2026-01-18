@@ -308,7 +308,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
-  const headerClass = "px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800";
+  const headerClass = "px-6 py-4 bg-slate-100 dark:bg-slate-800/80 flex justify-between items-center border-b border-slate-200 dark:border-slate-700";
   // Subtle Edit Button style to blend in with page style
   const editBtnStyle = "p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-blue-600 hover:shadow-sm transition-all active:scale-90 shadow-none";
 
@@ -552,13 +552,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             </Card>
 
             <Card className="overflow-hidden border shadow-sm flex flex-col mt-4">
-              <div className="px-4 pt-4 bg-slate-50 dark:bg-slate-800 flex gap-1 border-b border-slate-100 dark:border-slate-800">
+              <div className="px-4 pt-4 bg-slate-100 dark:bg-slate-800 flex gap-1 border-b border-slate-200 dark:border-slate-700">
                 <button 
                   onClick={() => setActiveTab('overview')} 
                   className={`transition-all px-10 py-5 rounded-t-3xl font-black text-lg xl:text-xl uppercase tracking-wider flex items-center gap-3 relative ${
                     activeTab === 'overview' 
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.05)] z-10 -mb-[2px]' 
-                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 hover:bg-slate-100/50'
+                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 hover:bg-slate-200/50'
                   }`}
                 >
                   <ClipboardList className={`w-6 h-6 ${activeTab === 'overview' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`} />
@@ -570,7 +570,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                   className={`transition-all px-10 py-5 rounded-t-3xl font-black text-lg xl:text-xl uppercase tracking-wider flex items-center gap-3 relative ${
                     activeTab === 'samples' 
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.05)] z-10 -mb-[2px]' 
-                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 hover:bg-slate-100/50'
+                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 hover:bg-slate-200/50'
                   }`}
                 >
                   <FlaskConical className={`w-6 h-6 ${activeTab === 'samples' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`} />
