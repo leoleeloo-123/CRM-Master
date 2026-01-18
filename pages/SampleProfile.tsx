@@ -297,8 +297,8 @@ const SampleProfile: React.FC = () => {
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
           {/* Left Column (Narrow Cards) */}
           <div className="space-y-8">
-             {/* Integrated Status Card (Status + Test + Aging) - Redesigned to be flatter */}
-             <Card className={`overflow-hidden border-l-4 border-l-blue-600 shadow-sm rounded-3xl transition-all ${isEditingStatus ? 'ring-4 ring-blue-500/20' : ''}`}>
+             {/* Integrated Status Card (Status + Test + Aging) - Fixed Border to match others */}
+             <Card className={`overflow-hidden border shadow-sm rounded-3xl transition-all ${isEditingStatus ? 'ring-4 ring-blue-500/20 border-blue-500' : 'border-slate-200 dark:border-slate-700'}`}>
                 <div className={headerClass}>
                    <h3 className={titleClass}><Activity className="w-5 h-5 text-blue-600" /> {t('status')}</h3>
                    <button onClick={() => setIsEditingStatus(!isEditingStatus)} className={editBtnStyle}>
