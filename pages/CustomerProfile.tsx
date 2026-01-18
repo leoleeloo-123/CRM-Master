@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus } from '../types';
@@ -17,7 +18,6 @@ const formatInteractionSummary = (isStarred: boolean, typeTag: string, exhibitio
   const starStr = isStarred ? '(标星记录)' : '(一般记录)';
   const exhStr = exhibitionTag && exhibitionTag !== 'None' ? `//${exhibitionTag}` : '';
   
-  // Requirement: Ensure serialized tags in the summary string use Chinese if available for Excel consistency
   const typeZh = translateToZh(typeTag);
   const effectZh = translateToZh(effectTag);
   
@@ -42,7 +42,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isEditCustomerModalOpen, setIsEditCustomerModalOpen] = useState(false);
   
-  // Interaction State
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
   const [intIsStarred, setIntIsStarred] = useState(false);
   const [intTypeTag, setIntTypeTag] = useState('None');
@@ -50,12 +49,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [intEffectTag, setIntEffectTag] = useState('None');
   const [intContent, setIntContent] = useState('');
   
-  // Filtering States for Interaction History
   const [filterType, setFilterType] = useState('all');
   const [filterEffect, setFilterEffect] = useState('all');
-  const [filterStarred, setFilterStarred] = useState('all'); // all, starred, normal
+  const [filterStarred, setFilterStarred] = useState('all');
 
-  // Filtering States for Samples Tab
   const [sampleStatusFilter, setSampleStatusFilter] = useState('all');
   const [sampleTestStatusFilter, setSampleTestStatusFilter] = useState('Ongoing');
 
@@ -71,7 +68,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [editingRegionIndex, setEditingRegionIndex] = useState<number | null>(null);
   const [tagSearchTerm, setTagSearchTerm] = useState('');
 
-  // Link Management State
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [editingLinkIndex, setEditingLinkIndex] = useState<number | null>(null);
@@ -98,7 +94,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     });
   }, [customerSamples]);
 
-  // Derived filtered customer samples
   const filteredCustomerSamples = useMemo(() => {
     return sortedCustomerSamples.filter(s => {
       const matchesStatus = sampleStatusFilter === 'all' || s.status === sampleStatusFilter;
@@ -107,7 +102,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     });
   }, [sortedCustomerSamples, sampleStatusFilter, sampleTestStatusFilter]);
 
-  // Fix: Added availableExhibitionsToAdd memo to handle exhibition selection in the tags modal
   const availableExhibitionsToAdd = useMemo(() => {
     return exhibitions.filter(ex => 
       !tempTags.includes(ex.name) && 
@@ -115,7 +109,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     );
   }, [exhibitions, tempTags, tagSearchTerm]);
 
-  // Derived filtered interactions
   const processedInteractions = useMemo(() => {
     if (!customer) return [];
     return customer.interactions
@@ -197,13 +190,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     const oldName = customer.name;
     const newName = tempName.trim();
     
-    // Update customer info
     saveUpdate({ 
       name: newName,
       region: tempRegions.filter(r => r.trim())
     });
     
-    // Update name in samples globally if changed
     if (oldName !== newName) {
       setSamples(prev => prev.map(s => s.customerId === id ? { ...s, customerName: newName } : s));
     }
@@ -213,29 +204,23 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const handleDeleteCustomer = () => {
     if (confirm(t('confirmDeleteCustomer'))) {
-      // Remove customer
       setCustomers(prev => prev.filter(c => c.id !== id));
-      // Remove associated samples
       setSamples(prev => prev.filter(s => s.customerId !== id));
-      // Redirect
       navigate('/customers');
     }
   };
 
   const handleRefreshDates = () => {
     setIsRefreshing(true);
-    // Recalculate based on current interactions
     const computed = getComputedDatesForCustomer(customer.interactions);
     
     saveUpdate({
       lastContactDate: computed.lastContact || customer.lastContactDate,
-      // Only update if computed value is found, otherwise keep original
       lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
       lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate,
       lastStatusUpdate: format(new Date(), 'yyyy-MM-dd')
     });
 
-    // Brief delay for UX feedback
     setTimeout(() => setIsRefreshing(false), 600);
   };
 
@@ -248,17 +233,14 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       ? [updatedInt, ...customer.interactions]
       : customer.interactions.map(i => i.id === updatedInt.id ? updatedInt : i);
     
-    // Ensure chronological order for computation
     newInteractions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    // Recalculate all computed dates based on the modified history
     const computed = getComputedDatesForCustomer(newInteractions);
 
     const updateObj: Partial<Customer> = { 
       interactions: newInteractions,
       lastStatusUpdate: format(new Date(), 'yyyy-MM-dd'),
       lastContactDate: computed.lastContact || customer.lastContactDate,
-      // Preserve existing if loop finds nothing
       lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
       lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate
     };
@@ -270,15 +252,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const deleteInteraction = (intId: string) => {
     if (confirm(t('confirmDeleteInteraction'))) {
       const newInteractions = customer.interactions.filter(i => i.id !== intId);
-      
-      // Recalculate based on remaining history
       const computed = getComputedDatesForCustomer(newInteractions);
 
       const updateObj: Partial<Customer> = { 
         interactions: newInteractions,
         lastStatusUpdate: format(new Date(), 'yyyy-MM-dd'),
         lastContactDate: computed.lastContact || customer.lastContactDate,
-        // Preserve existing if loop finds nothing
         lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
         lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate
       };
@@ -287,7 +266,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     }
   };
 
-  // Fix: Added handleAddLink function for managing customer document links
   const handleAddLink = () => {
     if (!newLinkUrl.trim() || !customer) return;
     let url = newLinkUrl.trim();
@@ -321,7 +299,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setTempRegions(tempRegions.filter((_, i) => i !== idx));
   };
 
-  // Unified Title Style for all cards
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
   const headerClass = "px-6 py-4 bg-slate-50 dark:bg-slate-800 flex justify-between items-center border-b border-slate-100 dark:border-slate-800";
@@ -334,7 +311,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const hasActiveFilters = filterType !== 'all' || filterEffect !== 'all' || filterStarred !== 'all';
 
-  // Helper for the compact aging counters card
   const MiniDaysCounter = ({ date, label, onDateChange }: { date?: string, label: string, onDateChange: (d: string) => void }) => {
     const targetDate = date ? parseLocalDate(date) : null;
     const daysDiff = targetDate && isValid(targetDate) ? differenceInDays(startOfDay(new Date()), startOfDay(targetDate)) : 0;
@@ -404,7 +380,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
          <div className="space-y-8">
-            {/* Merged Aging Counters Card */}
             <Card className="overflow-hidden border shadow-sm flex flex-col">
                <div className={headerClass}>
                   <h3 className={titleClass}><Activity className="w-5 h-5 text-blue-600" /> {t('statusUpdateHeader')}</h3>
@@ -558,50 +533,38 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             </Card>
 
             <Card className="overflow-hidden border shadow-sm flex flex-col mt-4">
-              <div className={headerClass}>
-                <div className="flex gap-8">
-                  <button 
-                    onClick={() => setActiveTab('overview')} 
-                    className={`transition-all relative flex items-center gap-3 ${
-                      activeTab === 'overview' 
-                        ? 'text-blue-600' 
-                        : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
-                    }`}
-                  >
-                    <ClipboardList className={`w-5 h-5 ${activeTab === 'overview' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`} />
-                    <span className="font-black text-base xl:text-lg uppercase tracking-wider">
-                      {t('interactionHistory')} ({processedInteractions.length})
-                    </span>
-                    {activeTab === 'overview' && (
-                      <div className="absolute bottom-[-18px] left-0 right-0 h-1 bg-blue-600 rounded-full" />
-                    )}
-                  </button>
+              <div className="px-4 pt-4 bg-slate-50 dark:bg-slate-800 flex gap-1 border-b border-slate-100 dark:border-slate-800">
+                <button 
+                  onClick={() => setActiveTab('overview')} 
+                  className={`transition-all px-10 py-5 rounded-t-3xl font-black text-sm xl:text-base uppercase tracking-wider flex items-center gap-3 relative ${
+                    activeTab === 'overview' 
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.05)] z-10 -mb-[2px]' 
+                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 hover:bg-slate-100/50'
+                  }`}
+                >
+                  <ClipboardList className={`w-6 h-6 ${activeTab === 'overview' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`} />
+                  <span>{t('interactionHistory')}</span>
+                </button>
 
-                  <button 
-                    onClick={() => setActiveTab('samples')} 
-                    className={`transition-all relative flex items-center gap-3 ${
-                      activeTab === 'samples' 
-                        ? 'text-blue-600' 
-                        : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
-                    }`}
-                  >
-                    <FlaskConical className={`w-5 h-5 ${activeTab === 'samples' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`} />
-                    <span className="font-black text-base xl:text-lg uppercase tracking-wider">
-                      {t('sampleSummary')} ({customerSamples.length})
-                    </span>
-                    {activeTab === 'samples' && (
-                      <div className="absolute bottom-[-18px] left-0 right-0 h-1 bg-blue-600 rounded-full" />
-                    )}
-                  </button>
-                </div>
+                <button 
+                  onClick={() => setActiveTab('samples')} 
+                  className={`transition-all px-10 py-5 rounded-t-3xl font-black text-sm xl:text-base uppercase tracking-wider flex items-center gap-3 relative ${
+                    activeTab === 'samples' 
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.05)] z-10 -mb-[2px]' 
+                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 hover:bg-slate-100/50'
+                  }`}
+                >
+                  <FlaskConical className={`w-6 h-6 ${activeTab === 'samples' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`} />
+                  <span>{t('sampleSummary')}</span>
+                </button>
               </div>
 
-              <div className="p-6 bg-slate-50/50 dark:bg-slate-900/20">
+              <div className="p-8 bg-white dark:bg-slate-900">
                 {activeTab === 'overview' && (
                   <div className="space-y-8 animate-in fade-in duration-500">
                     <div className="space-y-6">
                        <div className="flex flex-col gap-4">
-                          <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-white dark:bg-slate-900/40 shadow-sm rounded-2xl">
+                          <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-slate-50/50 dark:bg-slate-800/40 shadow-sm rounded-2xl">
                              <div className="flex flex-wrap items-center gap-6 w-full">
                                 <select 
                                   className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
@@ -635,7 +598,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                   <button onClick={resetFilters} className="text-sm font-black uppercase text-rose-500 hover:underline">Reset</button>
                                 )}
 
-                                {/* Unified Buttons Group integrated into filter card */}
                                 <div className="ml-auto flex items-center gap-3 self-end">
                                    <button 
                                      onClick={handleRefreshDates}
@@ -644,7 +606,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                    >
                                      <RefreshCcw size={18} />
                                    </button>
-                                   <Button className="text-[10px] py-2.5 bg-blue-600 text-white rounded-lg px-6 font-black uppercase tracking-widest shadow-lg shadow-blue-600/20" 
+                                   <Button className="text-[10px] py-3 bg-blue-600 text-white rounded-xl px-8 font-black uppercase tracking-widest shadow-lg shadow-blue-600/20" 
                                        onClick={() => {
                                          setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
                                          setIntIsStarred(false);
@@ -653,14 +615,14 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                          setIntEffectTag('None');
                                          setIntContent('');
                                        }}>
-                                     <Plus size={14} className="mr-1" /> Log Progress
+                                     <Plus size={16} className="mr-1" /> Log Progress
                                    </Button>
                                 </div>
                              </div>
                           </Card>
                        </div>
                        
-                       <div className="border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-8 py-4 space-y-8">
+                       <div className="border-l-2 border-slate-100 dark:border-slate-800 ml-4 pl-10 py-4 space-y-10">
                          {processedInteractions.length > 0 ? (
                            <>
                              {visibleInteractions.map((item) => {
@@ -668,21 +630,21 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                const parsed = item.parsed;
                                return (
                                 <div key={int.id} className="relative group">
-                                   <div className="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
+                                   <div className="absolute -left-[51px] top-1.5 w-5 h-5 rounded-full bg-blue-600 border-4 border-white dark:border-slate-900 shadow-sm flex items-center justify-center font-black text-white text-[8px]"></div>
                                    <div className="flex items-center justify-between mb-3">
                                       <div className="flex flex-wrap items-center gap-3">
                                         <span className="font-black text-sm text-slate-900 dark:text-white">{int.date}</span>
                                         <Star size={16} className={parsed.isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-700'} />
-                                        {parsed.typeTag !== '无' && parsed.typeTag !== 'None' && <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.typeTag as any) || parsed.typeTag}</span>}
-                                        {parsed.exhibitionTag !== '无' && parsed.exhibitionTag !== 'None' && <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{parsed.exhibitionTag}</span>}
-                                        {parsed.effectTag !== '无' && parsed.effectTag !== 'None' && <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">{t(parsed.effectTag as any) || parsed.effectTag}</span>}
+                                        {parsed.typeTag !== '无' && parsed.typeTag !== 'None' && <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black uppercase border border-blue-100 dark:border-blue-800">{t(parsed.typeTag as any) || parsed.typeTag}</span>}
+                                        {parsed.exhibitionTag !== '无' && parsed.exhibitionTag !== 'None' && <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded text-[10px] font-black uppercase border border-purple-100 dark:border-purple-800">{parsed.exhibitionTag}</span>}
+                                        {parsed.effectTag !== '无' && parsed.effectTag !== 'None' && <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-black uppercase border border-emerald-100 dark:border-emerald-800">{t(parsed.effectTag as any) || parsed.effectTag}</span>}
                                       </div>
                                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                          <button onClick={() => setEditingInteraction(int)} className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-90"><PencilLine size={14}/></button>
                                          <button onClick={() => deleteInteraction(int.id)} className="p-1.5 rounded-lg bg-red-600 text-white shadow-sm hover:bg-red-700 transition-all active:scale-90"><Trash2 size={14}/></button>
                                       </div>
                                    </div>
-                                   <Card className="p-4 bg-white dark:bg-slate-800/40 shadow-sm border border-slate-100 dark:border-slate-800">
+                                   <Card className="p-6 bg-slate-50/30 dark:bg-slate-800/40 shadow-sm border border-slate-100 dark:border-slate-800 rounded-3xl">
                                       <p className="text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{parsed.content}</p>
                                     </Card>
                                 </div>
@@ -697,16 +659,15 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                </div>
                              )}
                            </>
-                         ) : <div className="text-slate-400 italic font-bold py-10 text-center uppercase tracking-widest">No matching history found.</div>}
+                         ) : <div className="text-slate-400 italic font-bold py-16 text-center uppercase tracking-widest border-2 border-dashed rounded-3xl">No matching history found.</div>}
                        </div>
                     </div>
                   </div>
                 )}
 
                 {activeTab === 'samples' && (
-                  <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
-                     {/* Sample List Filters */}
-                     <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-white dark:bg-slate-900/40 shadow-sm rounded-2xl">
+                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                     <Card className="p-6 border border-slate-100 dark:border-slate-800 flex items-center bg-slate-50/50 dark:bg-slate-800/40 shadow-sm rounded-2xl">
                         <div className="flex flex-wrap items-center gap-6 w-full">
                            <select 
                              className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-black uppercase tracking-tight text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 shadow-sm min-w-[160px]"
@@ -739,68 +700,66 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                         </div>
                      </Card>
 
-                     <div className="space-y-2">
+                     <div className="space-y-3">
                         {filteredCustomerSamples.map(sample => (
-                          <Card key={sample.id} className="p-3 xl:p-4 hover:shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer group" onClick={() => navigate(`/samples/${sample.id}`)}>
-                             <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-4 min-w-0 flex-1">
-                                   <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 group-hover:scale-110 transition-transform shrink-0">
-                                      <FlaskConical className="w-5 h-5 xl:w-6 xl:h-6" />
+                          <Card key={sample.id} className="p-5 xl:p-6 hover:shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 transition-all cursor-pointer group rounded-3xl" onClick={() => navigate(`/samples/${sample.id}`)}>
+                             <div className="flex items-center justify-between gap-6">
+                                <div className="flex items-center gap-6 min-w-0 flex-1">
+                                   <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-2xl text-blue-600 group-hover:scale-110 transition-transform shrink-0">
+                                      <FlaskConical className="w-6 h-6 xl:w-8 xl:h-8" />
                                    </div>
                                    <div className="flex flex-col flex-1 min-w-0">
-                                      <div className="flex items-center gap-3">
-                                         <h4 className="font-black text-sm xl:text-base text-slate-900 dark:text-white truncate uppercase tracking-tight">{sample.sampleName}</h4>
-                                         <span className="hidden sm:inline bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border dark:border-slate-700 text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                      <div className="flex items-center gap-4">
+                                         <h4 className="font-black text-base xl:text-lg text-slate-900 dark:text-white truncate uppercase tracking-tight">{sample.sampleName}</h4>
+                                         <span className="hidden sm:inline bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
                                             SKU: {sample.sampleSKU || 'N/A'}
                                          </span>
                                       </div>
                                       
-                                      <div className="flex items-center gap-4 mt-0.5">
-                                         <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-6 mt-1.5">
+                                         <div className="flex items-center gap-3">
                                             <Badge color={sample.testStatus === 'Finished' ? 'green' : sample.testStatus === 'Terminated' ? 'red' : 'yellow'}>
-                                              <span className="text-[9px]">{t(sample.testStatus as any) || sample.testStatus}</span>
+                                              <span className="text-[10px]">{t(sample.testStatus as any) || sample.testStatus}</span>
                                             </Badge>
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">
                                                Qty: {sample.quantity}
                                             </span>
                                          </div>
                                          
-                                         <div className="hidden md:flex items-center gap-2">
-                                            {(sample.docLinks || []).slice(0, 2).map((link, idx) => (
+                                         <div className="hidden md:flex items-center gap-3">
+                                            {(sample.docLinks || []).slice(0, 3).map((link, idx) => (
                                               <a 
                                                 key={idx} 
                                                 href={link.url} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer" 
                                                 onClick={e => e.stopPropagation()}
-                                                className="flex items-center gap-1 text-[9px] font-black uppercase text-blue-600 hover:text-blue-700 hover:underline bg-blue-50/50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/50"
+                                                className="flex items-center gap-1.5 text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 hover:underline bg-blue-50/50 dark:bg-blue-900/20 px-3 py-1 rounded-xl border border-blue-100 dark:border-blue-900/50"
                                               >
-                                                <LinkIcon size={8} /> {link.title}
+                                                <LinkIcon size={10} /> {link.title}
                                               </a>
                                             ))}
-                                            {(customer.docLinks || []).length > 2 && (
-                                               <span className="text-[8px] font-black text-slate-400">...</span>
+                                            {(customer.docLinks || []).length > 3 && (
+                                               <span className="text-[10px] font-black text-slate-400">...</span>
                                             )}
                                          </div>
                                       </div>
                                    </div>
                                 </div>
                                 
-                                <div className="flex items-center gap-6 shrink-0">
+                                <div className="flex items-center gap-8 shrink-0">
                                    <div className="text-right">
-                                      <Badge color="blue">
-                                         <span className="text-[10px]">{t(sample.status as any) || sample.status}</span>
-                                      </Badge>
-                                      <div className="text-[10px] font-black text-slate-400 uppercase mt-0.5 tracking-widest">
-                                         DDL: <span className="text-slate-600 dark:text-slate-300">{sample.nextActionDate || 'TBD'}</span>
+                                      <div className="mb-1"><Badge color="blue"><span className="text-xs font-black">{t(sample.status as any) || sample.status}</span></Badge></div>
+                                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                                         DDL: <span className="text-slate-700 dark:text-slate-300">{sample.nextActionDate || 'TBD'}</span>
                                       </div>
                                    </div>
-                                   <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-all group-hover:translate-x-1" />
+                                   <ArrowRight size={24} className="text-slate-200 group-hover:text-blue-600 transition-all group-hover:translate-x-1" />
                                 </div>
                              </div>
                           </Card>
                         ))}
-                        {filteredCustomerSamples.length === 0 && <div className="text-slate-400 italic font-bold py-16 text-center uppercase tracking-widest border-2 border-dashed rounded-3xl opacity-50">No samples matching filter.</div>}
+                        {filteredCustomerSamples.length === 0 && <div className="text-slate-400 italic font-bold py-24 text-center uppercase tracking-widest border-2 border-dashed rounded-[3rem] opacity-50">No samples matching filter.</div>}
                      </div>
                   </div>
                 )}
@@ -809,7 +768,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
          </div>
        </div>
 
-       {/* --- Modals --- */}
        <Modal isOpen={isEditCustomerModalOpen} onClose={() => setIsEditCustomerModalOpen(false)} title={t('editCustomerName')}>
           <div className="space-y-8">
              <div className="space-y-2">
