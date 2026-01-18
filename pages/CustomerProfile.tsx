@@ -57,6 +57,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [sampleTestStatusFilter, setSampleTestStatusFilter] = useState('Ongoing');
 
   const [showAllInteractions, setShowAllInteractions] = useState(false);
+  const [showAllContacts, setShowAllContacts] = useState(false); // New state for contacts folding
+
   const [tempSummary, setTempSummary] = useState('');
   const [tempTags, setTempTags] = useState<string[]>([]);
   const [tempUpcomingPlan, setTempUpcomingPlan] = useState('');
@@ -85,6 +87,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     if (!isValid(targetDate)) return null;
     return differenceInDays(startOfDay(targetDate), startOfDay(new Date()));
   }, [customer?.nextActionDate]);
+
+  const visibleContacts = useMemo(() => {
+    if (!customer) return [];
+    return showAllContacts ? customer.contacts : customer.contacts.slice(0, 2);
+  }, [customer, showAllContacts]);
 
   const sortedCustomerSamples = useMemo(() => {
     return [...customerSamples].sort((a, b) => {
@@ -409,7 +416,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                  <button onClick={() => setIsEditContactsOpen(true)} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={16}/></button>
                </div>
                <div className="p-6 space-y-4">
-                 {customer.contacts.map((c, i) => (
+                 {visibleContacts.map((c, i) => (
                    <div key={i} className={`p-4 rounded-2xl border-2 flex flex-col gap-2 ${c.isPrimary ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 dark:border-slate-800'}`}>
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2 min-w-0">
@@ -434,6 +441,17 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                       </div>
                    </div>
                  ))}
+                 {customer.contacts.length > 2 && (
+                   <div className="flex justify-center pt-2">
+                     <button 
+                       onClick={() => setShowAllContacts(!showAllContacts)} 
+                       className="text-blue-600 font-black uppercase text-[10px] xl:text-xs tracking-widest flex items-center gap-1 hover:underline transition-all active:scale-95"
+                     >
+                       {showAllContacts ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+                       {showAllContacts ? 'View Less' : `View More (${customer.contacts.length - 2})`}
+                     </button>
+                   </div>
+                 )}
                </div>
             </Card>
 
@@ -522,7 +540,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
-                  <h3 className={titleClass}><Box className="w-5 h-5 text-emerald-600"/> {t('productSummary')}</h3>
+                  <h3 className={titleClass}><Box className="w-5 h-5 text-blue-600"/> {t('productSummary')}</h3>
                   <button onClick={() => { setTempSummary(customer.productSummary); setIsEditSummaryOpen(true); }} className="p-2 rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"><PencilLine size={20}/></button>
                </div>
                <div className="p-6">
@@ -650,7 +668,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                              })}
                              {processedInteractions.length > 3 && (
                                <div className="flex justify-center pt-2">
-                                 <button onClick={() => setShowAllInteractions(!showAllInteractions)} className="text-blue-600 font-black uppercase text-xs tracking-widest flex items-center gap-1">
+                                 <button onClick={() => setShowAllInteractions(!showAllInteractions)} className="text-blue-600 font-black uppercase text-xs tracking-widest flex items-center gap-1 hover:underline transition-all">
                                    {showAllInteractions ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
                                    {showAllInteractions ? 'View Less' : `View More (${processedInteractions.length - 3})`}
                                  </button>
