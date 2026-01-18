@@ -64,6 +64,10 @@ export const translations = {
     reportDescription: 'Report Description',
     filterByStage: 'Filter by Stage',
     sampleTrackingReport: 'Sample Tracking Report',
+    dailyAgenda: 'Daily Agenda',
+    agendaCustomers: 'Customers',
+    agendaSamples: 'Samples',
+    actionNeeded: 'Action needed',
 
     // Customer List
     customerDatabase: 'Customer Database',
@@ -275,10 +279,10 @@ export const translations = {
     availableTags: 'Available Tags',
     
     // Font Size
-    fontSize: 'Font Size',
-    fontSmall: 'Small',
-    fontStandard: 'Standard',
-    fontLarge: 'Large',
+    fontSize: '字体大小',
+    fontSmall: '小',
+    fontStandard: '标准',
+    fontLarge: '大',
   },
   zh: {
     // Navigation
@@ -342,6 +346,10 @@ export const translations = {
     reportDescription: '报告说明',
     filterByStage: '阶段筛选',
     sampleTrackingReport: '样品追踪报告',
+    dailyAgenda: '每日日程',
+    agendaCustomers: '客户事项',
+    agendaSamples: '样品日程',
+    actionNeeded: '需跟进',
 
     // Customer List
     customerDatabase: '客户数据库',

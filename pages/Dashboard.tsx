@@ -142,13 +142,13 @@ const DashboardCalendar: React.FC<{
     const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
     return (
-      <div className="w-full flex flex-col">
+      <div className="w-full flex flex-col h-full">
          <div className="grid grid-cols-7 mb-3 px-1">
             {weekDays.map(d => (
               <div key={d} className="text-center text-xs xl:text-sm font-black text-slate-400 uppercase tracking-widest">{d}</div>
             ))}
          </div>
-         <div className="grid grid-cols-7 gap-1.5 p-1">
+         <div className="grid grid-cols-7 gap-1.5 p-1 flex-1">
             {days.map(day => {
                const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
                const dayStr = format(day, 'yyyy-MM-dd');
@@ -271,7 +271,7 @@ const DashboardCalendar: React.FC<{
                                 <span className="truncate">{g.customerName}</span>
                                 <span className="px-2 bg-blue-600 text-white rounded-md text-[10px] font-black">{g.count}</span>
                              </div>
-                             <p className="text-xs text-blue-500/70 mt-1 uppercase tracking-widest">Active Samples</p>
+                             <p className="text-xs text-blue-500/70 mt-1 uppercase tracking-widest">{t('activeSamples')}</p>
                           </div>
                        ))}
                     </div>
@@ -340,7 +340,7 @@ const DashboardCalendar: React.FC<{
           </div>
        </div>
        
-       <div className="animate-in fade-in duration-500 overflow-visible">
+       <div className="animate-in fade-in duration-500 flex-1 min-h-0">
           {view === 'month' && renderMonthView()}
           {view === 'week' && renderWeekView()}
        </div>
@@ -560,11 +560,11 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           {/* BOTTOM ROW: Daily Agenda + Calendar */}
           {/* Row 2, Col 1: Daily Agenda Card */}
           <div className="lg:col-span-1">
-            <Card className="p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full max-h-[750px]">
+            <Card className="p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full">
               <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <h3 className={sharedTitleClass}>
                   <ListTodo className="w-6 h-6 text-blue-600" />
-                  DAILY AGENDA
+                  {t('dailyAgenda')}
                 </h3>
                 <div className="mt-4 relative group">
                   <input 
@@ -588,18 +588,18 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                   <>
                     {dailyCustomers.length > 0 && (
                       <div className="space-y-3">
-                        <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Customers</span>
+                        <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">{t('agendaCustomers')}</span>
                         {dailyCustomers.map(c => (
                             <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-rose-500 bg-rose-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800" onClick={() => navigate(`/customers/${c.id}`)}>
                                 <h4 className="font-black text-rose-800 dark:text-rose-400 text-sm xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
-                                <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || "Action needed"}</p>
+                                <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || t('actionNeeded')}</p>
                             </Card>
                         ))}
                       </div>
                     )}
                     {dailySamples.length > 0 && (
                       <div className="space-y-3 pt-2">
-                        <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Samples</span>
+                        <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">{t('agendaSamples')}</span>
                         {dailySamples.map(s => (
                           <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 bg-blue-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
                             <h4 className="font-black text-blue-800 dark:text-blue-400 text-sm xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
@@ -628,7 +628,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </div>
       </div>
 
-      {/* Report Preview Modal */}
+      {/* Report Preview Modal ... remains unchanged */}
       {isPreviewModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
           <div className="bg-white dark:bg-slate-900 w-full max-w-[1200px] h-[95vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
