@@ -211,12 +211,12 @@ const ExhibitionList: React.FC = () => {
             />
           </div>
 
-          {/* Filter Bar */}
-          <div className="flex flex-wrap items-center gap-3">
-             <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
-                <Tag size={16} className="text-slate-400" />
+          {/* Filter Bar - Enlarged by approx 15% (text-xs -> text-sm, increased padding and icons) */}
+          <div className="flex flex-wrap items-center gap-4">
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Tag size={18} className="text-slate-400" />
                 <select 
-                  className="bg-transparent text-xs font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
                   value={filterSeries}
                   onChange={e => setFilterSeries(e.target.value)}
                 >
@@ -225,10 +225,10 @@ const ExhibitionList: React.FC = () => {
                 </select>
              </div>
 
-             <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
-                <Calendar size={16} className="text-slate-400" />
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Calendar size={18} className="text-slate-400" />
                 <select 
-                  className="bg-transparent text-xs font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
                   value={filterYear}
                   onChange={e => setFilterYear(e.target.value)}
                 >
@@ -237,10 +237,10 @@ const ExhibitionList: React.FC = () => {
                 </select>
              </div>
 
-             <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
-                <User size={16} className="text-slate-400" />
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <User size={18} className="text-slate-400" />
                 <select 
-                  className="bg-transparent text-xs font-black uppercase tracking-widest outline-none dark:text-slate-300 max-w-[150px]"
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300 max-w-[180px]"
                   value={filterCustomer}
                   onChange={e => setFilterCustomer(e.target.value)}
                 >
@@ -249,32 +249,32 @@ const ExhibitionList: React.FC = () => {
                 </select>
              </div>
 
-             <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
 
-             {/* Global Collapse/Expand Toggle Button */}
+             {/* Global Collapse/Expand Toggle Button - Enlarged slightly */}
              <button 
               onClick={toggleAllExpansion}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 text-xs font-black uppercase tracking-widest transition-all ${
                 isAllExpanded 
                   ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300'
               }`}
              >
-               {isAllExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+               {isAllExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                {isAllExpanded ? t('collapseAll') : t('expandAll')}
              </button>
 
              {hasActiveFilters && (
                <button 
                 onClick={resetFilters}
-                className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors ml-2"
+                className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors ml-2"
                >
-                 <X size={14} /> {t('cancel')}
+                 <X size={16} /> {t('cancel')}
                </button>
              )}
 
              <div className="ml-auto">
-               <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
+               <span className="text-xs font-black uppercase text-slate-400 tracking-[0.2em]">
                  {t('results')}: {filteredExhibitions.length}
                </span>
              </div>
@@ -284,7 +284,7 @@ const ExhibitionList: React.FC = () => {
         {/* Grouped List View */}
         <div className="mt-10 overflow-hidden border-2 rounded-[2rem] border-slate-100 dark:border-slate-800">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-slate-500 uppercase text-[10px] font-black tracking-widest">
+            <thead className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-slate-500 uppercase text-sm font-black tracking-widest">
               <tr>
                 <th className="p-6">{t('colExhibitionSeries')}</th>
                 <th className="p-6">{t('colLocation')}</th>
