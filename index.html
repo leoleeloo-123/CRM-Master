@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -66,44 +65,54 @@
         border-color: #e8e4d8 !important;
       }
 
-      /* Muted Dark Mode Styles */
-      .theme-muted-dark {
-        background-color: #1a1b1e !important; /* 克制的蓝灰黑 */
-        color: #c1c2c5 !important;
+      /* Dark Green Mode Styles - Slightly lighter and softer than previous version */
+      .theme-dark-green {
+        background-color: #1c2521 !important; /* Slightly lighter deep green base */
+        color: #a4b0a4 !important; /* Muted sage-gray text */
       }
-      .theme-muted-dark .bg-slate-50,
-      .theme-muted-dark .bg-white,
-      .theme-muted-dark div[class*="bg-white"],
-      .theme-muted-dark div[class*="bg-slate-900"] {
-        background-color: #1a1b1e !important;
+      .theme-dark-green .bg-slate-50,
+      .theme-dark-green .bg-white,
+      .theme-dark-green div[class*="bg-white"],
+      .theme-dark-green div[class*="bg-slate-900"] {
+        background-color: #1c2521 !important;
       }
-      .theme-muted-dark .card,
-      .theme-muted-dark div[class*="bg-slate-800"] {
-        background-color: #25262b !important; /* 柔和的卡片层级 */
-        border-color: #373a40 !important;
+      .theme-dark-green .card,
+      .theme-dark-green div[class*="bg-slate-800"],
+      .theme-dark-green div[class*="bg-white"] {
+        background-color: #2b3631 !important; /* Lighter card surface for contrast */
+        border-color: #3a4741 !important; /* Defined soft green border */
       }
-      .theme-muted-dark .bg-slate-100,
-      .theme-muted-dark div[class*="bg-slate-800/80"] {
-        background-color: #141517 !important;
+      .theme-dark-green .bg-slate-100,
+      .theme-dark-green div[class*="bg-slate-800/80"] {
+        background-color: #161d1a !important; /* Deeper headers/recessed areas */
       }
-      .theme-muted-dark .text-slate-900,
-      .theme-muted-dark .text-white,
-      .theme-muted-dark h1, .theme-muted-dark h2, .theme-muted-dark h3 {
-        color: #e8e9eb !important;
+      .theme-dark-green .text-slate-900,
+      .theme-dark-green .text-white,
+      .theme-dark-green h1, .theme-dark-green h2, .theme-dark-green h3 {
+        color: #e1e8e1 !important; /* Very soft light green-tinted text */
       }
-      .theme-muted-dark .text-slate-400,
-      .theme-muted-dark .text-slate-500 {
-        color: #909296 !important;
+      .theme-dark-green .text-slate-400,
+      .theme-dark-green .text-slate-500 {
+        color: #7e8c82 !important; /* Muted secondary text */
       }
-      .theme-muted-dark .border-slate-200,
-      .theme-muted-dark .border-slate-700,
-      .theme-muted-dark .border-slate-800 {
-        border-color: #373a40 !important;
+      .theme-dark-green .border-slate-200,
+      .theme-dark-green .border-slate-100,
+      .theme-dark-green .border-slate-700,
+      .theme-dark-green .border-slate-800 {
+        border-color: #3a4741 !important;
+      }
+      /* Sidebar and Scrollbar blend */
+      .theme-dark-green .sidebar, .theme-dark-green aside {
+        background-color: #161d1a !important;
+        border-right-color: #2b3631 !important;
+      }
+      .theme-dark-green .shadow-sm, .theme-dark-green .shadow-md {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1) !important;
       }
 
       /* Capture Logic Styling: Force stability for html-to-image */
       #sample-status-report {
-        width: 1100px !important; /* Slightly wider for better spacing */
+        width: 1100px !important; 
         min-width: 1100px !important;
         margin: 0 auto;
         background: white !important;
@@ -118,7 +127,7 @@
         font-family: 'Inter', sans-serif !important;
         -webkit-print-color-adjust: exact !important;
         color-adjust: exact !important;
-        line-height: 1.4 !important; /* Explicit line height to prevent overlap */
+        line-height: 1.4 !important; 
         box-sizing: border-box !important;
       }
       
@@ -126,7 +135,6 @@
       #sample-status-report h4 { font-size: 28px !important; font-weight: 900 !important; }
       #sample-status-report h5 { font-size: 24px !important; font-weight: 900 !important; }
       
-      /* Table and Grid Stability */
       #sample-status-report table { 
         width: 100% !important; 
         border-collapse: collapse !important; 
@@ -149,7 +157,6 @@
       #sample-status-report .border-slate-100 { border-color: #f1f5f9 !important; }
       #sample-status-report .border-slate-200 { border-color: #e2e8f0 !important; }
 
-      /* Hidden scrollbars for capture */
       #sample-status-report::-webkit-scrollbar { display: none; }
     </style>
   <script type="importmap">

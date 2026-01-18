@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation, Activity, ClipboardList, Coffee, CloudMoon } from 'lucide-react';
+import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation, Activity, ClipboardList, Coffee, CloudMoon, Leaf } from 'lucide-react';
 import { TagOptions } from '../types';
 import { getCanonicalTag } from '../utils/i18n';
 
@@ -53,7 +52,6 @@ const Settings: React.FC = () => {
        <div className="flex flex-wrap gap-2.5 mb-5">
          {tagOptions[category].map(tag => (
            <div key={tag} className="flex items-center gap-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl text-xs xl:text-sm font-black shadow-sm group hover:border-blue-300 transition-all">
-              {/* Note: Tags in settings display raw text from database as requested, no translation call here */}
               <span className="text-slate-800 dark:text-slate-200">{tag}</span>
               <button 
                 onClick={() => handleDeleteTag(category, tag)}
@@ -84,44 +82,25 @@ const Settings: React.FC = () => {
     <div className="space-y-10 xl:space-y-16 max-w-6xl mx-auto pb-20">
       <div className="flex flex-col gap-2">
         <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('settings')}</h2>
-        <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('settingsDesc')}</p>
+        <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('settingsDesc')}</p>
       </div>
 
       <div className="space-y-12">
-        {/* Organization Profile */}
         <Card className="p-8 xl:p-12 shadow-sm border-2">
           <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
             <Building2 className="text-blue-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('orgProfile')}
           </h3>
-          
           <div className="max-w-4xl space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="block text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
-                  {t('orgName')}
-                </label>
-                <input 
-                  type="text" 
-                  value={localCompanyName}
-                  onChange={(e) => setLocalCompanyName(e.target.value)}
-                  className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-base xl:text-xl transition-all"
-                  placeholder={t('orgName')}
-                />
+                <label className="block text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('orgName')}</label>
+                <input type="text" value={localCompanyName} onChange={(e) => setLocalCompanyName(e.target.value)} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-base xl:text-xl transition-all" placeholder={t('orgName')} />
               </div>
               <div className="space-y-2">
-                <label className="block text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
-                  {t('uName')}
-                </label>
-                <input 
-                  type="text" 
-                  value={localUserName}
-                  onChange={(e) => setLocalUserName(e.target.value)}
-                  className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-base xl:text-xl transition-all"
-                  placeholder={t('uName')}
-                />
+                <label className="block text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('uName')}</label>
+                <input type="text" value={localUserName} onChange={(e) => setLocalUserName(e.target.value)} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-base xl:text-xl transition-all" placeholder={t('uName')} />
               </div>
             </div>
-            
             <div className="pt-2 flex items-center gap-6">
               <Button onClick={handleSaveProfile} className="px-10 py-3.5 shadow-xl bg-blue-600 hover:bg-blue-700">
                 <Save className="w-5 h-5 xl:w-6 xl:h-6" /> {isSaved ? t('profileUpdated') : t('saveProfile')}
@@ -130,30 +109,25 @@ const Settings: React.FC = () => {
           </div>
         </Card>
 
-        {/* Interaction Tags Management Section */}
         <Card className="p-8 xl:p-12 shadow-sm border-2">
           <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
             <Activity className="text-amber-500 w-7 h-7 xl:w-8 xl:h-8" /> {t('interactionTagManagement')}
           </h3>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {renderTagEditor("interactionType", 'interactionTypes')}
             {renderTagEditor("interactionEffect", 'interactionEffects')}
           </div>
         </Card>
 
-        {/* General Tag Management */}
         <Card className="p-8 xl:p-12 shadow-sm border-2">
           <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
             <Tags className="text-indigo-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('tagManagement')}
           </h3>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {renderTagEditor("tagsSampleStatus", 'sampleStatus')}
             {renderTagEditor("tagsCrystalType", 'crystalType')}
             {renderTagEditor("tagsProductCategory", 'productCategory')}
             {renderTagEditor("tagsProductForm", 'productForm')}
-            
             <div className="md:col-span-2 pt-10 border-t dark:border-slate-800">
                <h4 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 uppercase tracking-wider">
                   <Presentation size={24} className="text-indigo-500" /> {t('exhibitionMetadata')}
@@ -163,60 +137,27 @@ const Settings: React.FC = () => {
           </div>
         </Card>
 
-        {/* Appearance & Language Selection */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <Card className="p-8 xl:p-12 shadow-sm border-2">
             <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
               <Monitor className="text-blue-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('appearance')}
             </h3>
-            
             <div className="grid grid-cols-2 gap-4">
-               <button
-                  onClick={() => toggleTheme('light')}
-                  className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${
-                    theme === 'light' 
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-lg' 
-                      : 'border-slate-100 text-slate-400 hover:bg-slate-50'
-                  }`}
-               >
+               <button onClick={() => toggleTheme('light')} className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${theme === 'light' ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-lg' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
                   <Sun className="w-6 h-6 xl:w-8 xl:h-8" />
                   <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">{t('lightMode')}</span>
                </button>
-
-               <button
-                  onClick={() => toggleTheme('warm')}
-                  className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${
-                    theme === 'warm' 
-                      ? 'border-amber-600 bg-amber-50 text-amber-800 shadow-lg' 
-                      : 'border-slate-100 text-slate-400 hover:bg-slate-50'
-                  }`}
-               >
+               <button onClick={() => toggleTheme('warm')} className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${theme === 'warm' ? 'border-amber-600 bg-amber-50 text-amber-800 shadow-lg' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
                   <Coffee className="w-6 h-6 xl:w-8 xl:h-8" />
                   <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">Warm Light</span>
                </button>
-
-               <button
-                  onClick={() => toggleTheme('dark')}
-                  className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${
-                    theme === 'dark' 
-                      ? 'border-blue-500 bg-slate-800 text-blue-400 shadow-lg' 
-                      : 'border-slate-800 text-slate-500 hover:bg-slate-800/50'
-                  }`}
-               >
+               <button onClick={() => toggleTheme('dark')} className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${theme === 'dark' ? 'border-blue-500 bg-slate-800 text-blue-400 shadow-lg' : 'border-slate-800 text-slate-500 hover:bg-slate-800/50'}`}>
                   <Moon className="w-6 h-6 xl:w-8 xl:h-8" />
                   <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">{t('darkMode')}</span>
                </button>
-
-               <button
-                  onClick={() => toggleTheme('muted-dark')}
-                  className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${
-                    theme === 'muted-dark' 
-                      ? 'border-indigo-500 bg-[#25262b] text-indigo-400 shadow-lg' 
-                      : 'border-slate-800 text-slate-500 hover:bg-slate-800/50'
-                  }`}
-               >
-                  <CloudMoon className="w-6 h-6 xl:w-8 xl:h-8" />
-                  <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">Muted Dark</span>
+               <button onClick={() => toggleTheme('dark-green')} className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${theme === 'dark-green' ? 'border-emerald-500 bg-[#2b3631] text-emerald-400 shadow-lg' : 'border-slate-800 text-slate-500 hover:bg-slate-800/50'}`}>
+                  <Leaf className="w-6 h-6 xl:w-8 xl:h-8" />
+                  <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">Dark Green</span>
                </button>
             </div>
           </Card>
@@ -225,27 +166,11 @@ const Settings: React.FC = () => {
             <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
               <Languages className="text-purple-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('languageSettings')}
             </h3>
-            
             <div className="space-y-4">
-              <button
-                 onClick={() => setLanguage('en')}
-                 className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${
-                   language === 'en'
-                     ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-lg'
-                     : 'border-slate-100 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800'
-                 }`}
-              >
+              <button onClick={() => setLanguage('en')} className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${language === 'en' ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-lg' : 'border-slate-100 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                  <span className="font-black text-xs xl:text-sm uppercase tracking-[0.1em]">{t('english')}</span>
               </button>
-
-              <button
-                 onClick={() => setLanguage('zh')}
-                 className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${
-                   language === 'zh'
-                     ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-lg'
-                     : 'border-slate-100 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800'
-                 }`}
-              >
+              <button onClick={() => setLanguage('zh')} className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${language === 'zh' ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-lg' : 'border-slate-100 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                  <span className="font-black text-xs xl:text-sm uppercase tracking-[0.1em]">{t('chinese')}</span>
               </button>
             </div>

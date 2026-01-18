@@ -1,11 +1,10 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Language, translations } from '../utils/i18n';
 import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction } from '../types';
 import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
-export type ThemeMode = 'light' | 'dark' | 'warm' | 'muted-dark';
+export type ThemeMode = 'light' | 'dark' | 'warm' | 'dark-green';
 
 // Helper to handle the serialized summary format: (StarStatus)<TypeTag>//ExhibitionTag{EffectTag}Content
 export const parseInteractionSummary = (summary: string) => {
@@ -53,20 +52,15 @@ export const parseInteractionSummary = (summary: string) => {
 };
 
 // Constant arrays for bilingual tag matching in date logic
-// Strictly recognizes both standard English internal keys and the user's specific Chinese strings
 const REPLY_TAGS = ['Customer Reply', 'Customer Reply & Follow-up', '对方回复', '对方回复及我方跟进'];
 const FOLLOWUP_TAGS = ['Our Follow-up', 'Customer Reply & Follow-up', '我方跟进', '对方回复及我方跟进'];
 
 // Helper: Recalculate dynamic dates based on full interaction history
 export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
-  // Sort all logs by date descending (newest first)
   const sorted = [...interactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
-  // 1. Last Contact Date (The date of the newest log, regardless of tags)
   const lastContact = sorted.length > 0 ? sorted[0].date : undefined;
 
-  // 2. Last Customer Reply Date (Unreplied)
-  // Most recent date where Effect Tag indicates customer response
   let lastCustomerReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
@@ -76,8 +70,6 @@ export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
     }
   }
 
-  // 3. Last My Reply Date (Unfollowed)
-  // Most recent date where Effect Tag indicates our follow-up
   let lastMyReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
@@ -132,7 +124,6 @@ const DEFAULT_TAGS: TagOptions = {
   productCategory: ['Agglomerated Diamond', 'Nano Diamond', 'Spherical Diamond', 'Diamond Ball', 'Micron', 'CVD'],
   productForm: ['Powder', 'Suspension'],
   eventSeries: ['Semicon', 'Optical Expo', 'Industrial Fair'],
-  // Reverted to user's strict Chinese strings
   interactionTypes: ['无', '对方邮件', '我方邮件', '双方邮件', '展会相见', '视频会议', '线下会面'],
   interactionEffects: ['无', '对方回复', '我方跟进', '对方回复及我方跟进']
 };
@@ -140,7 +131,7 @@ const DEFAULT_TAGS: TagOptions = {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<ThemeMode>(() => {
     const savedTheme = localStorage.getItem('theme') as ThemeMode;
-    return (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'warm' || savedTheme === 'muted-dark') ? savedTheme : 'light';
+    return (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'warm' || savedTheme === 'dark-green') ? savedTheme : 'light';
   });
   
   const [language, setLanguageState] = useState<Language>(() => {
@@ -248,13 +239,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const root = document.documentElement;
-    // Clear all previous theme markers
-    root.classList.remove('dark', 'theme-warm', 'theme-muted-dark');
+    root.classList.remove('dark', 'theme-warm', 'theme-dark-green');
     
-    // Apply new theme class
     if (theme === 'dark') root.classList.add('dark');
     else if (theme === 'warm') root.classList.add('theme-warm');
-    else if (theme === 'muted-dark') root.classList.add('theme-muted-dark');
+    else if (theme === 'dark-green') root.classList.add('theme-dark-green');
     
     localStorage.setItem('theme', theme);
   }, [theme]);
@@ -356,7 +345,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const clearDatabase = () => {
-    // Reset to demo state
     setCustomersState(MOCK_CUSTOMERS);
     setSamplesState(MOCK_SAMPLES);
     setMasterProducts(MOCK_MASTER_PRODUCTS);
