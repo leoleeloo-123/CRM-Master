@@ -274,7 +274,7 @@ const SampleProfile: React.FC = () => {
              <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-400" />
            </button>
            <div>
-              <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4 uppercase">{sample.sampleName}</h1>
+              <h1 className="text-2xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-4 uppercase">{sample.sampleName}</h1>
               <div className="flex items-center gap-4">
                  <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest">{t('customer')}</span>
                  <div 
@@ -298,7 +298,7 @@ const SampleProfile: React.FC = () => {
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
           {/* Left Column (Narrow Cards) */}
           <div className="space-y-8">
-             {/* Integrated Status Card (Status + Test + Aging) */}
+             {/* Integrated Status Card (Status + Test + Aging) - Redesigned to be flatter */}
              <Card className={`overflow-hidden border-l-4 border-l-blue-600 shadow-sm rounded-3xl transition-all ${isEditingStatus ? 'ring-4 ring-blue-500/20' : ''}`}>
                 <div className={headerClass}>
                    <h3 className={titleClass}><Activity className="w-5 h-5 text-blue-600" /> {t('status')}</h3>
@@ -306,7 +306,7 @@ const SampleProfile: React.FC = () => {
                      {isEditingStatus ? <X className="w-4 h-4" /> : <PencilLine className="w-4 h-4" />}
                    </button>
                 </div>
-                <div className="p-8 space-y-8 bg-white dark:bg-slate-900/40">
+                <div className="p-6 xl:px-8 xl:py-6 bg-white dark:bg-slate-900/40">
                    {isEditingStatus ? (
                       <div className="space-y-6">
                          <div className="space-y-2">
@@ -326,36 +326,24 @@ const SampleProfile: React.FC = () => {
                          <Button onClick={handleSaveStatus} className="w-full bg-blue-600 py-3 font-black shadow-lg shadow-blue-600/20"><Save size={18} className="mr-2" /> {t('save')}</Button>
                       </div>
                    ) : (
-                      <div className="space-y-8">
-                        <div className="grid grid-cols-2 gap-4">
-                           <div className="space-y-2">
-                              <span className={labelClass}>{t('currentStatus')}</span>
-                              <div className="flex h-10 items-center">
-                                 <Badge color="blue"><span className="text-xs xl:text-sm font-black uppercase">{t(sample.status as any)}</span></Badge>
-                              </div>
-                           </div>
-                           <div className="space-y-2">
-                              <span className={labelClass}>{t('testFinished')}</span>
-                              <div className="flex h-10 items-center">
-                                 {sample.testStatus === 'Finished' ? <Badge color="green"><span className="text-xs xl:text-sm font-black uppercase">{t('filterTestFinished')}</span></Badge> : sample.testStatus === 'Terminated' ? <Badge color="red"><span className="text-xs xl:text-sm font-black uppercase">{t('projectTerminated')}</span></Badge> : <Badge color="yellow"><span className="text-xs xl:text-sm font-black uppercase">{t('filterTestOngoing')}</span></Badge>}
-                              </div>
+                      <div className="grid grid-cols-3 gap-6 items-center">
+                        <div className="space-y-2">
+                           <span className={labelClass}>{t('currentStatus')}</span>
+                           <div className="flex h-8 items-center">
+                              <Badge color="blue"><span className="text-[10px] xl:text-xs font-black uppercase">{t(sample.status as any)}</span></Badge>
                            </div>
                         </div>
-                        
-                        {/* Integrated Aging Counter */}
-                        <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
-                           <div className="flex items-center justify-between">
-                              <div className="flex flex-col">
-                                 <span className={labelClass}>{t('updateStatus')}</span>
-                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{t('daysSinceUpdate')}</span>
-                              </div>
-                              <div className="flex items-baseline gap-2 group relative">
-                                 <span className={`text-4xl xl:text-5xl font-black ${agingColor} tabular-nums tracking-tight`}>{agingDays}</span>
-                                 <span className="text-xs font-black text-slate-400 uppercase">Days</span>
-                                 <div className="absolute -right-8 top-1/2 -translate-y-1/2 p-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Timer size={14} className="text-slate-400" />
-                                 </div>
-                              </div>
+                        <div className="space-y-2">
+                           <span className={labelClass}>{t('testFinished')}</span>
+                           <div className="flex h-8 items-center">
+                              {sample.testStatus === 'Finished' ? <Badge color="green"><span className="text-[10px] xl:text-xs font-black uppercase">{t('filterTestFinished')}</span></Badge> : sample.testStatus === 'Terminated' ? <Badge color="red"><span className="text-[10px] xl:text-xs font-black uppercase">{t('projectTerminated')}</span></Badge> : <Badge color="yellow"><span className="text-[10px] xl:text-xs font-black uppercase">{t('filterTestOngoing')}</span></Badge>}
+                           </div>
+                        </div>
+                        <div className="space-y-1 text-right">
+                           <span className={labelClass}>{t('updateStatus')}</span>
+                           <div className="flex items-baseline justify-end gap-1.5 group relative">
+                              <span className={`text-3xl xl:text-4xl font-black ${agingColor} tabular-nums tracking-tight`}>{agingDays}</span>
+                              <span className="text-[9px] font-black text-slate-400 uppercase">Days</span>
                            </div>
                         </div>
                       </div>
