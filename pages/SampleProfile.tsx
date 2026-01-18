@@ -297,7 +297,7 @@ const SampleProfile: React.FC = () => {
        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 xl:gap-8">
           <Card className={`overflow-hidden border-l-4 border-l-blue-600 shadow-sm rounded-3xl transition-all ${isEditingStatus ? 'ring-4 ring-blue-500/20' : ''}`}>
              <div className={headerClass}>
-                <h3 className="font-black text-sm xl:text-base text-slate-700 dark:text-slate-300 uppercase tracking-wider">{t('currentStatus')}</h3>
+                <h3 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white uppercase tracking-wider">{t('currentStatus')}</h3>
                 <button onClick={() => setIsEditingStatus(!isEditingStatus)} className={editBtnStyle}>
                   <PencilLine className="w-4 h-4" />
                 </button>
@@ -323,7 +323,7 @@ const SampleProfile: React.FC = () => {
 
           <Card className={`overflow-hidden shadow-sm rounded-3xl transition-all ${isEditingTest ? 'ring-4 ring-blue-500/20' : ''}`}>
              <div className={headerClass}>
-                <h3 className="font-black text-sm xl:text-base text-slate-700 dark:text-slate-300 uppercase tracking-wider">{t('testFinished')}</h3>
+                <h3 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white uppercase tracking-wider">{t('testFinished')}</h3>
                 <button onClick={() => setIsEditingTest(!isEditingTest)} className={editBtnStyle}><PencilLine className="w-4 h-4" /></button>
              </div>
              <div className="p-6 xl:p-8 bg-white dark:bg-slate-900/40 min-h-[100px] flex items-center">
@@ -346,7 +346,7 @@ const SampleProfile: React.FC = () => {
 
           <Card className={`overflow-hidden shadow-sm rounded-3xl transition-all ${isEditingTracking ? 'ring-4 ring-blue-500/20' : ''}`}>
              <div className={headerClass}>
-                <h3 className="font-black text-sm xl:text-base text-slate-700 dark:text-slate-300 uppercase tracking-wider">{t('tracking')}</h3>
+                <h3 className="font-black text-lg xl:text-xl text-slate-900 dark:text-white uppercase tracking-wider">{t('tracking')}</h3>
                 <button onClick={() => setIsEditingTracking(!isEditingTracking)} className={editBtnStyle}><PencilLine className="w-4 h-4" /></button>
              </div>
              <div className="p-6 xl:p-8 bg-white dark:bg-slate-900/40 min-h-[100px] flex items-center">
@@ -715,25 +715,6 @@ const SampleProfile: React.FC = () => {
             </div>
          </Modal>
        )}
-
-       {/* Name Modal */}
-       <Modal isOpen={isEditingNameModalOpen} onClose={() => setIsEditingNameModalOpen(false)} title={t('editSample')}>
-          <div className="space-y-6">
-             <div className="space-y-2">
-                <label className={labelClass}>{t('nickname')}</label>
-                <input 
-                  className="w-full p-4 border-2 rounded-2xl font-black text-lg dark:bg-slate-800 outline-none focus:border-blue-500 transition-all shadow-inner" 
-                  value={tempName} 
-                  onChange={(e) => setTempName(e.target.value)} 
-                  autoFocus
-                />
-             </div>
-             <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-800">
-                <Button variant="secondary" onClick={() => setIsEditingNameModalOpen(false)}>{t('cancel')}</Button>
-                <Button onClick={() => { saveSampleUpdate({ nickname: tempName }); setIsEditingNameModalOpen(false); }} className="bg-blue-600 px-8 font-black">{t('save')}</Button>
-             </div>
-          </div>
-       </Modal>
     </div>
   );
 };
