@@ -1,16 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink } from '../types';
 import { Card, Badge, Button, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check, Star, Info, Timer } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check, Star, Info, Timer, Calendar } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 
 const SampleProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { samples, customers, setSamples, t, tagOptions, syncSampleToCatalog } = useApp();
+  const { samples, customers, setSamples, t, tagOptions, syncSampleToCatalog, language } = useApp();
 
   const sample = samples.find(s => s.id === id);
   const customer = customers.find(c => c.id === sample?.customerId);
@@ -85,16 +85,12 @@ const SampleProfile: React.FC = () => {
     return sorted.map(item => `【${item.date}】${item.text}`).join(' ||| ');
   };
 
-  /**
-   * CRITICAL UPDATE: LOGIC DRIVEN DATE
-   * Every time any information is saved, added, or deleted, lastStatusDate refreshes to today.
-   */
   const saveSampleUpdate = (fields: Partial<Sample>) => {
     if (!sample) return;
     const today = format(new Date(), 'yyyy-MM-dd');
     setSamples(prev => prev.map(s => s.id === id ? { 
       ...s, 
-      lastStatusDate: today, // Logic driven: auto-refresh to today on any change
+      lastStatusDate: today,
       ...fields
     } : s));
   };
@@ -245,11 +241,13 @@ const SampleProfile: React.FC = () => {
 
   const isTestFinished = sample.testStatus === 'Finished' || sample.testStatus === 'Terminated';
   const urgency = isTestFinished ? 'none' : getUrgencyLevel(sample.nextActionDate);
-  const urgencyClass = isTestFinished 
-    ? "bg-slate-50 border-slate-200 dark:bg-slate-900/20 dark:border-slate-800"
-    : urgency === 'urgent' ? "bg-rose-50 border-rose-100" 
-    : urgency === 'warning' ? "bg-amber-50 border-amber-200" 
-    : "bg-slate-50 border-slate-200";
+
+  const daysRemaining = useMemo(() => {
+    if (!sample?.nextActionDate) return null;
+    const targetDate = parseLocalDate(sample.nextActionDate);
+    if (!isValid(targetDate)) return null;
+    return differenceInDays(startOfDay(targetDate), startOfDay(new Date()));
+  }, [sample?.nextActionDate]);
 
   // Aging logic for the integrated counter
   const agingDate = sample.lastStatusDate ? parseLocalDate(sample.lastStatusDate) : new Date();
@@ -264,6 +262,7 @@ const SampleProfile: React.FC = () => {
   const editBtnStyle = "p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-blue-600 hover:shadow-sm transition-all active:scale-90 shadow-none";
   const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
   const valueClass = "font-black text-slate-900 dark:text-white text-sm xl:text-base text-right";
+  const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
 
   return (
     <div className="space-y-8 xl:space-y-12 animate-in fade-in duration-500 pb-20">
@@ -484,46 +483,47 @@ const SampleProfile: React.FC = () => {
 
           {/* Right Column (Wider Cards) */}
           <div className="lg:col-span-2 space-y-8">
-             {/* Plan Banner */}
-             <Card className={`overflow-hidden border-2 rounded-3xl shadow-sm bg-white dark:bg-slate-900/40 transition-colors ${urgencyClass}`}>
+             {/* Plan Banner - Style aligned with Customer Profile */}
+             <Card className="overflow-hidden border shadow-sm rounded-3xl bg-white dark:bg-slate-900/40">
                 <div className={headerClass}>
                    <h3 className={titleClass}><Clock className="w-5 h-5 text-blue-600" /> {t('upcomingPlanHeader')}</h3>
-                   <button onClick={() => setIsEditingPlan(true)} className={`${editBtnStyle} bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white hover:shadow-lg ${isTestFinished ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={isTestFinished}>
-                      <PencilLine size={16} />
+                   <button onClick={() => setIsEditingPlan(true)} className={editBtnStyle}>
+                      <PencilLine size={20} />
                    </button>
                 </div>
-                <div className="p-8 xl:p-10">
-                   <div className="flex items-center gap-6 mb-8">
-                      <div className="p-4 bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-800">
-                         <Clock className="w-8 h-8 xl:w-10 xl:h-10 text-slate-900 dark:text-white" />
-                      </div>
-                      <div>
-                         <h4 className="font-black text-[10px] xl:text-xs text-slate-400 tracking-[0.2em] uppercase mb-1.5">{t('daysUntilDDL')} / {t('back')}</h4>
-                         <div className="flex items-center gap-3">
-                            <span className="text-lg xl:text-xl font-black text-slate-900 dark:text-white tracking-tight">DDL: {isTestFinished ? 'N/A' : (sample.nextActionDate || 'TBD')}</span>
-                            {urgency === 'urgent' && <Badge color="red">URGENT</Badge>}
-                         </div>
-                      </div>
-                   </div>
-
-                   <div className="flex items-center gap-3 mb-8 px-2">
-                      <button 
-                        onClick={handleToggleStar}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 font-black text-[10px] xl:text-xs uppercase transition-all active:scale-95 ${sample.isStarredSample ? 'border-amber-400 bg-amber-50 text-amber-700 shadow-md' : 'border-slate-100 dark:border-slate-800 text-slate-400 bg-white dark:bg-slate-900'}`}
-                      >
-                        <Star size={18} className={sample.isStarredSample ? 'fill-amber-400 text-amber-500' : 'text-slate-300'} />
-                        {t('starSample')}
-                      </button>
-                      {sample.isStarredSample && (
-                        <span className="text-[10px] font-black uppercase text-amber-500 animate-pulse tracking-widest">
-                          DDL Synced with Customer
-                        </span>
+                <div className="p-8">
+                   <div className={contentTextClass + " whitespace-pre-wrap mb-10"}>
+                      {isTestFinished ? (
+                         <span className="text-slate-400">Sample testing concluded. No further upcoming plans.</span>
+                      ) : (
+                         sample.upcomingPlan || <span className="text-slate-400">No upcoming plan logged for this sample.</span>
                       )}
                    </div>
-
-                   <p className="text-base xl:text-xl font-bold text-slate-800 dark:text-slate-200 leading-relaxed italic opacity-80 pl-2">
-                      {isTestFinished ? <span className="text-slate-400">Sample testing concluded. No further upcoming plans.</span> : (sample.upcomingPlan || <span className="text-slate-400">No upcoming plan logged for this sample.</span>)}
-                   </p>
+                   
+                   <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-black uppercase">
+                      <div className="flex items-center gap-3">
+                         <Calendar size={14} className="text-slate-400" />
+                         <span className="font-black text-slate-900 dark:text-white text-xs xl:text-sm">DDL: {isTestFinished ? 'N/A' : (sample.nextActionDate || 'TBD')}</span>
+                         {!isTestFinished && daysRemaining !== null && (
+                            <Badge color={urgency === 'urgent' ? 'red' : urgency === 'warning' ? 'yellow' : 'green'}>
+                               {Math.abs(daysRemaining)} {daysRemaining < 0 ? (language === 'en' ? 'Days Overdue' : '天逾期') : (language === 'en' ? 'Days Remaining' : '天剩余')}
+                            </Badge>
+                         )}
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                         <button 
+                            onClick={handleToggleStar}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all active:scale-95 ${sample.isStarredSample ? 'border-amber-200 bg-amber-50 text-amber-600' : 'border-slate-100 text-slate-300'}`}
+                         >
+                           <Star size={12} className={sample.isStarredSample ? 'fill-amber-400' : ''} />
+                           <span className="text-[10px] font-black uppercase tracking-wider">{t('starred')}</span>
+                         </button>
+                         {sample.isStarredSample && (
+                           <span className="text-[9px] font-bold text-amber-500/80 animate-pulse">SYNCED</span>
+                         )}
+                      </div>
+                   </div>
                 </div>
              </Card>
 
