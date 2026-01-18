@@ -5,6 +5,7 @@ import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction } 
 import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
+export type ThemeMode = 'light' | 'dark' | 'warm' | 'muted-dark';
 
 // Helper to handle the serialized summary format: (StarStatus)<TypeTag>//ExhibitionTag{EffectTag}Content
 export const parseInteractionSummary = (summary: string) => {
@@ -90,8 +91,8 @@ export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
 };
 
 interface AppContextType {
-  theme: 'light' | 'dark';
-  toggleTheme: (theme: 'light' | 'dark') => void;
+  theme: ThemeMode;
+  toggleTheme: (theme: ThemeMode) => void;
   language: Language;
   setLanguage: (lang: Language) => void;
   fontSize: FontSize;
@@ -137,9 +138,9 @@ const DEFAULT_TAGS: TagOptions = {
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return (savedTheme === 'dark' || savedTheme === 'light') ? savedTheme : 'light';
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const savedTheme = localStorage.getItem('theme') as ThemeMode;
+    return (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'warm' || savedTheme === 'muted-dark') ? savedTheme : 'light';
   });
   
   const [language, setLanguageState] = useState<Language>(() => {
@@ -246,8 +247,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [exhibitions]);
 
   useEffect(() => {
-    if (theme === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    const root = document.documentElement;
+    // Clear all previous theme markers
+    root.classList.remove('dark', 'theme-warm', 'theme-muted-dark');
+    
+    // Apply new theme class
+    if (theme === 'dark') root.classList.add('dark');
+    else if (theme === 'warm') root.classList.add('theme-warm');
+    else if (theme === 'muted-dark') root.classList.add('theme-muted-dark');
+    
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -270,7 +278,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem('isDemoData', String(isDemoData)); }, [isDemoData]);
   useEffect(() => { localStorage.setItem('tagOptions', JSON.stringify(tagOptions)); }, [tagOptions]);
 
-  const toggleTheme = (newTheme: 'light' | 'dark') => setTheme(newTheme);
+  const toggleTheme = (newTheme: ThemeMode) => setTheme(newTheme);
   const setLanguage = (lang: Language) => setLanguageState(lang);
   const setFontSize = (size: FontSize) => setFontSizeState(size);
   const setCompanyName = (name: string) => setCompanyNameState(name);

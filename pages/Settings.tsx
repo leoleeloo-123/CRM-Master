@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation, Activity, ClipboardList } from 'lucide-react';
+import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation, Activity, ClipboardList, Coffee, CloudMoon } from 'lucide-react';
 import { TagOptions } from '../types';
 import { getCanonicalTag } from '../utils/i18n';
 
@@ -169,29 +170,53 @@ const Settings: React.FC = () => {
               <Monitor className="text-blue-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('appearance')}
             </h3>
             
-            <div className="flex gap-6">
+            <div className="grid grid-cols-2 gap-4">
                <button
                   onClick={() => toggleTheme('light')}
-                  className={`flex-1 p-6 rounded-3xl border-4 flex flex-col items-center gap-4 transition-all active:scale-95 ${
+                  className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${
                     theme === 'light' 
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-slate-800 shadow-xl' 
-                      : 'border-slate-100 dark:border-slate-800 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-lg' 
+                      : 'border-slate-100 text-slate-400 hover:bg-slate-50'
                   }`}
                >
-                  <Sun className="w-8 h-8 xl:w-10 xl:h-10" />
-                  <span className="font-black text-xs xl:text-sm uppercase tracking-widest">{t('lightMode')}</span>
+                  <Sun className="w-6 h-6 xl:w-8 xl:h-8" />
+                  <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">{t('lightMode')}</span>
+               </button>
+
+               <button
+                  onClick={() => toggleTheme('warm')}
+                  className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${
+                    theme === 'warm' 
+                      ? 'border-amber-600 bg-amber-50 text-amber-800 shadow-lg' 
+                      : 'border-slate-100 text-slate-400 hover:bg-slate-50'
+                  }`}
+               >
+                  <Coffee className="w-6 h-6 xl:w-8 xl:h-8" />
+                  <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">Warm Light</span>
                </button>
 
                <button
                   onClick={() => toggleTheme('dark')}
-                  className={`flex-1 p-6 rounded-3xl border-4 flex flex-col items-center gap-4 transition-all active:scale-95 ${
+                  className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${
                     theme === 'dark' 
-                      ? 'border-blue-600 bg-slate-800 text-blue-400 shadow-xl' 
-                      : 'border-slate-100 dark:border-slate-800 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      ? 'border-blue-500 bg-slate-800 text-blue-400 shadow-lg' 
+                      : 'border-slate-800 text-slate-500 hover:bg-slate-800/50'
                   }`}
                >
-                  <Moon className="w-8 h-8 xl:w-10 xl:h-10" />
-                  <span className="font-black text-xs xl:text-sm uppercase tracking-widest">{t('darkMode')}</span>
+                  <Moon className="w-6 h-6 xl:w-8 xl:h-8" />
+                  <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">{t('darkMode')}</span>
+               </button>
+
+               <button
+                  onClick={() => toggleTheme('muted-dark')}
+                  className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${
+                    theme === 'muted-dark' 
+                      ? 'border-indigo-500 bg-[#25262b] text-indigo-400 shadow-lg' 
+                      : 'border-slate-800 text-slate-500 hover:bg-slate-800/50'
+                  }`}
+               >
+                  <CloudMoon className="w-6 h-6 xl:w-8 xl:h-8" />
+                  <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">Muted Dark</span>
                </button>
             </div>
           </Card>

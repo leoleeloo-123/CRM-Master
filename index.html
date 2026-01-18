@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -34,6 +35,70 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
+      }
+
+      /* Warm Light Mode Styles */
+      .theme-warm {
+        background-color: #f4f1ea !important; /* Soft warm gray background */
+        color: #3c3836 !important;
+      }
+      .theme-warm .bg-slate-50 { background-color: #edeae0 !important; }
+      .theme-warm .bg-white, 
+      .theme-warm .card, 
+      .theme-warm div[class*="bg-white"] { 
+        background-color: #fffcf9 !important; /* Near-white cream */
+        border-color: #e8e4d8 !important;
+      }
+      .theme-warm .bg-slate-100,
+      .theme-warm div[class*="bg-slate-100"] {
+        background-color: #ece8df !important;
+      }
+      .theme-warm .text-slate-900, 
+      .theme-warm .text-slate-800 { 
+        color: #3c3836 !important; 
+      }
+      .theme-warm .text-slate-600,
+      .theme-warm .text-slate-500 {
+        color: #665c54 !important;
+      }
+      .theme-warm .border-slate-200,
+      .theme-warm .border-slate-100 {
+        border-color: #e8e4d8 !important;
+      }
+
+      /* Muted Dark Mode Styles */
+      .theme-muted-dark {
+        background-color: #1a1b1e !important; /* 克制的蓝灰黑 */
+        color: #c1c2c5 !important;
+      }
+      .theme-muted-dark .bg-slate-50,
+      .theme-muted-dark .bg-white,
+      .theme-muted-dark div[class*="bg-white"],
+      .theme-muted-dark div[class*="bg-slate-900"] {
+        background-color: #1a1b1e !important;
+      }
+      .theme-muted-dark .card,
+      .theme-muted-dark div[class*="bg-slate-800"] {
+        background-color: #25262b !important; /* 柔和的卡片层级 */
+        border-color: #373a40 !important;
+      }
+      .theme-muted-dark .bg-slate-100,
+      .theme-muted-dark div[class*="bg-slate-800/80"] {
+        background-color: #141517 !important;
+      }
+      .theme-muted-dark .text-slate-900,
+      .theme-muted-dark .text-white,
+      .theme-muted-dark h1, .theme-muted-dark h2, .theme-muted-dark h3 {
+        color: #e8e9eb !important;
+      }
+      .theme-muted-dark .text-slate-400,
+      .theme-muted-dark .text-slate-500 {
+        color: #909296 !important;
+      }
+      .theme-muted-dark .border-slate-200,
+      .theme-muted-dark .border-slate-700,
+      .theme-muted-dark .border-slate-800 {
+        border-color: #373a40 !important;
       }
 
       /* Capture Logic Styling: Force stability for html-to-image */
