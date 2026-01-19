@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Customer, Sample } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel, Button, parseLocalDate, Modal } from '../components/Common';
-import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box, Filter, Maximize2, Minimize2, ChevronDown, ChevronRight as ChevronRightSmall, ChevronUp, Clock, ListTodo, FileText, Download, Printer, X, Image as ImageIcon, RefreshCcw, FileBarChart2, ClipboardList } from 'lucide-react';
+import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box, Filter, Maximize2, Minimize2, ChevronDown, ChevronRight as ChevronRightSmall, ChevronUp, Clock, ListTodo, FileText, Download, Printer, X, ImageIcon, RefreshCcw, FileBarChart2, ClipboardList } from 'lucide-react';
 import { 
   format, isBefore, addDays, 
   endOfMonth, endOfWeek, eachDayOfInterval, 
@@ -411,7 +411,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   
   const labelClass = "text-[10px] xl:text-[11px] font-black uppercase text-slate-400 tracking-widest";
   const sharedTitleClass = "font-black text-slate-800 dark:text-white text-sm xl:text-lg uppercase tracking-wider flex items-center gap-3";
-  const statCardClass = "p-3 xl:p-4 flex items-center gap-4 border-l-4 shadow-sm border-2 rounded-2xl flex-1 h-full transition-all";
+  const statCardClass = "p-3 xl:p-4 flex items-center gap-4 border-l-4 shadow-sm border-2 rounded-lg flex-1 h-full transition-all";
 
   const handleDateFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = parseLocalDate(e.target.value);
@@ -475,7 +475,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           </div>
         </div>
 
-        {/* Main Grid Layout - Organized by Rows to align vertical lengths */}
+        {/* Main Grid Layout - Optimized border consistency */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch">
           
           {/* TOP ROW: Stats + Generate Report Toolbar */}
@@ -501,8 +501,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             </Card>
           </div>
 
-          {/* Row 1, Col 2-4: Generate Report Toolbar */}
-          <Card className="lg:col-span-3 p-5 xl:p-6 shadow-sm flex flex-col lg:flex-row items-center gap-6 xl:gap-8 border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900/20 transition-all h-full">
+          {/* Row 1, Col 2-4: Generate Report Toolbar - Standardized to border-2 */}
+          <Card className="lg:col-span-3 p-5 xl:p-6 shadow-sm flex flex-col lg:flex-row items-center gap-6 xl:gap-8 border-2 overflow-hidden bg-white dark:bg-slate-900/20 transition-all h-full">
             {/* Step 1: Select Template */}
             <div className="flex-1 w-full space-y-3">
               <div className="flex items-center gap-3">
@@ -558,7 +558,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           </Card>
 
           {/* BOTTOM ROW: Daily Agenda + Calendar */}
-          {/* Row 2, Col 1: Daily Agenda Card */}
+          {/* Row 2, Col 1: Daily Agenda Card - Reference Standard */}
           <div className="lg:col-span-1">
             <Card className="p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full">
               <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
@@ -590,7 +590,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                       <div className="space-y-3">
                         <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">{t('agendaCustomers')}</span>
                         {dailyCustomers.map(c => (
-                            <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-rose-500 bg-rose-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800" onClick={() => navigate(`/customers/${c.id}`)}>
+                            <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-rose-500 bg-rose-50/20 transition-all cursor-pointer border-2 dark:border-slate-700" onClick={() => navigate(`/customers/${c.id}`)}>
                                 <h4 className="font-black text-rose-800 dark:text-rose-400 text-sm xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
                                 <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || t('actionNeeded')}</p>
                             </Card>
@@ -601,7 +601,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                       <div className="space-y-3 pt-2">
                         <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">{t('agendaSamples')}</span>
                         {dailySamples.map(s => (
-                          <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 bg-blue-50/20 transition-all cursor-pointer border border-slate-50 dark:border-slate-800 group" onClick={() => navigate(`/samples/${s.id}`)}>
+                          <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 bg-blue-50/20 transition-all cursor-pointer border-2 dark:border-slate-700 group" onClick={() => navigate(`/samples/${s.id}`)}>
                             <h4 className="font-black text-blue-800 dark:text-blue-400 text-sm xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
                             <p className="text-xs xl:text-sm font-bold text-slate-500 line-clamp-2 italic pl-2 border-l-2 border-blue-100 mt-1">{s.customerName}</p>
                           </Card>
