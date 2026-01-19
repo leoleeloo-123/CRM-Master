@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
@@ -155,9 +156,9 @@ const Settings: React.FC = () => {
                   <Moon className="w-6 h-6 xl:w-8 xl:h-8" />
                   <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">{t('darkMode')}</span>
                </button>
-               <button onClick={() => toggleTheme('dark-green')} className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${theme === 'dark-green' ? 'border-emerald-500 bg-[#2b3631] text-emerald-400 shadow-lg' : 'border-slate-800 text-slate-500 hover:bg-slate-800/50'}`}>
+               <button onClick={() => toggleTheme('dark-green')} className={`p-4 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all active:scale-95 ${theme === 'dark-green' ? 'border-emerald-600 bg-[#e8efeb] text-emerald-700 shadow-lg' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
                   <Leaf className="w-6 h-6 xl:w-8 xl:h-8" />
-                  <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">Dark Green</span>
+                  <span className="font-black text-[10px] xl:text-xs uppercase tracking-widest">Soft Green</span>
                </button>
             </div>
           </Card>

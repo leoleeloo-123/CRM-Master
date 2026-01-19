@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -52,6 +53,10 @@
       .theme-warm div[class*="bg-slate-100"] {
         background-color: #ece8df !important;
       }
+      .theme-warm .bg-slate-200,
+      .theme-warm div[class*="bg-slate-200"] {
+        background-color: #e0dbcd !important; /* Darker warm gray for headers */
+      }
       .theme-warm .text-slate-900, 
       .theme-warm .text-slate-800 { 
         color: #3c3836 !important; 
@@ -65,50 +70,51 @@
         border-color: #e8e4d8 !important;
       }
 
-      /* Dark Green Mode Styles - Optimized for contrast and readability */
+      /* Soft Green Mode Styles - Replaces Dark Green with a Light/Sage Theme */
       .theme-dark-green {
-        background-color: #1c2521 !important; /* Slightly lighter deep green base */
-        color: #f1f5f9 !important; /* High-contrast off-white text like standard dark mode */
+        background-color: #f0f4f2 !important; /* Soft Sage/Eucalyptus background */
+        color: #2c3330 !important; /* Deep charcoal charcoal with green tint */
       }
-      .theme-dark-green .bg-slate-50,
+      .theme-dark-green .bg-slate-50 { 
+        background-color: #f8faf9 !important; 
+      }
       .theme-dark-green .bg-white,
+      .theme-dark-green .card,
       .theme-dark-green div[class*="bg-white"],
       .theme-dark-green div[class*="bg-slate-900"] {
-        background-color: #1c2521 !important;
-      }
-      .theme-dark-green .card,
-      .theme-dark-green div[class*="bg-slate-800"],
-      .theme-dark-green div[class*="bg-white"] {
-        background-color: #2b3631 !important; /* Lighter card surface for contrast */
-        border-color: #3a4741 !important; /* Defined soft green border */
+        background-color: #ffffff !important; /* Pure white card body */
       }
       .theme-dark-green .bg-slate-100,
-      .theme-dark-green div[class*="bg-slate-800/80"] {
-        background-color: #161d1a !important; /* Deeper headers/recessed areas */
+      .theme-dark-green div[class*="bg-slate-100"] {
+        background-color: #e9efec !important; /* Subtle green-tint gray */
+      }
+      .theme-dark-green .bg-slate-200,
+      .theme-dark-green div[class*="bg-slate-200"] {
+        background-color: #dee6e2 !important; /* Defined light green for headers */
       }
       .theme-dark-green .text-slate-900,
-      .theme-dark-green .text-white,
+      .theme-dark-green .text-slate-800,
       .theme-dark-green h1, .theme-dark-green h2, .theme-dark-green h3 {
-        color: #ffffff !important; /* Pure white for headers as requested */
+        color: #2c3330 !important; 
       }
       .theme-dark-green .text-slate-400,
       .theme-dark-green .text-slate-500,
       .theme-dark-green .text-slate-600 {
-        color: #94a3b8 !important; /* Brighter slate-gray for secondary text */
+        color: #5c6b65 !important; /* Muted sage gray for secondary text */
       }
       .theme-dark-green .border-slate-200,
       .theme-dark-green .border-slate-100,
       .theme-dark-green .border-slate-700,
       .theme-dark-green .border-slate-800 {
-        border-color: #3a4741 !important;
+        border-color: #e2eae6 !important;
       }
-      /* Sidebar and Scrollbar blend */
+      /* Sidebar adjustment for Soft Green */
       .theme-dark-green .sidebar, .theme-dark-green aside {
-        background-color: #161d1a !important;
-        border-right-color: #2b3631 !important;
+        background-color: #ffffff !important;
+        border-right-color: #e2eae6 !important;
       }
-      .theme-dark-green .shadow-sm, .theme-dark-green .shadow-md {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1) !important;
+      .theme-dark-green .shadow-sm {
+        box-shadow: 0 1px 2px 0 rgba(44, 51, 48, 0.05) !important;
       }
 
       /* Capture Logic Styling: Force stability for html-to-image */
