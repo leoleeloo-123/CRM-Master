@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
-import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight, User, ListFilter, Maximize2, Minimize2, ExternalLink, Star } from 'lucide-react';
+import { Search, Plus, Truck, CheckCircle2, FlaskConical, ClipboardList, Filter, MoreHorizontal, GripVertical, Trash2, ArrowLeft, ArrowRight, CalendarDays, X, ChevronDown, ChevronRight, User, ListFilter, Maximize2, Minimize2, ExternalLink, Star, Activity, Box, Tag } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -19,13 +19,13 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
   const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions, language } = useApp();
   
-  // Default to list view as requested
+  // State for View Mode
   const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterTestFinished, setFilterTestFinished] = useState<string>('ongoing'); 
   
-  // Expansion state for both list and board view
+  // Expansion state
   const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
 
   // Default expand all on mount
@@ -35,7 +35,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     }
   }, [customers.length]);
 
-  // New Filters
+  // Filters
   const [filterCrystal, setFilterCrystal] = useState<string>('');
   const [filterForm, setFilterForm] = useState<string>('');
   const [filterCustomer, setFilterCustomer] = useState<string>('');
@@ -118,18 +118,15 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     return groups;
   }, [filteredSamples]);
 
-  // Derived: Are all currently filtered groups expanded?
+  // Expansion logic
   const isAllExpanded = useMemo(() => {
     if (groupedSamplesList.length === 0) return false;
     return groupedSamplesList.every(g => expandedCustomers.has(g.customerId));
   }, [groupedSamplesList, expandedCustomers]);
 
   const toggleAllExpansion = () => {
-    if (isAllExpanded) {
-      setExpandedCustomers(new Set());
-    } else {
-      setExpandedCustomers(new Set(groupedSamplesList.map(g => g.customerId)));
-    }
+    if (isAllExpanded) setExpandedCustomers(new Set());
+    else setExpandedCustomers(new Set(groupedSamplesList.map(g => g.customerId)));
   };
 
   const toggleCustomerExpansion = (cid: string) => {
@@ -139,37 +136,13 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     setExpandedCustomers(next);
   };
 
-  const getUrgencyColor = (dateStr: string) => {
-    if (!dateStr) return "bg-white dark:bg-slate-800";
-    const targetDate = parseLocalDate(dateStr);
-    if (!isValid(targetDate)) return "bg-white dark:bg-slate-800";
-    const diff = differenceInDays(startOfDay(new Date()), startOfDay(targetDate));
-    
-    if (diff < 7) return "bg-emerald-50/40 border-l-emerald-500 dark:bg-emerald-900/10";
-    if (diff < 30) return "bg-amber-50/40 border-l-amber-500 dark:bg-amber-900/10";
-    return "bg-red-50/40 border-l-red-500 dark:bg-red-900/10";
-  };
-
   const renderDaysSinceUpdate = (dateStr: string) => {
     if (!dateStr) return <span className="text-slate-400">-</span>;
     const targetDate = parseLocalDate(dateStr);
     if (!isValid(targetDate)) return <span className="text-slate-400">-</span>;
-    const diff = differenceInDays(startOfDay(new Date()), startOfDay(targetDate));
+    const diff = Math.abs(differenceInDays(startOfDay(new Date()), startOfDay(targetDate)));
     let colorClass = diff < 7 ? "text-emerald-600" : diff < 30 ? "text-amber-500" : "text-red-500";
-    return <span className={`font-bold ${colorClass}`}>{diff}d</span>;
-  };
-
-  const getTestStatusBadge = (status: TestStatus) => {
-    switch (status) {
-      case 'Finished': return <Badge color="green">{t('projectFinished')}</Badge>;
-      case 'Terminated': return <Badge color="red">{t('projectTerminated')}</Badge>;
-      default: return <Badge color="yellow">{t('projectOngoing')}</Badge>;
-    }
-  };
-
-  const getGradingBadge = (status: GradingStatus | string | undefined) => {
-    if (status === 'Graded') return <Badge color="green">{t('graded')}</Badge>;
-    return <Badge color="gray">{t('ungraded')}</Badge>;
+    return <span className={`font-black ${colorClass}`}>{diff}d</span>;
   };
 
   const resetFilters = () => {
@@ -180,343 +153,393 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     setFilterForm('');
     setFilterCustomer('');
     setFilterGrading('');
-    // Re-expand all on reset
     setExpandedCustomers(new Set(customers.map(c => c.id)));
   };
 
   const handleCreateSample = () => {
-    if (!newSample.customerId) {
-      alert("Please select a customer.");
-      return;
-    }
-
+    if (!newSample.customerId) { alert("Please select a customer."); return; }
     const targetCustomer = customers.find(c => c.id === newSample.customerId);
     if (!targetCustomer) return;
-
     const existingForCustomer = samples.filter(s => s.customerId === newSample.customerId);
     const maxIndex = existingForCustomer.reduce((max, s) => Math.max(max, s.sampleIndex || 0), 0);
     const newIndex = maxIndex + 1;
-
     const catStr = newSample.productCategory.join(', ');
     const procPart = newSample.processedSize ? ` > ${newSample.processedSize}` : '';
     const nickname = newSample.nickname.trim();
     const generatedName = `${newSample.crystalType} ${catStr} ${newSample.productForm} - ${newSample.originalSize}${procPart}${nickname ? ` (${nickname})` : ''}`;
-
     const newId = `s_${Date.now()}`;
     const now = format(new Date(), 'yyyy-MM-dd');
-
     const sampleRecord: Sample = {
-      id: newId,
-      customerId: newSample.customerId,
-      customerName: targetCustomer.name,
-      sampleIndex: newIndex,
-      sampleSKU: newSample.sampleSKU,
-      status: newSample.status,
-      lastStatusDate: now,
-      testStatus: 'Ongoing',
-      crystalType: newSample.crystalType,
-      productCategory: newSample.productCategory as ProductCategory[],
-      productForm: newSample.productForm as ProductForm,
-      originalSize: newSample.originalSize,
-      processedSize: newSample.processedSize,
-      nickname: nickname,
-      quantity: newSample.quantity || '0',
-      sampleName: generatedName,
-      requestDate: now,
-      productType: generatedName,
-      specs: `${newSample.originalSize}${procPart}`,
-      statusDetails: `【${now}】Sample record created manually.`
+      id: newId, customerId: newSample.customerId, customerName: targetCustomer.name, sampleIndex: newIndex, sampleSKU: newSample.sampleSKU, status: newSample.status, lastStatusDate: now, testStatus: 'Ongoing', crystalType: newSample.crystalType, productCategory: newSample.productCategory as ProductCategory[], productForm: newSample.productForm as ProductForm, originalSize: newSample.originalSize, processedSize: newSample.processedSize, nickname: nickname, quantity: newSample.quantity || '0', sampleName: generatedName, requestDate: now, productType: generatedName, specs: `${newSample.originalSize}${procPart}`, statusDetails: `【${now}】Sample record created manually.`
     };
-
     setSamples(prev => [...prev, sampleRecord]);
     syncSampleToCatalog(sampleRecord);
     setIsAddModalOpen(false);
     navigate(`/samples/${newId}`);
   };
 
+  const hasActiveFilters = searchTerm !== '' || filterStatus !== '' || filterTestFinished !== 'ongoing' || filterCrystal !== '' || filterForm !== '' || filterCustomer !== '' || filterGrading !== '';
+
   return (
-    <div className="flex flex-col h-full space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('sampleTracking')}</h2>
           <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('monitorSamples')}</p>
         </div>
-        <div className="flex gap-2">
-          <div className="bg-slate-100 p-1 rounded-lg flex dark:bg-slate-800">
-             <Button variant={viewMode === 'list' ? 'primary' : 'ghost'} onClick={() => setViewMode('list')} className="py-1 px-4">{t('list')}</Button>
-             <Button variant={viewMode === 'board' ? 'primary' : 'ghost'} onClick={() => setViewMode('board')} className="py-1 px-4">{t('board')}</Button>
+        <div className="flex gap-4">
+          <div className="bg-slate-100 p-1.5 rounded-xl flex dark:bg-slate-800 shadow-inner">
+             <button onClick={() => setViewMode('list')} className={`px-8 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>{t('list')}</button>
+             <button onClick={() => setViewMode('board')} className={`px-8 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>{t('board')}</button>
           </div>
-          <Button className="flex items-center gap-2 shadow-md" onClick={() => setIsAddModalOpen(true)}><Plus size={18} /> {t('newSample')}</Button>
+          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-8 py-3 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
+             <Plus size={20} />
+             <span className="font-black uppercase tracking-widest text-sm">{t('newSample')}</span>
+          </Button>
         </div>
       </div>
 
-      <Card className="p-4 flex flex-col gap-4 bg-slate-50 dark:bg-slate-800/50 border-2">
-         <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-              <input className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-900" placeholder={t('searchSample')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-            </div>
-            <div className="flex items-center gap-2">
-               <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterCustomer} onChange={e => setFilterCustomer(e.target.value)}>
-                  <option value="">{t('customer')}: All</option>
+      <Card className="p-6 xl:p-8 border-2 rounded-2xl">
+        <div className="space-y-6">
+          {/* Main Search - Matches ExhibitionList Style */}
+          <div className="relative">
+            <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
+            <input 
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all shadow-sm"
+              placeholder={t('searchSample')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Filter Pill Bar - Matches ExhibitionList Style */}
+          <div className="flex flex-wrap items-center gap-4">
+             {/* Customer Filter */}
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <User size={18} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300 max-w-[150px]"
+                  value={filterCustomer}
+                  onChange={e => setFilterCustomer(e.target.value)}
+                >
+                  <option value="">{t('allCustomers')}</option>
                   {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-               </select>
-               
-               <div className="h-full w-px bg-slate-200 dark:bg-slate-700 mx-1" />
-               
+                </select>
+             </div>
+
+             {/* Status Filter */}
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Activity size={18} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  value={filterStatus}
+                  onChange={e => setFilterStatus(e.target.value)}
+                >
+                  <option value="">Status: All</option>
+                  {FIXED_BOARD_ORDER.map(s => <option key={s} value={s}>{t(s as any)}</option>)}
+                </select>
+             </div>
+
+             {/* Test Filter */}
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <CheckCircle2 size={18} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  value={filterTestFinished}
+                  onChange={e => setFilterTestFinished(e.target.value)}
+                >
+                  <option value="all">{t('test')}: All</option>
+                  <option value="ongoing">{t('filterTestOngoing')}</option>
+                  <option value="finished">{t('filterTestFinished')}</option>
+                  <option value="terminated">{t('filterTestTerminated')}</option>
+                </select>
+             </div>
+
+             {/* Crystal Filter */}
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Box size={18} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  value={filterCrystal}
+                  onChange={e => setFilterCrystal(e.target.value)}
+                >
+                  <option value="">{t('crystal')}: All</option>
+                  {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any) || c}</option>)}
+                </select>
+             </div>
+
+             {/* Form Filter */}
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <FlaskConical size={18} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  value={filterForm}
+                  onChange={e => setFilterForm(e.target.value)}
+                >
+                  <option value="">{t('form')}: All</option>
+                  {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any) || f}</option>)}
+                </select>
+             </div>
+
+             {/* Grading Filter */}
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Tag size={18} className="text-slate-400" />
+                <select 
+                  className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300"
+                  value={filterGrading}
+                  onChange={e => setFilterGrading(e.target.value)}
+                >
+                  <option value="">{t('grading')}: All</option>
+                  <option value="Graded">{t('graded')}</option>
+                  <option value="Ungraded">{t('ungraded')}</option>
+                </select>
+             </div>
+
+             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+
+             {/* Global Expand Toggle */}
+             <button 
+              onClick={toggleAllExpansion}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 text-xs font-black uppercase tracking-widest transition-all ${
+                isAllExpanded 
+                  ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300'
+              }`}
+             >
+               {isAllExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+               {isAllExpanded ? t('collapseAll') : t('expandAll')}
+             </button>
+
+             {hasActiveFilters && (
                <button 
-                onClick={toggleAllExpansion}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                  isAllExpanded 
-                    ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300'
-                }`}
+                onClick={resetFilters}
+                className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors ml-2"
                >
-                 {isAllExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                 {isAllExpanded ? 'Collapse All' : 'Expand All'}
+                 <X size={16} /> {t('cancel')}
                </button>
+             )}
 
-               <Button variant="ghost" className="text-xs text-slate-500" onClick={resetFilters}>Reset</Button>
-            </div>
-         </div>
-         
-         <div className="flex flex-wrap items-center gap-2">
-            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-               <option value="">Status: All</option>
-               {FIXED_BOARD_ORDER.map(s => <option key={s} value={s}>{t(s as any)}</option>)}
-            </select>
-            
-            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterTestFinished} onChange={e => setFilterTestFinished(e.target.value)}>
-               <option value="all">{t('test')}: All</option>
-               <option value="ongoing">{t('filterTestOngoing')}</option>
-               <option value="finished">{t('filterTestFinished')}</option>
-               <option value="terminated">{t('filterTestTerminated')}</option>
-            </select>
+             <div className="ml-auto">
+               <span className="text-xs font-black uppercase text-slate-400 tracking-[0.2em]">
+                 {t('results')}: {filteredSamples.length}
+               </span>
+             </div>
+          </div>
 
-            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterCrystal} onChange={e => setFilterCrystal(e.target.value)}>
-               <option value="">{t('crystal')}: All</option>
-               {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any) || c}</option>)}
-            </select>
+          {/* List/Board Container */}
+          <div className="pt-2">
+            {viewMode === 'list' ? (
+              <div className="overflow-hidden border-2 rounded-2xl border-slate-100 dark:border-slate-800">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-100 dark:bg-slate-800/80 border-b-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase text-[10px] xl:text-xs font-black tracking-widest">
+                    <tr>
+                      <th className="p-6 pl-14 w-48">{t('customer')}</th>
+                      <th className="p-6 w-72">{t('product')} Spec</th>
+                      <th className="p-6 w-44">{t('docLinks')}</th>
+                      <th className="p-6 text-center">{t('grading')}</th>
+                      <th className="p-6 text-center w-20">{t('qtyAbbr')}</th>
+                      <th className="p-6">Status</th>
+                      <th className="p-6 text-center">⭐</th>
+                      <th className="p-6">Next Step</th>
+                      <th className="p-6 text-center">Aging</th>
+                      <th className="p-6">Test</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                    {groupedSamplesList.map(group => {
+                      const isExpanded = expandedCustomers.has(group.customerId);
+                      return (
+                        <React.Fragment key={group.customerId}>
+                          {/* Group Header Row - Exhibition Style */}
+                          <tr 
+                            onClick={() => toggleCustomerExpansion(group.customerId)}
+                            className="bg-slate-50/50 dark:bg-slate-800/30 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          >
+                            <td colSpan={10} className="p-5 border-y-2 border-slate-100 dark:border-slate-800">
+                              <div className="flex items-center gap-4">
+                                {isExpanded ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
+                                <span className="font-black text-slate-900 dark:text-white uppercase tracking-[0.1em] text-sm group-hover:text-blue-600 transition-colors">
+                                  {group.customerName}
+                                </span>
+                                <Badge color="gray">{group.samples.length} Samples</Badge>
+                              </div>
+                            </td>
+                          </tr>
+                          
+                          {/* Sample Rows */}
+                          {isExpanded && group.samples.map(s => {
+                            const isTestFinished = s.testStatus === 'Finished' || s.testStatus === 'Terminated';
+                            return (
+                              <tr 
+                                key={s.id} 
+                                onClick={() => navigate(`/samples/${s.id}`)} 
+                                className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 cursor-pointer transition-colors group"
+                              >
+                                <td className="p-6 pl-14">
+                                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Sample #{s.sampleIndex}</div>
+                                </td>
+                                <td className="p-6">
+                                   <div className="font-black text-blue-600 dark:text-blue-400 text-sm xl:text-base group-hover:underline transition-all leading-tight">
+                                     {s.sampleName}
+                                   </div>
+                                   <div className="text-[10px] text-slate-400 font-mono mt-1 uppercase tracking-widest">{s.sampleSKU || 'NOSKU'}</div>
+                                </td>
+                                <td className="p-6">
+                                  <div className="flex flex-col gap-1.5 max-w-[160px]">
+                                    {(s.docLinks || []).map((link, lIdx) => (
+                                      <a 
+                                        key={lIdx}
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-blue-600 dark:text-blue-400 hover:underline text-[10px] truncate flex items-center gap-1.5 font-bold uppercase tracking-tight"
+                                        title={link.title}
+                                      >
+                                        <ExternalLink size={12} className="shrink-0" />
+                                        {link.title}
+                                      </a>
+                                    ))}
+                                    {(!s.docLinks || s.docLinks.length === 0) && <span className="text-slate-300 font-bold text-[10px] uppercase">-</span>}
+                                  </div>
+                                </td>
+                                <td className="p-6 text-center">
+                                  {s.isGraded === 'Graded' ? <Badge color="green">Graded</Badge> : <Badge color="gray">Un-G</Badge>}
+                                </td>
+                                <td className="p-6 text-center font-black text-slate-700 dark:text-slate-300 text-sm">{s.quantity}</td>
+                                <td className="p-6">
+                                  <Badge color="blue">{t(s.status as any)}</Badge>
+                                </td>
+                                <td className="p-6 text-center">
+                                   {s.isStarredSample ? <Star size={16} className="fill-amber-400 text-amber-400 mx-auto" /> : <span className="text-slate-200">-</span>}
+                                </td>
+                                <td className="p-6 max-w-[180px]">
+                                   <div className="truncate text-xs text-slate-600 dark:text-slate-300 font-bold italic" title={s.upcomingPlan}>
+                                     {isTestFinished ? <span className="text-slate-400">N/A</span> : (s.upcomingPlan || '-')}
+                                   </div>
+                                   <div className="text-[9px] font-black text-slate-400 mt-1 uppercase">DDL: {s.nextActionDate || 'TBD'}</div>
+                                </td>
+                                <td className="p-6 text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
+                                <td className="p-6">
+                                   <Badge color={s.testStatus === 'Finished' ? 'green' : s.testStatus === 'Terminated' ? 'red' : 'yellow'}>
+                                      <span className="text-[10px] font-black uppercase">{t(s.testStatus as any) || s.testStatus}</span>
+                                   </Badge>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    })}
+                    
+                    {groupedSamplesList.length === 0 && (
+                      <tr>
+                        <td colSpan={10} className="p-24 text-center">
+                          <FlaskConical className="w-16 h-16 mx-auto mb-6 opacity-10" />
+                          <p className="text-sm xl:text-lg font-black uppercase tracking-[0.2em] text-slate-300">No Samples Match Filter</p>
+                          <button onClick={resetFilters} className="mt-4 text-blue-500 font-bold uppercase text-xs tracking-widest hover:underline">Clear all filters</button>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex h-[calc(100vh-420px)] min-h-[500px] gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                 {FIXED_BOARD_ORDER.map((status) => {
+                    const colSamples = filteredSamples.filter(s => s.status === status);
+                    const colGroups: { customerId: string, customerName: string, samples: Sample[] }[] = [];
+                    colSamples.forEach(s => {
+                      let lastGroup = colGroups[colGroups.length - 1];
+                      if (lastGroup && lastGroup.customerId === s.customerId) {
+                        lastGroup.samples.push(s);
+                      } else {
+                        colGroups.push({ customerId: s.customerId, customerName: s.customerName, samples: [s] });
+                      }
+                    });
 
-            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterForm} onChange={e => setFilterForm(e.target.value)}>
-               <option value="">{t('form')}: All</option>
-               {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any) || f}</option>)}
-            </select>
+                    return (
+                      <div key={status} className="flex-1 min-w-[340px] max-w-[480px] bg-slate-100 dark:bg-slate-900/50 rounded-3xl p-5 flex flex-col shadow-inner border border-slate-200/50">
+                         <div className="flex justify-between items-center mb-5 px-1">
+                            <h4 className="font-black uppercase text-sm text-slate-500 flex items-center gap-3 tracking-[0.15em]">
+                               <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                               {t(status as any)}
+                               <span className="ml-1 opacity-50">({colSamples.length})</span>
+                            </h4>
+                         </div>
+                         <div className="space-y-4 overflow-y-auto flex-1 pr-1 scrollbar-hide">
+                            {colGroups.map(group => {
+                              const isExpanded = expandedCustomers.has(group.customerId);
+                              return (
+                                <div key={`${status}-${group.customerId}`} className="space-y-2">
+                                   <div 
+                                     onClick={() => toggleCustomerExpansion(group.customerId)}
+                                     className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700 cursor-pointer hover:border-blue-300 transition-all shadow-sm active:scale-[0.99]"
+                                   >
+                                     <div className="flex items-center gap-3 min-w-0">
+                                        {isExpanded ? <ChevronDown size={18} className="text-slate-400 shrink-0" /> : <ChevronRight size={18} className="text-slate-400 shrink-0" />}
+                                        <span className="font-black text-xs xl:text-sm text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
+                                     </div>
+                                     <Badge color="gray">{group.samples.length}</Badge>
+                                   </div>
 
-            <select className="border rounded-lg px-3 py-2 text-xs font-bold dark:bg-slate-900 bg-white" value={filterGrading} onChange={e => setFilterGrading(e.target.value)}>
-               <option value="">{t('grading')}: All</option>
-               <option value="Graded">{t('graded')}</option>
-               <option value="Ungraded">{t('ungraded')}</option>
-            </select>
-
-            <div className="ml-auto text-[10px] font-black uppercase text-slate-400 tracking-widest whitespace-nowrap">
-               {language === 'en' 
-                 ? `Showing ${filteredSamples.length} Samples | ${samples.length} Samples in Total`
-                 : `显示 ${filteredSamples.length} 个样品 | 共 ${samples.length} 个样品`}
-            </div>
-         </div>
+                                   {isExpanded && (
+                                     <div className="pl-3 space-y-3 border-l-2 border-slate-200 dark:border-slate-800 ml-2 py-1">
+                                       {group.samples.map(s => (
+                                         <Card 
+                                           key={s.id} 
+                                           onClick={() => navigate(`/samples/${s.id}`)} 
+                                           className="p-5 cursor-pointer hover:shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-400 transition-all hover:-translate-y-1 bg-white dark:bg-slate-800"
+                                         >
+                                            <div className="flex justify-between items-start mb-3">
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">#{s.sampleIndex}</span>
+                                                {s.isStarredSample && <Star size={14} className="fill-amber-400 text-amber-400" />}
+                                              </div>
+                                              {renderDaysSinceUpdate(s.lastStatusDate)}
+                                            </div>
+                                            <p className="text-sm xl:text-base font-black text-blue-600 dark:text-blue-400 leading-tight mb-4 line-clamp-2 uppercase tracking-tight group-hover:underline">{s.sampleName}</p>
+                                            
+                                            <div className="flex items-center justify-between pt-3 border-t border-slate-50 dark:border-slate-800">
+                                              <span className="text-[10px] font-mono text-slate-400 truncate max-w-[120px] uppercase font-bold">{s.sampleSKU || 'NOSKU'}</span>
+                                              <div className="flex items-center gap-2">
+                                                 <Badge color={s.testStatus === 'Finished' ? 'green' : s.testStatus === 'Terminated' ? 'red' : 'yellow'}>
+                                                    <span className="text-[9px] font-black uppercase">{s.testStatus.charAt(0)}</span>
+                                                 </Badge>
+                                                 <span className="text-xs font-black text-slate-800 dark:text-white">{s.quantity}</span>
+                                              </div>
+                                            </div>
+                                         </Card>
+                                       ))}
+                                     </div>
+                                   )}
+                                </div>
+                              );
+                            })}
+                            {colGroups.length === 0 && (
+                               <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl opacity-20">
+                                  <FlaskConical size={32} className="mb-4" />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Empty Stage</span>
+                               </div>
+                            )}
+                         </div>
+                      </div>
+                    );
+                 })}
+              </div>
+            )}
+          </div>
+        </div>
       </Card>
 
-      <div className="flex-1 min-h-0">
-        {viewMode === 'list' ? (
-          <Card className="h-full border-0 shadow-xl overflow-auto">
-             <table className="w-full text-left">
-                <thead className="bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase text-xs font-bold sticky top-0 z-10">
-                  <tr>
-                     <th className="p-4 w-40">Customer</th>
-                     <th className="p-4 w-60">Generated Product Spec</th>
-                     <th className="p-4 w-44">Links</th>
-                     <th className="p-4 w-24 text-center">{t('grading')}</th>
-                     <th className="p-4 w-20 text-center">{t('qtyAbbr')}</th>
-                     <th className="p-4 w-32">Status</th>
-                     <th className="p-4 w-12 text-center">⭐</th>
-                     <th className="p-4">Next Step</th>
-                     <th className="p-4 w-28 whitespace-nowrap">Key Date</th>
-                     <th className="p-4 text-center w-20">Aging</th>
-                     <th className="p-4 w-28">Test</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {groupedSamplesList.map(group => {
-                    const isExpanded = expandedCustomers.has(group.customerId);
-                    return (
-                      <React.Fragment key={group.customerId}>
-                        <tr 
-                          onClick={() => toggleCustomerExpansion(group.customerId)}
-                          className="bg-slate-50 dark:bg-slate-800/40 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-700"
-                        >
-                          <td colSpan={11} className="p-4">
-                            <div className="flex items-center gap-3">
-                              {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
-                              <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-base">
-                                {group.customerName}
-                              </span>
-                              <Badge color="gray">{group.samples.length} Samples</Badge>
-                            </div>
-                          </td>
-                        </tr>
-                        
-                        {isExpanded && group.samples.map(s => {
-                          const isTestFinished = s.testStatus === 'Finished' || s.testStatus === 'Terminated';
-                          return (
-                            <tr 
-                              key={s.id} 
-                              onClick={() => navigate(`/samples/${s.id}`)} 
-                              className={`cursor-pointer hover:bg-blue-50/30 dark:hover:bg-blue-900/10 border-l-4 transition-colors ${getUrgencyColor(s.lastStatusDate)}`}
-                            >
-                              <td className="p-4 pl-12">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample #{s.sampleIndex}</div>
-                              </td>
-                              <td className="p-4">
-                                 <div className="font-bold text-blue-600 dark:text-blue-400 text-sm xl:text-base">{s.sampleName}</div>
-                                 <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.sampleSKU || 'NOSKU'}</div>
-                              </td>
-                              <td className="p-4">
-                                <div className="flex flex-col gap-1 max-w-[160px]">
-                                  {(s.docLinks || []).map((link, lIdx) => (
-                                    <a 
-                                      key={lIdx}
-                                      href={link.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="text-blue-600 dark:text-blue-400 hover:underline text-[10px] xl:text-xs truncate flex items-center gap-1 font-bold"
-                                      title={link.title}
-                                    >
-                                      <ExternalLink size={10} className="shrink-0" />
-                                      {link.title}
-                                    </a>
-                                  ))}
-                                  {(!s.docLinks || s.docLinks.length === 0) && <span className="text-slate-300">-</span>}
-                                </div>
-                              </td>
-                              <td className="p-4 text-center">
-                                {getGradingBadge(s.isGraded)}
-                              </td>
-                              <td className="p-4 font-bold text-slate-700 dark:text-slate-300 text-center">{s.quantity}</td>
-                              <td className="p-4"><Badge color="blue">{t(s.status as any)}</Badge></td>
-                              <td className="p-4 text-center">
-                                 {s.isStarredSample ? <Star size={16} className="fill-amber-400 text-amber-400 mx-auto" /> : '-'}
-                              </td>
-                              <td className="p-4 max-w-[200px]">
-                                 <div className="truncate text-xs text-slate-600 dark:text-slate-300 italic" title={s.upcomingPlan}>
-                                   {isTestFinished ? <span className="text-slate-400">N/A</span> : (s.upcomingPlan || '-')}
-                                 </div>
-                              </td>
-                              <td className="p-4 whitespace-nowrap text-xs font-bold text-slate-600 dark:text-slate-400">
-                                 {isTestFinished ? 'N/A' : (s.nextActionDate || '-')}
-                              </td>
-                              <td className="p-4 text-center">{renderDaysSinceUpdate(s.lastStatusDate)}</td>
-                              <td className="p-4">
-                                 {getTestStatusBadge(s.testStatus)}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </React.Fragment>
-                    );
-                  })}
-                  
-                  {groupedSamplesList.length === 0 && (
-                    <tr>
-                      <td colSpan={11} className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest italic">No samples match your filters</td>
-                    </tr>
-                  )}
-                </tbody>
-             </table>
-          </Card>
-        ) : (
-          <div className="flex h-full gap-6 overflow-x-auto pb-4 scrollbar-hide">
-             {FIXED_BOARD_ORDER.map((status) => {
-                const colSamples = filteredSamples.filter(s => s.status === status);
-                const colGroups: { customerId: string, customerName: string, samples: Sample[] }[] = [];
-                colSamples.forEach(s => {
-                  let lastGroup = colGroups[colGroups.length - 1];
-                  if (lastGroup && lastGroup.customerId === s.customerId) {
-                    lastGroup.samples.push(s);
-                  } else {
-                    colGroups.push({ customerId: s.customerId, customerName: s.customerName, samples: [s] });
-                  }
-                });
-
-                return (
-                  <div key={status} className="flex-1 min-w-[320px] max-w-[480px] bg-slate-100 dark:bg-slate-900/50 rounded-3xl p-5 flex flex-col shadow-inner">
-                     <div className="flex justify-between items-center mb-5 px-1">
-                        <h4 className="font-extrabold uppercase text-sm xl:text-base text-slate-500 flex items-center gap-2 tracking-widest">
-                           <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                           {t(status as any)} ({colSamples.length})
-                        </h4>
-                     </div>
-                     <div className="space-y-5 overflow-y-auto flex-1 pr-1 scrollbar-hide">
-                        {colGroups.map(group => {
-                          const isExpanded = expandedCustomers.has(group.customerId);
-                          return (
-                            <div key={`${status}-${group.customerId}`} className="space-y-3">
-                               <div 
-                                 onClick={() => toggleCustomerExpansion(group.customerId)}
-                                 className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-[0.99]"
-                               >
-                                 <div className="flex items-center gap-3 min-w-0">
-                                    {isExpanded ? <ChevronDown size={18} className="text-slate-400 shrink-0" /> : <ChevronRight size={18} className="text-slate-400 shrink-0" />}
-                                    <span className="font-black text-sm xl:text-base text-slate-900 dark:text-white uppercase truncate tracking-tight">{group.customerName}</span>
-                                 </div>
-                                 <Badge color="gray">{group.samples.length}</Badge>
-                               </div>
-
-                               {isExpanded && (
-                                 <div className="pl-4 space-y-3 border-l-2 border-slate-200 dark:border-slate-800 ml-2">
-                                   {group.samples.map(s => (
-                                     <Card 
-                                       key={s.id} 
-                                       onClick={() => navigate(`/samples/${s.id}`)} 
-                                       className={`p-5 cursor-pointer hover:shadow-xl border-l-4 transition-all hover:-translate-y-1 ${getUrgencyColor(s.lastStatusDate)}`}
-                                     >
-                                        <div className="flex justify-between items-start mb-2">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample #{s.sampleIndex}</span>
-                                            {s.isStarredSample && <Star size={12} className="fill-amber-400 text-amber-400" />}
-                                          </div>
-                                          {renderDaysSinceUpdate(s.lastStatusDate)}
-                                        </div>
-                                        <p className="text-base font-black text-blue-600 dark:text-blue-400 leading-snug mb-3 line-clamp-2 uppercase tracking-tight">{s.sampleName}</p>
-                                        
-                                        <div className="flex gap-1.5 flex-wrap">
-                                          <div className="scale-90 origin-left">
-                                            {getTestStatusBadge(s.testStatus)}
-                                          </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 dark:border-slate-800">
-                                          <span className="text-[10px] font-mono text-slate-400 truncate max-w-[120px] uppercase">{s.sampleSKU || 'NO SKU'}</span>
-                                          <span className="text-sm font-black text-slate-700 dark:text-slate-300">{s.quantity}</span>
-                                        </div>
-                                     </Card>
-                                   ))}
-                                 </div>
-                               )}
-                            </div>
-                          );
-                        })}
-                        {colGroups.length === 0 && (
-                           <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl opacity-30">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Empty</span>
-                           </div>
-                        )}
-                     </div>
-                  </div>
-                );
-             })}
-          </div>
-        )}
-      </div>
-
+      {/* Add Sample Modal - Styling refined to match overall aesthetic */}
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={t('createSample')}>
-         <div className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-1 md:col-span-2">
-                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">{t('selectCustomer')} *</label>
+         <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="col-span-1 md:col-span-2 space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('selectCustomer')} *</label>
                  <select 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-black uppercase outline-none focus:border-blue-500"
                     value={newSample.customerId}
                     onChange={(e) => setNewSample({...newSample, customerId: e.target.value})}
                  >
@@ -525,10 +548,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                  </select>
               </div>
               
-              <div>
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('crystal')}</label>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('crystal')}</label>
                  <select 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-black outline-none focus:border-blue-500"
                     value={newSample.crystalType}
                     onChange={(e) => setNewSample({...newSample, crystalType: e.target.value})}
                  >
@@ -536,10 +559,10 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                  </select>
               </div>
 
-              <div>
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('form')}</label>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('form')}</label>
                  <select 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-black outline-none focus:border-blue-500"
                     value={newSample.productForm}
                     onChange={(e) => setNewSample({...newSample, productForm: e.target.value})}
                  >
@@ -547,19 +570,20 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                  </select>
               </div>
 
-              <div className="col-span-1 md:col-span-2">
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('category')}</label>
-                 <div className="flex flex-wrap gap-2 p-3 border-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+              <div className="col-span-1 md:col-span-2 space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('category')}</label>
+                 <div className="flex flex-wrap gap-2 p-4 border-2 rounded-2xl bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800">
                     {tagOptions.productCategory.map(cat => (
                       <button 
                         key={cat}
+                        type="button"
                         onClick={() => {
                           const updated = newSample.productCategory.includes(cat)
                             ? newSample.productCategory.filter(c => c !== cat)
                             : [...newSample.productCategory, cat];
                           setNewSample({...newSample, productCategory: updated});
                         }}
-                        className={`px-3 py-1 rounded-full text-xs font-black transition-all ${newSample.productCategory.includes(cat) ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200'}`}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${newSample.productCategory.includes(cat) ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'}`}
                       >
                         {t(cat as any) || cat}
                       </button>
@@ -567,60 +591,60 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                  </div>
               </div>
 
-              <div>
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('original')}</label>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('original')}</label>
                  <input 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-black outline-none focus:border-blue-500"
                     value={newSample.originalSize}
                     onChange={(e) => setNewSample({...newSample, originalSize: e.target.value})}
                     placeholder="e.g. 10um"
                  />
               </div>
 
-              <div>
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('processed')}</label>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('processed')}</label>
                  <input 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-black outline-none focus:border-blue-500"
                     value={newSample.processedSize}
                     onChange={(e) => setNewSample({...newSample, processedSize: e.target.value})}
                     placeholder="e.g. 5um"
                  />
               </div>
 
-              <div>
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Nickname / 昵称</label>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nickname / 昵称</label>
                  <input 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-black outline-none focus:border-blue-500"
                     value={newSample.nickname}
                     onChange={(e) => setNewSample({...newSample, nickname: e.target.value})}
                     placeholder="e.g. Agglomerated batch"
                  />
               </div>
 
-              <div>
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('quantity')}</label>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('quantity')}</label>
                  <input 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-black outline-none focus:border-blue-500"
                     value={newSample.quantity}
                     onChange={(e) => setNewSample({...newSample, quantity: e.target.value})}
                     placeholder="e.g. 500g"
                  />
               </div>
 
-              <div>
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('sampleSku')}</label>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('sampleSku')}</label>
                  <input 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-mono text-sm"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-mono text-sm uppercase outline-none focus:border-blue-500"
                     value={newSample.sampleSKU}
                     onChange={(e) => setNewSample({...newSample, sampleSKU: e.target.value})}
                     placeholder="Internal SKU..."
                  />
               </div>
 
-              <div className="col-span-1 md:col-span-2">
-                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{t('currentStatus')}</label>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('currentStatus')}</label>
                  <select 
-                    className="w-full border-2 rounded-xl p-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold"
+                    className="w-full border-2 rounded-2xl p-4 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 font-black outline-none focus:border-blue-500"
                     value={newSample.status}
                     onChange={(e) => setNewSample({...newSample, status: e.target.value})}
                  >
@@ -629,9 +653,9 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
-               <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
-               <Button onClick={handleCreateSample} className="px-8 shadow-xl bg-blue-600">Create Sample</Button>
+            <div className="flex justify-end gap-3 pt-6 border-t dark:border-slate-800">
+               <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>{t('cancel')}</Button>
+               <Button onClick={handleCreateSample} className="px-10 shadow-xl bg-blue-600 font-black uppercase text-sm tracking-widest">Create Sample</Button>
             </div>
          </div>
       </Modal>
