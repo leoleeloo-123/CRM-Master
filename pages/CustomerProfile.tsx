@@ -729,6 +729,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                    </div>
                                    <div className="flex flex-col flex-1 min-w-0">
                                       <div className="flex items-center gap-4">
+                                         <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">#{sample.sampleIndex}</span>
+                                            {sample.isStarredSample && <Star size={14} className="fill-amber-400 text-amber-400 shrink-0" />}
+                                         </div>
                                          <h4 className="font-black text-base xl:text-lg text-slate-900 dark:text-white truncate uppercase tracking-tight">{sample.sampleName}</h4>
                                          <span className="hidden sm:inline bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
                                             SKU: {sample.sampleSKU || 'N/A'}
