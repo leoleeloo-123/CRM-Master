@@ -192,19 +192,19 @@ const ExhibitionList: React.FC = () => {
       </div>
 
       <Card className="p-6 xl:p-8 border-2 rounded-2xl">
-        <div className="space-y-4">
-          {/* Main Search - bg-slate-100 preserved as requested */}
+        <div className="space-y-6">
+          {/* Main Search - Updated background to white as requested */}
           <div className="relative">
             <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
             <input 
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50 outline-none focus:border-blue-500 font-bold transition-all shadow-inner"
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all shadow-sm"
               placeholder={t('exhibitionSearchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          {/* Filter Bar - Background updated to bg-slate-100 to match profile headers */}
+          {/* Filter Bar */}
           <div className="flex flex-wrap items-center gap-4">
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Tag size={18} className="text-slate-400" />
@@ -272,129 +272,129 @@ const ExhibitionList: React.FC = () => {
                </span>
              </div>
           </div>
-        </div>
 
-        {/* Grouped List View - Corners reduced to rounded-2xl to match application standards */}
-        <div className="mt-6 overflow-hidden border-2 rounded-2xl border-slate-100 dark:border-slate-800">
-          <table className="w-full text-left">
-            <thead className="bg-slate-100 dark:bg-slate-800/80 border-b-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase text-sm font-black tracking-widest">
-              <tr>
-                <th className="p-6">{t('colExhibitionSeries')}</th>
-                <th className="p-6">{t('colLocation')}</th>
-                <th className="p-6">{t('colDate')}</th>
-                <th className="p-6">{t('colOfficialLink')}</th>
-                <th className="p-6 text-center">{t('colLinkedCustomers')}</th>
-                <th className="p-6">{t('colEventSummary')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-              {groupedExhibitions.map(group => {
-                const isExpanded = expandedSeries.has(group.series);
-                return (
-                  <React.Fragment key={group.series}>
-                    {/* Series Header Row */}
-                    <tr 
-                      onClick={() => toggleSeriesExpansion(group.series)}
-                      className="bg-slate-50/50 dark:bg-slate-800/30 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <td colSpan={6} className="p-5 border-y-2 border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            {isExpanded ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
-                            <span className={`font-black uppercase tracking-[0.1em] text-sm ${group.series === 'NA' ? 'text-slate-400 italic' : 'text-blue-600'}`}>
-                              {group.series === 'NA' ? t('untaggedEvents') : group.series}
-                            </span>
-                            <Badge color={group.series === 'NA' ? 'gray' : 'blue'}>{group.items.length}</Badge>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    
-                    {/* Exhibition Items under this series */}
-                    {isExpanded && group.items.map(exh => {
-                      const usageCount = exhibitionStats[exh.name] || 0;
-                      return (
-                        <tr 
-                          key={`${group.series}-${exh.id}`}
-                          onClick={() => navigate(`/exhibitions/${exh.id}`)}
-                          className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 cursor-pointer transition-colors group"
-                        >
-                          <td className="p-6 pl-14">
-                            <div className="flex flex-col">
-                              <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-base group-hover:text-blue-600 transition-colors leading-tight">
-                                {exh.name}
-                              </span>
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {exh.eventSeries?.filter(s => s !== group.series).map(s => (
-                                  <span key={s} className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded">{s}</span>
-                                ))}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-6">
-                            <div className="flex items-center gap-2 text-slate-500 font-bold text-sm">
-                              <MapPin size={14} className="text-slate-400" />
-                              {exh.location || 'TBD'}
-                            </div>
-                          </td>
-                          <td className="p-6">
-                            <div className="flex items-center gap-2 text-slate-500 font-bold text-sm whitespace-nowrap">
-                              <Calendar size={14} className="text-slate-400" />
-                              {exh.date || 'TBD'}
-                            </div>
-                          </td>
-                          <td className="p-6">
-                            {exh.link && exh.link !== '#' ? (
-                              <div className="flex items-center gap-2 text-blue-600 font-black uppercase text-[10px] tracking-widest">
-                                <ExternalLink size={14} /> Link Ready
-                              </div>
-                            ) : (
-                              <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">{t('noLink')}</span>
-                            )}
-                          </td>
-                          <td className="p-6 text-center">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
-                              <User size={12} className="text-slate-400" />
-                              <span className="text-xs font-black text-slate-600 dark:text-slate-400">{usageCount}</span>
-                            </div>
-                          </td>
-                          <td className="p-6 relative">
-                            <div className="text-xs text-slate-600 dark:text-slate-300 font-bold line-clamp-2 max-w-[200px]">
-                               {exh.summary || <span className="text-slate-300 italic">{t('noSummary')}</span>}
-                            </div>
-                            <div className="absolute inset-y-0 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-white dark:from-slate-900 pl-4" onClick={e => e.stopPropagation()}>
-                              <button 
-                                onClick={(e) => handleEdit(exh, e)} 
-                                className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
-                              >
-                                <PencilLine size={16} />
-                              </button>
-                              <button 
-                                onClick={(e) => handleDelete(exh.id, exh.name, e)} 
-                                className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </React.Fragment>
-                );
-              })}
-              
-              {groupedExhibitions.length === 0 && (
+          {/* Grouped List View - Integrated into the space-y-6 container for unified spacing */}
+          <div className="overflow-hidden border-2 rounded-2xl border-slate-100 dark:border-slate-800">
+            <table className="w-full text-left">
+              <thead className="bg-slate-100 dark:bg-slate-800/80 border-b-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase text-sm font-black tracking-widest">
                 <tr>
-                  <td colSpan={6} className="p-20 text-center">
-                    <Filter className="w-16 h-16 mx-auto mb-6 opacity-10" />
-                    <p className="text-sm xl:text-lg font-black uppercase tracking-[0.2em] text-slate-300">No Exhibitions Found</p>
-                    <button onClick={resetFilters} className="mt-4 text-blue-500 font-bold uppercase text-xs tracking-widest hover:underline">Clear all filters</button>
-                  </td>
+                  <th className="p-6">{t('colExhibitionSeries')}</th>
+                  <th className="p-6">{t('colLocation')}</th>
+                  <th className="p-6">{t('colDate')}</th>
+                  <th className="p-6">{t('colOfficialLink')}</th>
+                  <th className="p-6 text-center">{t('colLinkedCustomers')}</th>
+                  <th className="p-6">{t('colEventSummary')}</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                {groupedExhibitions.map(group => {
+                  const isExpanded = expandedSeries.has(group.series);
+                  return (
+                    <React.Fragment key={group.series}>
+                      {/* Series Header Row */}
+                      <tr 
+                        onClick={() => toggleSeriesExpansion(group.series)}
+                        className="bg-slate-50/50 dark:bg-slate-800/30 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      >
+                        <td colSpan={6} className="p-5 border-y-2 border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              {isExpanded ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
+                              <span className={`font-black uppercase tracking-[0.1em] text-sm ${group.series === 'NA' ? 'text-slate-400 italic' : 'text-blue-600'}`}>
+                                {group.series === 'NA' ? t('untaggedEvents') : group.series}
+                              </span>
+                              <Badge color={group.series === 'NA' ? 'gray' : 'blue'}>{group.items.length}</Badge>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {/* Exhibition Items under this series */}
+                      {isExpanded && group.items.map(exh => {
+                        const usageCount = exhibitionStats[exh.name] || 0;
+                        return (
+                          <tr 
+                            key={`${group.series}-${exh.id}`}
+                            onClick={() => navigate(`/exhibitions/${exh.id}`)}
+                            className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 cursor-pointer transition-colors group"
+                          >
+                            <td className="p-6 pl-14">
+                              <div className="flex flex-col">
+                                <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-base group-hover:text-blue-600 transition-colors leading-tight">
+                                  {exh.name}
+                                </span>
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {exh.eventSeries?.filter(s => s !== group.series).map(s => (
+                                    <span key={s} className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded">{s}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-6">
+                              <div className="flex items-center gap-2 text-slate-500 font-bold text-sm">
+                                <MapPin size={14} className="text-slate-400" />
+                                {exh.location || 'TBD'}
+                              </div>
+                            </td>
+                            <td className="p-6">
+                              <div className="flex items-center gap-2 text-slate-500 font-bold text-sm whitespace-nowrap">
+                                <Calendar size={14} className="text-slate-400" />
+                                {exh.date || 'TBD'}
+                              </div>
+                            </td>
+                            <td className="p-6">
+                              {exh.link && exh.link !== '#' ? (
+                                <div className="flex items-center gap-2 text-blue-600 font-black uppercase text-[10px] tracking-widest">
+                                  <ExternalLink size={14} /> Link Ready
+                                </div>
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">{t('noLink')}</span>
+                              )}
+                            </td>
+                            <td className="p-6 text-center">
+                              <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+                                <User size={12} className="text-slate-400" />
+                                <span className="text-xs font-black text-slate-600 dark:text-slate-400">{usageCount}</span>
+                              </div>
+                            </td>
+                            <td className="p-6 relative">
+                              <div className="text-xs text-slate-600 dark:text-slate-300 font-bold line-clamp-2 max-w-[200px]">
+                                 {exh.summary || <span className="text-slate-300 italic">{t('noSummary')}</span>}
+                              </div>
+                              <div className="absolute inset-y-0 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-white dark:from-slate-900 pl-4" onClick={e => e.stopPropagation()}>
+                                <button 
+                                  onClick={(e) => handleEdit(exh, e)} 
+                                  className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
+                                >
+                                  <PencilLine size={16} />
+                                </button>
+                                <button 
+                                  onClick={(e) => handleDelete(exh.id, exh.name, e)} 
+                                  className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+                
+                {groupedExhibitions.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-20 text-center">
+                      <Filter className="w-16 h-16 mx-auto mb-6 opacity-10" />
+                      <p className="text-sm xl:text-lg font-black uppercase tracking-[0.2em] text-slate-300">No Exhibitions Found</p>
+                      <button onClick={resetFilters} className="mt-4 text-blue-500 font-bold uppercase text-xs tracking-widest hover:underline">Clear all filters</button>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </Card>
 
