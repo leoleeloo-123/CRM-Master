@@ -95,7 +95,7 @@ const Settings: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
                 <label className="block text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('orgName')}</label>
-                <input type="text" value={localCompanyName} onChange={(e) => setLocalCompanyName(e.target.value)} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-base xl:text-xl transition-all" placeholder={t('orgName')} />
+                <input type="text" value={localCompanyName} onChange={(e) => setLocalCompanyName(localCompanyName)} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-base xl:text-xl transition-all" placeholder={t('orgName')} />
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] xl:text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('uName')}</label>
@@ -110,30 +110,45 @@ const Settings: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-8 xl:p-12 shadow-sm border-2">
-          <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
-            <Activity className="text-amber-500 w-7 h-7 xl:w-8 xl:h-8" /> {t('interactionTagManagement')}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {renderTagEditor("interactionType", 'interactionTypes')}
-            {renderTagEditor("interactionEffect", 'interactionEffects')}
-          </div>
-        </Card>
-
+        {/* Unified Tag Management Card */}
         <Card className="p-8 xl:p-12 shadow-sm border-2">
           <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 pb-5 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
             <Tags className="text-indigo-600 w-7 h-7 xl:w-8 xl:h-8" /> {t('tagManagement')}
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {renderTagEditor("tagsSampleStatus", 'sampleStatus')}
-            {renderTagEditor("tagsCrystalType", 'crystalType')}
-            {renderTagEditor("tagsProductCategory", 'productCategory')}
-            {renderTagEditor("tagsProductForm", 'productForm')}
-            <div className="md:col-span-2 pt-10 border-t dark:border-slate-800">
-               <h4 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-4 mb-8 uppercase tracking-wider">
-                  <Presentation size={24} className="text-indigo-500" /> {t('exhibitionMetadata')}
-               </h4>
-               {renderTagEditor('eventSeries', 'eventSeries')}
+          
+          <div className="space-y-12">
+            {/* Interaction Tags Section */}
+            <div className="space-y-6">
+              <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-widest opacity-70">
+                <Activity size={18} className="text-amber-500" /> {t('interactionTagManagement')}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {renderTagEditor("interactionType", 'interactionTypes')}
+                {renderTagEditor("interactionEffect", 'interactionEffects')}
+              </div>
+            </div>
+
+            {/* Sample Tags Section */}
+            <div className="space-y-6 pt-10 border-t dark:border-slate-800">
+              <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-widest opacity-70">
+                <ClipboardList size={18} className="text-blue-600" /> {t('sampleTracking')}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {renderTagEditor("tagsSampleStatus", 'sampleStatus')}
+                {renderTagEditor("tagsCrystalType", 'crystalType')}
+                {renderTagEditor("tagsProductCategory", 'productCategory')}
+                {renderTagEditor("tagsProductForm", 'productForm')}
+              </div>
+            </div>
+
+            {/* Exhibition Tags Section */}
+            <div className="space-y-6 pt-10 border-t dark:border-slate-800">
+              <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-widest opacity-70">
+                <Presentation size={18} className="text-indigo-500" /> {t('exhibitionMetadata')}
+              </h4>
+              <div className="grid grid-cols-1 gap-8">
+                {renderTagEditor('eventSeries', 'eventSeries')}
+              </div>
             </div>
           </div>
         </Card>
