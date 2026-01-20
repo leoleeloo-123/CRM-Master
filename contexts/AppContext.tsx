@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Language, translations } from '../utils/i18n';
 import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction } from '../types';
-import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS } from '../services/dataService';
+import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS, MOCK_EXHIBITIONS } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
 export type ThemeMode = 'light' | 'dark' | 'warm' | 'dark-green';
@@ -119,7 +119,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Strictly restricted to the 5 requested statuses
 const DEFAULT_TAGS: TagOptions = {
   sampleStatus: ['等待中', '样品制作中', '样品已发出', '客户初步测试', '客户初步结果'],
   crystalType: ['单晶', '多晶'],
@@ -176,7 +175,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [exhibitions, setExhibitionsState] = useState<Exhibition[]>(() => {
     const saved = localStorage.getItem('exhibitions');
-    if (!saved) return [];
+    if (!saved) return MOCK_EXHIBITIONS; // Seed with mock exhibitions if empty
     try {
       const parsed: Exhibition[] = JSON.parse(saved);
       return parsed.map(exh => ({
@@ -184,7 +183,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eventSeries: Array.isArray(exh.eventSeries) ? exh.eventSeries : []
       }));
     } catch (e) {
-      return [];
+      return MOCK_EXHIBITIONS;
     }
   });
   
@@ -196,7 +195,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ...DEFAULT_TAGS,
         ...parsed,
-        // Override sampleStatus to ensure only the 5 permitted ones are used
         sampleStatus: DEFAULT_TAGS.sampleStatus,
         interactionTypes: Array.isArray(parsed.interactionTypes) ? parsed.interactionTypes : DEFAULT_TAGS.interactionTypes,
         interactionEffects: Array.isArray(parsed.interactionEffects) ? parsed.interactionEffects : DEFAULT_TAGS.interactionEffects
@@ -314,7 +312,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
       const addUnique = (list: string[], item: string) => { if (item && !list.includes(item)) list.push(item); };
       sampleList.forEach(s => {
-        // Status is forced to the 5 requested ones
         if (s.crystalType) addUnique(newTags.crystalType, s.crystalType);
         if (s.productForm) addUnique(newTags.productForm, s.productForm);
         if (s.productCategory) s.productCategory.forEach(cat => addUnique(newTags.productCategory, cat));
@@ -352,7 +349,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCustomersState(MOCK_CUSTOMERS);
     setSamplesState(MOCK_SAMPLES);
     setMasterProducts(MOCK_MASTER_PRODUCTS);
-    setExhibitionsState([]);
+    setExhibitionsState(MOCK_EXHIBITIONS);
     setIsDemoData(true);
     setTagOptionsState(DEFAULT_TAGS); 
     setCompanyNameState('Navi Material');
