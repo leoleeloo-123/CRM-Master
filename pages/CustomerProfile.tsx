@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity, ClipboardList, UserPlus, UserMinus, RotateCcw } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 import { translateToZh } from '../utils/i18n';
@@ -69,6 +69,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [newRegionInput, setNewRegionInput] = useState('');
   const [editingRegionIndex, setEditingRegionIndex] = useState<number | null>(null);
   const [tagSearchTerm, setTagSearchTerm] = useState('');
+
+  // Contacts Management State
+  const [tempContacts, setTempContacts] = useState<Contact[]>([]);
+  const [newContact, setNewContact] = useState<Contact>({ name: '', title: '', email: '', phone: '', isPrimary: false });
+  const [editingContactIndex, setEditingContactIndex] = useState<number | null>(null);
 
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
@@ -150,6 +155,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     if (customer) {
       setTempName(customer.name);
       setTempRegions(Array.isArray(customer.region) ? [...customer.region] : [customer.region]);
+      setTempContacts([...customer.contacts]);
     }
   }, [customer]);
 
@@ -306,10 +312,56 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setTempRegions(tempRegions.filter((_, i) => i !== idx));
   };
 
+  // Contacts Logic
+  const handleAddContact = () => {
+    if (!newContact.name.trim()) return;
+    
+    if (editingContactIndex !== null) {
+      // Update existing
+      setTempContacts(prev => prev.map((c, i) => i === editingContactIndex ? { ...newContact } : c));
+      setEditingContactIndex(null);
+    } else {
+      // Add new
+      const isFirst = tempContacts.length === 0;
+      const updated = [...tempContacts, { ...newContact, isPrimary: isFirst || newContact.isPrimary }];
+      setTempContacts(updated);
+    }
+    
+    // Clear form
+    setNewContact({ name: '', title: '', email: '', phone: '', isPrimary: false });
+  };
+
+  const handleStartEditContact = (idx: number) => {
+    setEditingContactIndex(idx);
+    setNewContact({ ...tempContacts[idx] });
+  };
+
+  const handleCancelEditContact = () => {
+    setEditingContactIndex(null);
+    setNewContact({ name: '', title: '', email: '', phone: '', isPrimary: false });
+  };
+
+  const handleSetPrimaryContact = (index: number) => {
+    // Modified to allow multiple primary contacts (toggles existing state)
+    setTempContacts(prev => prev.map((c, i) => i === index ? { ...c, isPrimary: !c.isPrimary } : c));
+  };
+
+  const handleRemoveContact = (index: number) => {
+    if (editingContactIndex === index) {
+      handleCancelEditContact();
+    }
+    setTempContacts(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateContacts = () => {
+    saveUpdate({ contacts: tempContacts });
+    setIsEditContactsOpen(false);
+    setEditingContactIndex(null);
+  };
+
   const titleClass = "font-black text-lg xl:text-xl text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-wider";
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
   const headerClass = "px-6 py-4 bg-slate-100 dark:bg-slate-800/80 flex justify-between items-center border-b border-slate-200 dark:border-slate-700";
-  // Subtle Edit Button style to blend in with page style
   const editBtnStyle = "p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-blue-600 hover:shadow-sm transition-all active:scale-90 shadow-none";
 
   const resetFilters = () => {
@@ -457,7 +509,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
             </Card>
 
-            {/* Status Summary moved here from the right column */}
             <Card className="overflow-hidden border shadow-sm">
                <div className={headerClass}>
                   <h3 className={titleClass}><Box className="w-5 h-5 text-blue-600"/> {t('productSummary')}</h3>
@@ -790,6 +841,153 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             </Card>
          </div>
        </div>
+
+       {/* Key Contacts Management Modal */}
+       <Modal isOpen={isEditContactsOpen} onClose={() => { setIsEditContactsOpen(false); setEditingContactIndex(null); }} title={t('keyContacts')}>
+          <div className="space-y-8">
+             {/* Add/Edit Contact Form */}
+             <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-3xl border-2 border-slate-100 dark:border-slate-800 space-y-4">
+                <h4 className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-[0.15em] mb-2">
+                   {editingContactIndex !== null ? (
+                      <><PencilLine size={16} className="text-amber-500" /> EDIT CONTACT</>
+                   ) : (
+                      <><UserPlus size={16} className="text-blue-500" /> {t('addContact')}</>
+                   )}
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('contactName')} *</label>
+                      <input 
+                         className="w-full p-3 border-2 border-white dark:border-slate-900 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                         value={newContact.name}
+                         onChange={e => setNewContact({...newContact, name: e.target.value})}
+                         placeholder="Contact Name"
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('contactTitle')}</label>
+                      <input 
+                         className="w-full p-3 border-2 border-white dark:border-slate-900 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                         value={newContact.title}
+                         onChange={e => setNewContact({...newContact, title: e.target.value})}
+                         placeholder="e.g. CEO"
+                      />
+                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('contactEmail')}</label>
+                      <input 
+                         className="w-full p-3 border-2 border-white dark:border-slate-900 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                         value={newContact.email}
+                         onChange={e => setNewContact({...newContact, email: e.target.value})}
+                         placeholder="example@company.com"
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('contactPhone')}</label>
+                      <input 
+                         className="w-full p-3 border-2 border-white dark:border-slate-900 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                         value={newContact.phone}
+                         onChange={e => setNewContact({...newContact, phone: e.target.value})}
+                         placeholder="+123..."
+                      />
+                   </div>
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                   <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                         <div className="relative">
+                            <input 
+                               type="checkbox" 
+                               className="sr-only" 
+                               checked={newContact.isPrimary} 
+                               onChange={e => setNewContact({...newContact, isPrimary: e.target.checked})} 
+                            />
+                            <div className={`w-10 h-6 rounded-full transition-colors ${newContact.isPrimary ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${newContact.isPrimary ? 'translate-x-4' : ''}`}></div>
+                         </div>
+                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600">{t('primaryContact')}</span>
+                      </label>
+                   </div>
+                   <div className="flex gap-2">
+                      {editingContactIndex !== null && (
+                         <button 
+                           onClick={handleCancelEditContact}
+                           className="p-2.5 text-slate-400 hover:text-slate-600 bg-white dark:bg-slate-900 border-2 border-white dark:border-slate-800 rounded-xl"
+                           title="Cancel Edit"
+                         >
+                            <RotateCcw size={18} />
+                         </button>
+                      )}
+                      <button 
+                        onClick={handleAddContact}
+                        className={`px-10 py-2.5 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md active:scale-95 transition-all ${editingContactIndex !== null ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                      >
+                         {editingContactIndex !== null ? 'Update' : t('add')}
+                      </button>
+                   </div>
+                </div>
+             </div>
+
+             {/* Existing Contacts List */}
+             <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Manage Contacts ({tempContacts.length})</h4>
+                <div className="space-y-3 max-h-[35vh] overflow-y-auto pr-1 scrollbar-hide">
+                   {tempContacts.length > 0 ? tempContacts.map((contact, idx) => (
+                      <div key={idx} className={`p-5 rounded-2xl border-2 flex items-center justify-between group transition-all ${contact.isPrimary ? 'border-blue-100 bg-blue-50/10' : 'border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900'} ${editingContactIndex === idx ? 'ring-2 ring-amber-400 border-amber-200' : ''}`}>
+                         <div className="flex items-center gap-5">
+                            <button 
+                               onClick={() => handleSetPrimaryContact(idx)}
+                               className={`p-2 rounded-xl transition-all ${contact.isPrimary ? 'bg-amber-100 text-amber-600 shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                               title="Toggle Primary Status"
+                            >
+                               <Star size={18} fill={contact.isPrimary ? 'currentColor' : 'none'} />
+                            </button>
+                            <div>
+                               <div className="flex items-center gap-2">
+                                  <span className="font-black text-slate-900 dark:text-white uppercase leading-none">{contact.name}</span>
+                                  {contact.isPrimary && <Badge color="yellow">PRIMARY</Badge>}
+                               </div>
+                               <p className="text-[10px] font-bold text-blue-600 uppercase mt-1 tracking-wider">{contact.title || 'No Title'}</p>
+                               <div className="flex items-center gap-3 mt-1 opacity-60">
+                                  {contact.email && <span className="text-[10px] font-bold flex items-center gap-1"><Mail size={10}/> {contact.email}</span>}
+                                  {contact.phone && <span className="text-[10px] font-bold flex items-center gap-1"><Phone size={10}/> {contact.phone}</span>}
+                               </div>
+                            </div>
+                         </div>
+                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <button 
+                               onClick={() => handleStartEditContact(idx)}
+                               className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl"
+                               title="Edit Information"
+                            >
+                               <PencilLine size={18} />
+                            </button>
+                            <button 
+                               onClick={() => handleRemoveContact(idx)}
+                               className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
+                               title="Remove Contact"
+                            >
+                               <Trash2 size={18} />
+                            </button>
+                         </div>
+                      </div>
+                   )) : (
+                     <div className="text-center py-12 border-2 border-dashed rounded-3xl opacity-30">
+                        <UserMinus size={32} className="mx-auto mb-2" />
+                        <span className="text-xs font-black uppercase tracking-widest">No Contacts Listed</span>
+                     </div>
+                   )}
+                </div>
+             </div>
+
+             <div className="flex justify-end gap-3 pt-6 border-t dark:border-slate-800">
+                <Button variant="secondary" onClick={() => { setIsEditContactsOpen(false); setEditingContactIndex(null); }}>{t('cancel')}</Button>
+                <Button onClick={handleUpdateContacts} className="bg-blue-600 px-12 shadow-xl shadow-blue-600/20 font-black uppercase text-sm tracking-widest">Save Contacts</Button>
+             </div>
+          </div>
+       </Modal>
 
        <Modal isOpen={isEditCustomerModalOpen} onClose={() => setIsEditCustomerModalOpen(false)} title={t('editCustomerName')}>
           <div className="space-y-8">
