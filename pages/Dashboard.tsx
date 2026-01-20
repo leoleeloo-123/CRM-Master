@@ -440,7 +440,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const activeSamplesCount = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received', '已送达', '已关闭', '已反馈'].includes(s.status)).length;
   
   const labelClass = "text-[10px] xl:text-[11px] font-black uppercase text-slate-400 tracking-widest";
-  const sharedTitleClass = "font-black text-slate-800 dark:text-white text-sm xl:text-lg uppercase tracking-wider flex items-center gap-3";
+  const sharedTitleClass = "font-black text-slate-800 dark:text-white text-base xl:text-xl uppercase tracking-wider flex items-center gap-3";
   const statCardClass = "p-3 xl:p-4 flex items-center gap-4 border-l-4 shadow-sm border-2 rounded-lg flex-1 h-full transition-all";
 
   const handleDateFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -619,22 +619,18 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           {/* Daily Agenda Card */}
           <div className="lg:col-span-1">
             <Card className="p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full">
-              <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <div className="flex justify-between items-center mb-6 pb-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <h3 className={sharedTitleClass}>
                   <ListTodo className="w-6 h-6 text-blue-600" />
                   {t('dailyAgenda')}
                 </h3>
-                <div className="mt-4 relative group">
+                <div className="relative group min-w-[120px]">
                   <input 
                     type="date" 
-                    className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-sm xl:text-base font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-[10px] xl:text-xs font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer shadow-sm text-right"
                     value={selectedDateStr}
                     onChange={handleDateFilterChange}
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none text-slate-300">
-                      <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
-                      <Clock className="w-5 h-5" />
-                  </div>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
