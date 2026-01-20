@@ -402,7 +402,11 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     return Object.entries(groupsMap).map(([id, data]) => ({
       customerId: id,
       ...data
-    })).sort((a, b) => a.customerName.localeCompare(b.customerName, 'zh-Hans-CN'));
+    })).sort((a, b) => {
+      // Sort by rank first (1 is high, 5 is low)
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return a.customerName.localeCompare(b.customerName, 'zh-Hans-CN');
+    });
   }, [samples, reviewStatus, customers]);
 
   // Logic for Exhibition Recap Groups
@@ -426,7 +430,11 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
       }
     });
 
-    return groups.sort((a, b) => a.customerName.localeCompare(b.customerName, 'zh-Hans-CN'));
+    return groups.sort((a, b) => {
+      // Sort by rank first (1 is high, 5 is low)
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return a.customerName.localeCompare(b.customerName, 'zh-Hans-CN');
+    });
   }, [customers, reportType, selectedExhibitionName]);
 
   const activeSamplesCount = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received', '已送达', '已关闭', '已反馈'].includes(s.status)).length;
