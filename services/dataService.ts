@@ -9,8 +9,8 @@ const dateStr = (days: number) => format(addDays(today, days), 'yyyy-MM-dd');
 export const MOCK_EXHIBITIONS: Exhibition[] = [
   {
     id: 'exh_1',
-    name: 'SEMICON 2024',
-    date: '2024-03-20',
+    name: 'SEMICON 2026',
+    date: '2026-03-20',
     location: 'Shanghai, China',
     link: 'https://www.semiconchina.org',
     eventSeries: ['Semicon'],
@@ -18,8 +18,8 @@ export const MOCK_EXHIBITIONS: Exhibition[] = [
   },
   {
     id: 'exh_2',
-    name: 'Optical Expo 2024',
-    date: '2024-05-15',
+    name: 'Optical Expo 2026',
+    date: '2026-05-15',
     location: 'Frankfurt, Germany',
     link: 'https://www.world-of-photonics.com',
     eventSeries: ['Optical Expo'],
@@ -30,7 +30,7 @@ export const MOCK_EXHIBITIONS: Exhibition[] = [
 export const MOCK_CUSTOMERS: Customer[] = [
   {
     id: 'c1',
-    name: 'Precision Photonics Ltd',
+    name: 'Lumina Optics GmbH',
     region: ['Europe', 'Germany'],
     rank: 1, // 5 Stars
     status: 'Active',
@@ -38,14 +38,14 @@ export const MOCK_CUSTOMERS: Customer[] = [
     lastStatusUpdate: dateStr(-2),
     followUpStatus: 'My Turn',
     contacts: [
-      { name: 'Dr. Klaus Weber', title: 'Head of R&D', email: 'k.weber@photonics.de', isPrimary: true },
-      { name: 'Sarah Schmidt', title: 'Senior Procurement Manager', email: 's.schmidt@photonics.de' }
+      { name: 'Dr. Klaus Weber', title: 'Head of R&D', email: 'k.weber@lumina-optics.de', isPrimary: true },
+      { name: 'Sarah Schmidt', title: 'Senior Procurement Manager', email: 's.schmidt@lumina-optics.de' }
     ],
     lastContactDate: dateStr(-5),
     lastCustomerReplyDate: dateStr(-10),
     lastMyReplyDate: dateStr(-5),
     nextActionDate: dateStr(0),
-    tags: ['SEMICON 2024', 'Optical Expo 2024'],
+    tags: ['SEMICON 2026', 'Optical Expo 2026'],
     docLinks: [
       { title: 'Technical Validation Report v2.4', url: 'https://example.com/reports/pp-v24' },
       { title: 'Standard Operating Procedures', url: 'https://example.com/docs/sop-diamond' }
@@ -54,13 +54,13 @@ export const MOCK_CUSTOMERS: Customer[] = [
     interactions: [
       {
         id: 'i1',
-        date: '2024-03-21',
-        summary: '(标星记录)<展会相见>//SEMICON 2024{我方跟进}Met with Dr. Klaus at our booth. We discussed the wear rate issue found in the previous trial. He confirmed that the new 0.5um formula is performing 15% better than competitors.',
+        date: '2026-03-21',
+        summary: '(标星记录)<展会相见>//SEMICON 2026{我方跟进}Met with Dr. Klaus at our booth. We discussed the wear rate issue found in the previous trial. He confirmed that the new 0.5um formula is performing 15% better than competitors.',
       },
       {
         id: 'i2',
-        date: '2024-05-16',
-        summary: '(一般记录)<展会相见>//Optical Expo 2024{对方回复}Quick touch-base during the networking event. Klaus introduced their new CEO. They are interested in exploring our spherical diamond series for their infrared lens project.',
+        date: '2026-05-16',
+        summary: '(一般记录)<展会相见>//Optical Expo 2026{对方回复}Quick touch-base during the networking event. Klaus introduced their new CEO. They are interested in exploring our spherical diamond series for their infrared lens project.',
       },
       {
         id: 'i3',
@@ -71,7 +71,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
   },
   {
     id: 'c2',
-    name: 'Global Wafer Solutions',
+    name: 'Apex Wafer Systems',
     region: ['Asia', 'Taiwan'],
     rank: 1, // 5 Stars
     status: 'Active',
@@ -80,19 +80,19 @@ export const MOCK_CUSTOMERS: Customer[] = [
     followUpStatus: 'Waiting for Customer',
     contacts: [
       { name: 'Mark Chen', title: 'Director of Engineering', isPrimary: true },
-      { name: 'Alice Wu', title: 'Process Engineer', email: 'a.wu@gws.com.tw' }
+      { name: 'Alice Wu', title: 'Process Engineer', email: 'a.wu@apex-systems.com.tw' }
     ],
     lastContactDate: dateStr(-1),
     lastCustomerReplyDate: dateStr(-1),
     lastMyReplyDate: dateStr(-8),
     nextActionDate: dateStr(3),
-    tags: ['SEMICON 2024'],
+    tags: ['SEMICON 2026'],
     upcomingPlan: 'Waiting for the internal quality control review of the 80um cluster samples. Anticipating a volume order of 50kg if tests pass.',
     interactions: [
       {
         id: 'i4',
-        date: '2024-03-22',
-        summary: '(标星记录)<展会相见>//SEMICON 2024{对方回复}Mark brought his entire technical team to our booth. We performed a live comparison of the FastCut-X series. The team was impressed by the uniformity and requested an immediate quote for mass production.',
+        date: '2026-03-22',
+        summary: '(标星记录)<展会相见>//SEMICON 2026{对方回复}Mark brought his entire technical team to our booth. We performed a live comparison of the FastCut-X series. The team was impressed by the uniformity and requested an immediate quote for mass production.',
       },
       {
         id: 'i5',
@@ -103,7 +103,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
   },
   {
     id: 'c3',
-    name: 'Innovative Abrasives Inc',
+    name: 'Titan Aerospace Finishings',
     region: ['North America', 'USA'],
     rank: 2, // 4 Stars
     status: 'Active',
@@ -111,19 +111,19 @@ export const MOCK_CUSTOMERS: Customer[] = [
     lastStatusUpdate: dateStr(-20),
     followUpStatus: 'Scheduled',
     contacts: [
-      { name: 'Jim Parsons', title: 'Process Lead', email: 'j.parsons@inn-abrasives.com' }
+      { name: 'Jim Parsons', title: 'Process Lead', email: 'j.parsons@titan-aero.com' }
     ],
     lastContactDate: dateStr(-20),
     lastCustomerReplyDate: dateStr(-25),
     lastMyReplyDate: dateStr(-20),
     nextActionDate: dateStr(1),
-    tags: ['Optical Expo 2024'],
+    tags: ['Optical Expo 2026'],
     upcomingPlan: 'Scheduled a technical consultation call to review the long-term storage stability of Batch 707-B slurry.',
     interactions: [
       {
         id: 'i6',
-        date: '2024-05-16',
-        summary: '(一般记录)<展会相见>//Optical Expo 2024{我方跟进}Jim visited our booth in Frankfurt to ask about the sedimentation rates of our water-based suspensions. Provided him with the latest stability data charts.',
+        date: '2026-05-16',
+        summary: '(一般记录)<展会相见>//Optical Expo 2026{我方跟进}Jim visited our booth in Frankfurt to ask about the sedimentation rates of our water-based suspensions. Provided him with the latest stability data charts.',
       }
     ]
   }
@@ -133,7 +133,7 @@ export const MOCK_SAMPLES: Sample[] = [
   {
     id: 's1',
     customerId: 'c1',
-    customerName: 'Precision Photonics Ltd',
+    customerName: 'Lumina Optics GmbH',
     sampleIndex: 1,
     sampleName: 'Single Crystal Agglomerated Powder - 0.5um > 0.5um (SuperPolish A)',
     productType: 'Powder',
@@ -157,7 +157,7 @@ export const MOCK_SAMPLES: Sample[] = [
   {
     id: 's2',
     customerId: 'c2',
-    customerName: 'Global Wafer Solutions',
+    customerName: 'Apex Wafer Systems',
     sampleIndex: 1,
     sampleName: 'Polycrystalline Diamond Ball Powder - 80um > 80um (FastCut-X)',
     productType: 'Diamond Ball',
@@ -180,7 +180,7 @@ export const MOCK_SAMPLES: Sample[] = [
   {
     id: 's3',
     customerId: 'c3',
-    customerName: 'Innovative Abrasives Inc',
+    customerName: 'Titan Aerospace Finishings',
     sampleIndex: 1,
     sampleName: 'Single Crystal Nano Diamond Suspension - 20nm > 20nm (Aerospace Slurry)',
     productType: 'Suspension',

@@ -146,7 +146,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [companyName, setCompanyNameState] = useState<string>(() => {
-    return localStorage.getItem('companyName') || 'Navi Material';
+    return localStorage.getItem('companyName') || 'Zenith Advanced Materials';
   });
 
   const [userName, setUserNameState] = useState<string>(() => {
@@ -352,7 +352,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setExhibitionsState(MOCK_EXHIBITIONS);
     setIsDemoData(true);
     setTagOptionsState(DEFAULT_TAGS); 
-    setCompanyNameState('Navi Material');
+    setCompanyNameState('Zenith Advanced Materials');
     setUserNameState('Demo User');
     localStorage.clear();
   };
