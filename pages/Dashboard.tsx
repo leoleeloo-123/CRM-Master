@@ -628,9 +628,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         </div>
       </div>
 
-      {/* Report Preview Modal ... remains unchanged */}
+      {/* Report Preview Modal */}
       {isPreviewModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
           <div className="bg-white dark:bg-slate-900 w-full max-w-[1200px] h-[95vh] rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
               <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
                 <div className="flex items-center gap-3">

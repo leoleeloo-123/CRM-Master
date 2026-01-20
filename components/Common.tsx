@@ -177,7 +177,7 @@ export const DaysCounter: React.FC<{
 export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
         <div className="p-4 xl:p-6 border-b flex justify-between items-center">
           <h3 className="font-black text-base xl:text-lg text-slate-900 dark:text-white uppercase tracking-wider">{title}</h3>
