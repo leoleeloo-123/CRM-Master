@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity, ClipboardList, UserPlus, UserMinus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity, ClipboardList, UserPlus, UserMinus, RotateCcw, ArrowUp, ArrowDown } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 import { translateToZh } from '../utils/i18n';
@@ -317,17 +317,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     if (!newContact.name.trim()) return;
     
     if (editingContactIndex !== null) {
-      // Update existing
       setTempContacts(prev => prev.map((c, i) => i === editingContactIndex ? { ...newContact } : c));
       setEditingContactIndex(null);
     } else {
-      // Add new
-      const isFirst = tempContacts.length === 0;
-      const updated = [...tempContacts, { ...newContact, isPrimary: isFirst || newContact.isPrimary }];
+      const updated = [...tempContacts, { ...newContact }];
       setTempContacts(updated);
     }
-    
-    // Clear form
     setNewContact({ name: '', title: '', email: '', phone: '', isPrimary: false });
   };
 
@@ -342,7 +337,6 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const handleSetPrimaryContact = (index: number) => {
-    // Modified to allow multiple primary contacts (toggles existing state)
     setTempContacts(prev => prev.map((c, i) => i === index ? { ...c, isPrimary: !c.isPrimary } : c));
   };
 
@@ -351,6 +345,19 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       handleCancelEditContact();
     }
     setTempContacts(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMoveContact = (index: number, direction: 'up' | 'down') => {
+    const nextIdx = direction === 'up' ? index - 1 : index + 1;
+    if (nextIdx < 0 || nextIdx >= tempContacts.length) return;
+    
+    const newArr = [...tempContacts];
+    [newArr[index], newArr[nextIdx]] = [newArr[nextIdx], newArr[index]];
+    setTempContacts(newArr);
+    
+    // Adjust editing index if needed
+    if (editingContactIndex === index) setEditingContactIndex(nextIdx);
+    else if (editingContactIndex === nextIdx) setEditingContactIndex(index);
   };
 
   const handleUpdateContacts = () => {
@@ -930,13 +937,31 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                 </div>
              </div>
 
-             {/* Existing Contacts List */}
+             {/* Existing Contacts List with Reorder buttons */}
              <div className="space-y-4">
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Manage Contacts ({tempContacts.length})</h4>
                 <div className="space-y-3 max-h-[35vh] overflow-y-auto pr-1 scrollbar-hide">
                    {tempContacts.length > 0 ? tempContacts.map((contact, idx) => (
                       <div key={idx} className={`p-5 rounded-2xl border-2 flex items-center justify-between group transition-all ${contact.isPrimary ? 'border-blue-100 bg-blue-50/10' : 'border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900'} ${editingContactIndex === idx ? 'ring-2 ring-amber-400 border-amber-200' : ''}`}>
                          <div className="flex items-center gap-5">
+                            <div className="flex flex-col gap-1">
+                               <button 
+                                 onClick={() => handleMoveContact(idx, 'up')}
+                                 disabled={idx === 0}
+                                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 disabled:opacity-20 transition-all active:scale-90"
+                                 title="Move Up"
+                               >
+                                 <ArrowUp size={14} />
+                               </button>
+                               <button 
+                                 onClick={() => handleMoveContact(idx, 'down')}
+                                 disabled={idx === tempContacts.length - 1}
+                                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 disabled:opacity-20 transition-all active:scale-90"
+                                 title="Move Down"
+                               >
+                                 <ArrowDown size={14} />
+                               </button>
+                            </div>
                             <button 
                                onClick={() => handleSetPrimaryContact(idx)}
                                className={`p-2 rounded-xl transition-all ${contact.isPrimary ? 'bg-amber-100 text-amber-600 shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
