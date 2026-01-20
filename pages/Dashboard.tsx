@@ -385,11 +385,16 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   // Logic for Sample Tracking Groups
   const sampleGroupsForReport = useMemo(() => {
     const filtered = samples.filter(s => s.status === reviewStatus);
-    const groupsMap: Record<string, { customerName: string; samples: Sample[] }> = {};
+    const groupsMap: Record<string, { customerName: string; samples: Sample[]; rank: number }> = {};
     
     filtered.forEach(s => {
       if (!groupsMap[s.customerId]) {
-        groupsMap[s.customerId] = { customerName: s.customerName, samples: [] };
+        const cust = customers.find(c => c.id === s.customerId);
+        groupsMap[s.customerId] = { 
+          customerName: s.customerName, 
+          samples: [],
+          rank: cust?.rank || 3
+        };
       }
       groupsMap[s.customerId].samples.push(s);
     });
@@ -398,13 +403,13 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
       customerId: id,
       ...data
     })).sort((a, b) => a.customerName.localeCompare(b.customerName, 'zh-Hans-CN'));
-  }, [samples, reviewStatus]);
+  }, [samples, reviewStatus, customers]);
 
   // Logic for Exhibition Recap Groups
   const exhibitionRecapGroups = useMemo(() => {
     if (reportType !== 'exhibition' || !selectedExhibitionName) return [];
 
-    const groups: { customerId: string; customerName: string; interactions: (Interaction & { parsed: any })[] }[] = [];
+    const groups: { customerId: string; customerName: string; rank: number; interactions: (Interaction & { parsed: any })[] }[] = [];
     
     customers.forEach(c => {
       const relevantLogs = (c.interactions || [])
@@ -415,6 +420,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         groups.push({
           customerId: c.id,
           customerName: c.name,
+          rank: c.rank,
           interactions: relevantLogs.sort((a, b) => b.date.localeCompare(a.date))
         });
       }
@@ -471,6 +477,17 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     exhibitions.find(e => e.name === selectedExhibitionName), 
     [exhibitions, selectedExhibitionName]
   );
+
+  const renderStars = (rank: number) => {
+    const filledCount = 6 - rank;
+    return (
+      <span style={{ display: 'inline-flex', gap: '4px', fontSize: '20px', color: '#fbbf24', marginLeft: '15px' }}>
+        {[...Array(5)].map((_, i) => (
+          <span key={i}>{i < filledCount ? '★' : '☆'}</span>
+        ))}
+      </span>
+    );
+  };
 
   return (
     <>
@@ -738,7 +755,10 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                               <div key={group.customerId} style={{ display: 'block' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '20px', borderBottom: '4px solid #f1f5f9', paddingBottom: '15px', marginBottom: '30px' }}>
                                     <div style={{ width: '12px', height: '40px', backgroundColor: '#1d4ed8', borderRadius: '10px' }}></div>
-                                    <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0' }}>{group.customerName}</h5>
+                                    <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0', display: 'flex', alignItems: 'center' }}>
+                                      {group.customerName}
+                                      {renderStars(group.rank)}
+                                    </h5>
                                   </div>
                                   <table className="w-full">
                                     <thead>
@@ -776,7 +796,10 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                               <div key={group.customerId} style={{ display: 'block' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px', borderBottom: '4px solid #f1f5f9', paddingBottom: '15px', marginBottom: '30px' }}>
                                     <div style={{ width: '12px', height: '40px', backgroundColor: '#1d4ed8', borderRadius: '10px' }}></div>
-                                    <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0' }}>{group.customerName}</h5>
+                                    <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0', display: 'flex', alignItems: 'center' }}>
+                                      {group.customerName}
+                                      {renderStars(group.rank)}
+                                    </h5>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
                                     {group.interactions.map(log => (
