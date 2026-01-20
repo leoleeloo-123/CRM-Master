@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Customer, Sample } from '../types';
+import { Customer, Sample, Interaction } from '../types';
 import { Card, Badge, RankStars, getUrgencyLevel, Button, parseLocalDate, Modal } from '../components/Common';
-import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box, Filter, Maximize2, Minimize2, ChevronDown, ChevronRight as ChevronRightSmall, ChevronUp, Clock, ListTodo, FileText, Download, Printer, X, ImageIcon, RefreshCcw, FileBarChart2, ClipboardList } from 'lucide-react';
+import { AlertTriangle, Calendar as CalendarIcon, ArrowRight, Activity, FlaskConical, ChevronLeft, ChevronRight, Globe, Check, Box, Filter, Maximize2, Minimize2, ChevronDown, ChevronRight as ChevronRightSmall, ChevronUp, Clock, ListTodo, FileText, Download, Printer, X, ImageIcon, RefreshCcw, FileBarChart2, ClipboardList, Presentation } from 'lucide-react';
 import { 
   format, isBefore, addDays, 
   endOfMonth, endOfWeek, eachDayOfInterval, 
@@ -10,7 +10,7 @@ import {
   isToday, startOfDay, isValid, startOfWeek
 } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
+import { useApp, parseInteractionSummary } from '../contexts/AppContext';
 import { toJpeg } from 'html-to-image';
 
 /**
@@ -350,14 +350,20 @@ const DashboardCalendar: React.FC<{
 
 const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   const navigate = useNavigate();
-  const { t, tagOptions, companyName, userName } = useApp();
+  const { t, tagOptions, companyName, userName, exhibitions, language } = useApp();
   
-  // State for StatusReview
+  // Sorting exhibitions: newest first
+  const sortedExhibitions = useMemo(() => {
+    return [...exhibitions].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }, [exhibitions]);
+
+  // State for Report Generation
+  const [reportType, setReportType] = useState<'sample' | 'exhibition'>('sample');
   const [reviewStatus, setReviewStatus] = useState<string>('样品制作中');
-  const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
+  const [selectedExhibitionName, setSelectedExhibitionName] = useState<string>(sortedExhibitions[0]?.name || '');
+
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [reportType, setReportType] = useState<'sample'>('sample');
 
   // Shared Calendar & Daily Agenda State
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -376,7 +382,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     return samples.filter(s => s.nextActionDate === selectedDateStr && s.testStatus === 'Ongoing');
   }, [samples, selectedDateStr]);
 
-  const reviewGroups = useMemo(() => {
+  // Logic for Sample Tracking Groups
+  const sampleGroupsForReport = useMemo(() => {
     const filtered = samples.filter(s => s.status === reviewStatus);
     const groupsMap: Record<string, { customerName: string; samples: Sample[] }> = {};
     
@@ -393,19 +400,28 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
     })).sort((a, b) => a.customerName.localeCompare(b.customerName, 'zh-Hans-CN'));
   }, [samples, reviewStatus]);
 
-  useEffect(() => {
-    if (reviewGroups.length > 0) {
-      setExpandedCustomers(new Set(reviewGroups.map(g => g.customerId)));
-    }
-  }, [reviewGroups]);
+  // Logic for Exhibition Recap Groups
+  const exhibitionRecapGroups = useMemo(() => {
+    if (reportType !== 'exhibition' || !selectedExhibitionName) return [];
 
-  const toggleAllExpansion = () => {
-    if (expandedCustomers.size === reviewGroups.length && reviewGroups.length > 0) {
-      setExpandedCustomers(new Set());
-    } else {
-      setExpandedCustomers(new Set(reviewGroups.map(g => g.customerId)));
-    }
-  };
+    const groups: { customerId: string; customerName: string; interactions: (Interaction & { parsed: any })[] }[] = [];
+    
+    customers.forEach(c => {
+      const relevantLogs = (c.interactions || [])
+        .map(int => ({ ...int, parsed: parseInteractionSummary(int.summary) }))
+        .filter(int => int.parsed.exhibitionTag === selectedExhibitionName);
+
+      if (relevantLogs.length > 0) {
+        groups.push({
+          customerId: c.id,
+          customerName: c.name,
+          interactions: relevantLogs.sort((a, b) => b.date.localeCompare(a.date))
+        });
+      }
+    });
+
+    return groups.sort((a, b) => a.customerName.localeCompare(b.customerName, 'zh-Hans-CN'));
+  }, [customers, reportType, selectedExhibitionName]);
 
   const activeSamplesCount = samples.filter(s => !['Delivered', 'Closed', 'Feedback Received', '已送达', '已关闭', '已反馈'].includes(s.status)).length;
   
@@ -429,7 +445,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
       const now = new Date();
       const dateStr = format(now, 'yyyyMMdd');
       const timeStr = format(now, 'HHmm');
-      const fileName = `样品报告_${companyName}_${userName}_${dateStr}_${timeStr}.jpg`;
+      const prefix = reportType === 'sample' ? '样品报告' : '展会回顾';
+      const fileName = `${prefix}_${companyName}_${userName}_${dateStr}_${timeStr}.jpg`;
       
       const dataUrl = await toJpeg(reportRef.current, { 
         quality: 0.95,
@@ -449,6 +466,11 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
       setIsExporting(false);
     }
   };
+
+  const currentExhibitionObj = useMemo(() => 
+    exhibitions.find(e => e.name === selectedExhibitionName), 
+    [exhibitions, selectedExhibitionName]
+  );
 
   return (
     <>
@@ -475,11 +497,10 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
           </div>
         </div>
 
-        {/* Main Grid Layout - Optimized border consistency */}
+        {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch">
           
           {/* TOP ROW: Stats + Generate Report Toolbar */}
-          {/* Row 1, Col 1: Stats Container */}
           <div className="lg:col-span-1 flex gap-4 items-stretch">
             <Card className={`${statCardClass} border-l-blue-500`}>
               <div className="p-1.5 xl:p-2 bg-blue-50 dark:bg-blue-900/50 rounded-lg text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
@@ -501,9 +522,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             </Card>
           </div>
 
-          {/* Row 1, Col 2-4: Generate Report Toolbar - Standardized to border-2 */}
+          {/* Row 1, Col 2-4: Generate Report Toolbar */}
           <Card className="lg:col-span-3 p-5 xl:p-6 shadow-sm flex flex-col lg:flex-row items-center gap-6 xl:gap-8 border-2 overflow-hidden bg-white dark:bg-slate-900/20 transition-all h-full">
-            {/* Step 1: Select Template */}
             <div className="flex-1 w-full space-y-3">
               <div className="flex items-center gap-3">
                 <FileBarChart2 className="text-blue-600 w-5 h-5" />
@@ -516,36 +536,50 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                   onChange={e => setReportType(e.target.value as any)}
                 >
                   <option value="sample">{t('sampleTrackingReport')}</option>
+                  <option value="exhibition">{t('exhibitionRecapReport')}</option>
                 </select>
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
             </div>
 
-            {/* Step 2: Configure Parameters */}
             <div className="flex-[2] w-full flex flex-col sm:flex-row items-end gap-6 lg:border-l border-slate-100 dark:border-slate-800 lg:pl-8">
               <div className="flex-1 space-y-2 min-w-0">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">{t('reportDescription')}</span>
                   <p className="text-[11px] xl:text-xs text-slate-500 dark:text-slate-400 font-bold leading-tight opacity-90 truncate lg:whitespace-normal lg:line-clamp-2">
-                    {reportType === 'sample' && t('reportSubtitlePrefix') + (t(reviewStatus as any) || reviewStatus) + t('reportSubtitleSuffix')}
+                    {reportType === 'sample' 
+                      ? t('reportSubtitlePrefix') + (t(reviewStatus as any) || reviewStatus) + t('reportSubtitleSuffix')
+                      : t('exhibitionReportSubtitle') + selectedExhibitionName
+                    }
                   </p>
               </div>
               
               <div className="w-full sm:w-auto space-y-2 shrink-0">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">{t('filterByStage')}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">
+                    {reportType === 'sample' ? t('filterByStage') : t('selectExhibition')}
+                  </span>
                   <div className="relative min-w-[200px]">
-                    <select 
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2.5 text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
-                      value={reviewStatus}
-                      onChange={e => setReviewStatus(e.target.value)}
-                    >
-                      {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
-                    </select>
+                    {reportType === 'sample' ? (
+                      <select 
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2.5 text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
+                        value={reviewStatus}
+                        onChange={e => setReviewStatus(e.target.value)}
+                      >
+                        {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
+                      </select>
+                    ) : (
+                      <select 
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2.5 text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
+                        value={selectedExhibitionName}
+                        onChange={e => setSelectedExhibitionName(e.target.value)}
+                      >
+                        {sortedExhibitions.map(ex => <option key={ex.id} value={ex.name}>{ex.name} ({ex.date?.substring(0,7) || 'TBD'})</option>)}
+                      </select>
+                    )}
                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
                   </div>
               </div>
             </div>
 
-            {/* Step 3: Action */}
             <div className="flex-none w-full lg:w-auto flex items-center justify-end lg:pl-8 lg:border-l border-slate-100 dark:border-slate-800 self-stretch">
                 <button 
                     onClick={() => setIsPreviewModalOpen(true)}
@@ -557,8 +591,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             </div>
           </Card>
 
-          {/* BOTTOM ROW: Daily Agenda + Calendar */}
-          {/* Row 2, Col 1: Daily Agenda Card - Reference Standard */}
+          {/* Daily Agenda Card */}
           <div className="lg:col-span-1">
             <Card className="p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full">
               <div className="flex flex-col mb-4 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
@@ -614,7 +647,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             </Card>
           </div>
 
-          {/* Row 2, Col 2-4: Calendar Card */}
+          {/* Calendar Card */}
           <div className="lg:col-span-3">
             <DashboardCalendar 
               customers={customers} 
@@ -636,7 +669,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                 <div className="flex items-center gap-3">
                     <ImageIcon className="text-blue-600 w-6 h-6" />
                     <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-wider">{t('previewExportJpg')}</h3>
-                    <Badge color="gray">{reviewGroups.length} {t('customers')}</Badge>
+                    <Badge color="gray">{reportType === 'sample' ? sampleGroupsForReport.length : exhibitionRecapGroups.length} {t('customers')}</Badge>
                 </div>
                 <div className="flex items-center gap-4">
                     <button 
@@ -659,7 +692,9 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                       <div className="border-b-[12px] border-slate-900 pb-16 mb-20" style={{ display: 'block', clear: 'both', height: 'auto', overflow: 'hidden' }}>
                           <div style={{ float: 'left', width: '650px' }}>
                             <h2 style={{ fontSize: '64px', fontWeight: '900', color: '#1d4ed8', margin: '0 0 10px 0', textTransform: 'uppercase' }}>{companyName}</h2>
-                            <p style={{ fontSize: '20px', fontWeight: '900', color: '#94a3b8', letterSpacing: '8px', margin: '0', textTransform: 'uppercase' }}>{t('sampleReportTitle')}</p>
+                            <p style={{ fontSize: '20px', fontWeight: '900', color: '#94a3b8', letterSpacing: '8px', margin: '0', textTransform: 'uppercase' }}>
+                              {reportType === 'sample' ? t('sampleReportTitle') : t('exhibitionRecapTitle')}
+                            </p>
                           </div>
                           <div style={{ float: 'right', width: '300px', textAlign: 'right' }}>
                             <p style={{ fontSize: '12px', fontWeight: '900', color: '#94a3b8', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 5px 0' }}>Report Date</p>
@@ -670,59 +705,116 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                           <div style={{ clear: 'both' }}></div>
                       </div>
 
+                      {/* Header Info Banner */}
                       <div className="bg-slate-100 p-12 rounded-[3rem] mb-20 border-2 border-slate-200" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ flex: '1' }}>
-                            <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Filter Criteria</span>
-                            <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>Status: <span style={{ color: '#2563eb' }}>{t(reviewStatus as any) || reviewStatus}</span></h4>
+                            <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>
+                              {reportType === 'sample' ? 'Filter Criteria' : 'Exhibition Details'}
+                            </span>
+                            <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>
+                              {reportType === 'sample' ? (
+                                <>Status: <span style={{ color: '#2563eb' }}>{t(reviewStatus as any) || reviewStatus}</span></>
+                              ) : (
+                                <>Event: <span style={{ color: '#1d4ed8' }}>{selectedExhibitionName}</span></>
+                              )}
+                            </h4>
+                            {reportType === 'exhibition' && currentExhibitionObj && (
+                              <p style={{ fontSize: '18px', fontWeight: '700', color: '#64748b', marginTop: '5px', textTransform: 'uppercase' }}>
+                                {currentExhibitionObj.location} • {currentExhibitionObj.date}
+                              </p>
+                            )}
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <span style={{ fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px' }}>Summary</span>
-                            <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>{reviewGroups.length} <span style={{ color: '#94a3b8' }}>{t('customers')}</span></h4>
+                            <h4 style={{ fontSize: '36px', fontWeight: '900', marginTop: '10px', textTransform: 'uppercase' }}>
+                              {reportType === 'sample' ? sampleGroupsForReport.length : exhibitionRecapGroups.length} <span style={{ color: '#94a3b8' }}>{t('customers')}</span>
+                            </h4>
                           </div>
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '80px' }}>
-                          {reviewGroups.map(group => (
-                            <div key={group.customerId} style={{ display: 'block' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', borderBottom: '4px solid #f1f5f9', paddingBottom: '15px', marginBottom: '30px' }}>
-                                  <div style={{ width: '12px', height: '40px', backgroundColor: '#1d4ed8', borderRadius: '10px' }}></div>
-                                  <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0' }}>{group.customerName}</h5>
-                                </div>
-                                <table className="w-full">
-                                  <thead>
-                                      <tr style={{ fontSize: '14px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#64748b', backgroundColor: '#f8fafc', borderTop: '2px solid #e2e8f0', borderBottom: '2px solid #e2e8f0' }}>
-                                        <th style={{ padding: '20px', textAlign: 'left', width: '60px' }}>#</th>
-                                        <th style={{ padding: '20px', textAlign: 'left', width: '380px' }}>Sample Details</th>
-                                        <th style={{ padding: '20px', textAlign: 'left', width: '150px' }}>Quantity</th>
-                                        <th style={{ padding: '20px', textAlign: 'left' }}>Plan / Next Steps</th>
-                                        <th style={{ padding: '20px', textAlign: 'right', width: '180px' }}>Key Date</th>
-                                      </tr>
-                                  </thead>
-                                  <tbody>
-                                      {group.samples.map(s => (
-                                        <tr key={s.id}>
-                                            <td style={{ padding: '20px', fontWeight: '900', color: '#94a3b8', fontSize: '20px' }}>{s.sampleIndex}</td>
-                                            <td style={{ padding: '20px' }}>
-                                              <div style={{ fontSize: '22px', fontWeight: '900', textTransform: 'uppercase', color: '#000', marginBottom: '8px' }}>{s.sampleName}</div>
-                                              <div style={{ fontSize: '14px', fontFamily: 'monospace', color: '#64748b', letterSpacing: '2px' }}>{s.sampleSKU || 'NO SKU RECORD'}</div>
-                                            </td>
-                                            <td style={{ padding: '20px', fontWeight: '900', fontSize: '20px' }}>{s.quantity}</td>
-                                            <td style={{ padding: '20px', fontStyle: 'italic', color: '#334155', fontSize: '20px' }}>
-                                              {s.upcomingPlan || '-'}
-                                            </td>
-                                            <td style={{ padding: '20px', fontWeight: '900', textTransform: 'uppercase', textAlign: 'right', fontSize: '20px', color: '#1d4ed8' }}>
-                                              {s.nextActionDate || '-'}
-                                            </td>
+                          {reportType === 'sample' ? (
+                            sampleGroupsForReport.map(group => (
+                              <div key={group.customerId} style={{ display: 'block' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', borderBottom: '4px solid #f1f5f9', paddingBottom: '15px', marginBottom: '30px' }}>
+                                    <div style={{ width: '12px', height: '40px', backgroundColor: '#1d4ed8', borderRadius: '10px' }}></div>
+                                    <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0' }}>{group.customerName}</h5>
+                                  </div>
+                                  <table className="w-full">
+                                    <thead>
+                                        <tr style={{ fontSize: '14px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#64748b', backgroundColor: '#f8fafc', borderTop: '2px solid #e2e8f0', borderBottom: '2px solid #e2e8f0' }}>
+                                          <th style={{ padding: '20px', textAlign: 'left', width: '60px' }}>#</th>
+                                          <th style={{ padding: '20px', textAlign: 'left', width: '380px' }}>Sample Details</th>
+                                          <th style={{ padding: '20px', textAlign: 'left', width: '150px' }}>Quantity</th>
+                                          <th style={{ padding: '20px', textAlign: 'left' }}>Plan / Next Steps</th>
+                                          <th style={{ padding: '20px', textAlign: 'right', width: '180px' }}>Key Date</th>
                                         </tr>
-                                      ))}
-                                  </tbody>
-                                </table>
+                                    </thead>
+                                    <tbody>
+                                        {group.samples.map(s => (
+                                          <tr key={s.id}>
+                                              <td style={{ padding: '20px', fontWeight: '900', color: '#94a3b8', fontSize: '20px' }}>{s.sampleIndex}</td>
+                                              <td style={{ padding: '20px' }}>
+                                                <div style={{ fontSize: '22px', fontWeight: '900', textTransform: 'uppercase', color: '#000', marginBottom: '8px' }}>{s.sampleName}</div>
+                                                <div style={{ fontSize: '14px', fontFamily: 'monospace', color: '#64748b', letterSpacing: '2px' }}>{s.sampleSKU || 'NO SKU RECORD'}</div>
+                                              </td>
+                                              <td style={{ padding: '20px', fontWeight: '900', fontSize: '20px' }}>{s.quantity}</td>
+                                              <td style={{ padding: '20px', fontStyle: 'italic', color: '#334155', fontSize: '20px' }}>
+                                                {s.upcomingPlan || '-'}
+                                              </td>
+                                              <td style={{ padding: '20px', fontWeight: '900', textTransform: 'uppercase', textAlign: 'right', fontSize: '20px', color: '#1d4ed8' }}>
+                                                {s.nextActionDate || '-'}
+                                              </td>
+                                          </tr>
+                                        ))}
+                                    </tbody>
+                                  </table>
+                              </div>
+                            ))
+                          ) : (
+                            exhibitionRecapGroups.map(group => (
+                              <div key={group.customerId} style={{ display: 'block' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', borderBottom: '4px solid #f1f5f9', paddingBottom: '15px', marginBottom: '30px' }}>
+                                    <div style={{ width: '12px', height: '40px', backgroundColor: '#1d4ed8', borderRadius: '10px' }}></div>
+                                    <h5 style={{ fontSize: '32px', fontWeight: '900', textTransform: 'uppercase', margin: '0' }}>{group.customerName}</h5>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                                    {group.interactions.map(log => (
+                                      <div key={log.id} style={{ padding: '30px', backgroundColor: '#f8fafc', borderRadius: '25px', border: '1px solid #e2e8f0' }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                                              <div style={{ display: 'flex', gap: '15px' }}>
+                                                  <span style={{ padding: '5px 15px', backgroundColor: '#1d4ed8', color: '#fff', borderRadius: '8px', fontSize: '16px', fontWeight: '900' }}>{log.date}</span>
+                                                  {log.parsed.typeTag !== 'None' && log.parsed.typeTag !== '无' && (
+                                                    <span style={{ padding: '5px 15px', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '8px', fontSize: '14px', fontWeight: '900', textTransform: 'uppercase' }}>
+                                                      {t(log.parsed.typeTag as any) || log.parsed.typeTag}
+                                                    </span>
+                                                  )}
+                                                  {log.parsed.effectTag !== 'None' && log.parsed.effectTag !== '无' && (
+                                                    <span style={{ padding: '5px 15px', backgroundColor: '#d1fae5', color: '#065f46', borderRadius: '8px', fontSize: '14px', fontWeight: '900', textTransform: 'uppercase' }}>
+                                                      {t(log.parsed.effectTag as any) || log.parsed.effectTag}
+                                                    </span>
+                                                  )}
+                                              </div>
+                                              {log.parsed.isStarred && <span style={{ fontSize: '24px' }}>⭐</span>}
+                                          </div>
+                                          <p style={{ fontSize: '22px', fontWeight: '600', color: '#1e293b', lineHeight: '1.6', margin: '0', whiteSpace: 'pre-wrap' }}>
+                                            {log.parsed.content}
+                                          </p>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                          {(reportType === 'exhibition' && exhibitionRecapGroups.length === 0) && (
+                            <div style={{ textAlign: 'center', padding: '100px', fontSize: '24px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '4px' }}>
+                                No meeting logs found for this exhibition.
                             </div>
-                          ))}
+                          )}
                       </div>
 
                       <div style={{ marginTop: '100px', paddingTop: '40px', borderTop: '4px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '3px' }}>
-                          <span>© {companyName} • Confidential Sample Status Log</span>
+                          <span>© {companyName} • Confidential {reportType === 'sample' ? 'Sample Log' : 'Exhibition Recap'}</span>
                           <span style={{ fontStyle: 'italic' }}>High Definition Long Image Export</span>
                       </div>
                     </div>
