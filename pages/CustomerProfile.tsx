@@ -6,7 +6,7 @@ import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLeve
 import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity, ClipboardList, UserPlus, UserMinus, RotateCcw, ArrowUp, ArrowDown } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
-import { translateToZh } from '../utils/i18n';
+import { translateToZh, getCanonicalTag } from '../utils/i18n';
 
 interface CustomerProfileProps {
   customers: Customer[];
@@ -14,10 +14,12 @@ interface CustomerProfileProps {
   onUpdateCustomer: (updated: Customer) => void;
 }
 
+// Fixed format helper: ensures that the serialized string ALWAYS uses Chinese keys for tags
 const formatInteractionSummary = (isStarred: boolean, typeTag: string, exhibitionTag: string, effectTag: string, content: string) => {
   const starStr = isStarred ? '(标星记录)' : '(一般记录)';
   const exhStr = exhibitionTag && exhibitionTag !== 'None' ? `//${exhibitionTag}` : '';
   
+  // FORCE tags to Chinese regardless of UI language for database consistency
   const typeZh = translateToZh(typeTag);
   const effectZh = translateToZh(effectTag);
   
@@ -44,9 +46,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
   const [intIsStarred, setIntIsStarred] = useState(false);
-  const [intTypeTag, setIntTypeTag] = useState('None');
+  const [intTypeTag, setIntTypeTag] = useState('无');
   const [intExhibitionTag, setIntExhibitionTag] = useState('None'); 
-  const [intEffectTag, setIntEffectTag] = useState('None');
+  const [intEffectTag, setIntEffectTag] = useState('无');
   const [intContent, setIntContent] = useState('');
   
   const [filterType, setFilterType] = useState('all');
@@ -144,9 +146,10 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     if (editingInteraction) {
       const parsed = parseInteractionSummary(editingInteraction.summary);
       setIntIsStarred(parsed.isStarred);
-      setIntTypeTag(parsed.typeTag);
+      // Canonicalize to make sure the value exists in tagOptions (which are Chinese)
+      setIntTypeTag(getCanonicalTag(parsed.typeTag));
       setIntExhibitionTag(parsed.exhibitionTag || 'None');
-      setIntEffectTag(parsed.effectTag);
+      setIntEffectTag(getCanonicalTag(parsed.effectTag));
       setIntContent(parsed.content);
     }
   }, [editingInteraction]);
@@ -687,9 +690,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                        onClick={() => {
                                          setEditingInteraction({ id: `int_${Date.now()}`, date: format(new Date(), 'yyyy-MM-dd'), summary: '' });
                                          setIntIsStarred(false);
-                                         setIntTypeTag('None');
+                                         setIntTypeTag('无');
                                          setIntExhibitionTag('None');
-                                         setIntEffectTag('None');
+                                         setIntEffectTag('无');
                                          setIntContent('');
                                        }}>
                                      <Plus size={16} className="mr-1" /> Log Progress

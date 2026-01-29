@@ -501,7 +501,7 @@ export const translations = {
     '微米粉': '微米粉',
     'CVD': 'CVD',
     
-    // Interaction Tag Mapping (Strictly matched to user's specified Chinese strings)
+    // Interaction Tag Mapping
     '无': '无',
     '对方邮件': '对方邮件',
     '我方邮件': '我方邮件',
@@ -614,41 +614,41 @@ export const translations = {
 
 /**
  * Normalizes an input value to a canonical tag (key) used in the translations object.
+ * Always returns the Chinese key version for internal stability.
  */
 export const getCanonicalTag = (val: string): string => {
-  if (!val) return val;
-  const trimmed = val.trim();
+  if (!val) return '无';
+  const trimmed = val.trim().toUpperCase();
   
-  // 1. Check if it's already a key in translations.en
-  if (translations.en.hasOwnProperty(trimmed)) return trimmed;
-  
-  // 2. Search through values in en and zh
+  // Search through keys and values to find a match
   for (const key of Object.keys(translations.en) as Array<keyof typeof translations.en>) {
-    if (translations.en[key] === trimmed || translations.zh[key] === trimmed) {
-      return key;
-    }
+    const enVal = translations.en[key];
+    const zhVal = translations.zh[key];
+    
+    // If it matches English label, return the Key (which is the Chinese string)
+    if (typeof enVal === 'string' && enVal.toUpperCase() === trimmed) return key;
+    // If it matches Chinese label, return the Key
+    if (typeof zhVal === 'string' && zhVal.toUpperCase() === trimmed) return key;
+    // If it matches the Key itself
+    if (key.toUpperCase() === trimmed) return key;
   }
   
-  return trimmed;
+  return val.trim();
 };
 
 /**
- * Translates a canonical tag or its English value into its Chinese equivalent.
+ * Specifically converts any input to its corresponding Chinese label.
+ * Useful for forcing Chinese storage in summary strings.
  */
 export const translateToZh = (keyOrVal: string): string => {
-  if (!keyOrVal) return keyOrVal;
+  if (!keyOrVal) return '无';
   
-  // 1. If it's a key in zh, return that translation
+  // 1. If it exists in zh as a key, it is already our canonical key
   if (translations.zh.hasOwnProperty(keyOrVal)) {
-    return translations.zh[keyOrVal as keyof typeof translations.zh];
+    return translations.zh[keyOrVal as keyof typeof translations.zh] as string;
   }
   
-  // 2. If it's a value in en, find the corresponding key and return zh[key]
-  for (const k of Object.keys(translations.en) as Array<keyof typeof translations.en>) {
-    if (translations.en[k] === keyOrVal) {
-      return translations.zh[k];
-    }
-  }
-  
-  return keyOrVal;
+  // 2. Otherwise, find it in en/zh values and return the canonical key
+  const canonical = getCanonicalTag(keyOrVal);
+  return translations.zh[canonical as keyof typeof translations.zh] || canonical;
 };

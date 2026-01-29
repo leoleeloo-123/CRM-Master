@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Language, translations } from '../utils/i18n';
+import { Language, translations, getCanonicalTag } from '../utils/i18n';
 import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction } from '../types';
 import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS, MOCK_EXHIBITIONS } from '../services/dataService';
 
@@ -30,7 +30,9 @@ export const parseInteractionSummary = (summary: string) => {
   // Type Tag <...>
   const typeMatch = result.content.match(/^<(.*?)>/);
   if (typeMatch) {
-    result.typeTag = typeMatch[1];
+    const rawType = typeMatch[1];
+    // ALWAYS canonicalize to the Chinese key used in tagOptions
+    result.typeTag = getCanonicalTag(rawType); 
     result.content = result.content.replace(typeMatch[0], '');
   }
 
@@ -44,7 +46,9 @@ export const parseInteractionSummary = (summary: string) => {
   // Effect Tag {...}
   const effectMatch = result.content.match(/^{(.*?)}/);
   if (effectMatch) {
-    result.effectTag = effectMatch[1];
+    const rawEffect = effectMatch[1];
+    // ALWAYS canonicalize to the Chinese key used in tagOptions
+    result.effectTag = getCanonicalTag(rawEffect);
     result.content = result.content.replace(effectMatch[0], '');
   }
 
