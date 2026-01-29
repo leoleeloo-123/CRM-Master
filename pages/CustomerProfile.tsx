@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus } from '../types';
+import { Customer, Sample, FollowUpStatus, Interaction, Contact, Rank, Exhibition, SampleDocLink, TestStatus, MailingInfo } from '../types';
 import { Card, Badge, Button, RankStars, StatusIcon, DaysCounter, getUrgencyLevel, Modal, parseLocalDate } from '../components/Common';
 import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List, Calendar, UserCheck, Star, PencilLine, ChevronDown, ChevronUp, Ruler, FlaskConical, AlertCircle, ExternalLink, Link as LinkIcon, Tag, ArrowRight, RefreshCcw, Check, Search, Filter, CheckCircle2, Activity, ClipboardList, UserPlus, UserMinus, RotateCcw, ArrowUp, ArrowDown } from 'lucide-react';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
@@ -43,6 +43,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [isEditLinksOpen, setIsEditLinksOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isEditCustomerModalOpen, setIsEditCustomerModalOpen] = useState(false);
+  const [isEditMailingOpen, setIsEditMailingOpen] = useState(false);
   
   const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
   const [intIsStarred, setIntIsStarred] = useState(false);
@@ -71,6 +72,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [newRegionInput, setNewRegionInput] = useState('');
   const [editingRegionIndex, setEditingRegionIndex] = useState<number | null>(null);
   const [tagSearchTerm, setTagSearchTerm] = useState('');
+  
+  const [tempMailing, setTempMailing] = useState<MailingInfo>({ recipient: '', phone: '', company: '', address: '' });
 
   // Contacts Management State
   const [tempContacts, setTempContacts] = useState<Contact[]>([]);
@@ -171,6 +174,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const handleUpdateSummary = () => {
     saveUpdate({ productSummary: tempSummary, lastStatusUpdate: format(new Date(), 'yyyy-MM-dd') });
     setIsEditSummaryOpen(false);
+  };
+
+  const handleUpdateMailing = () => {
+    saveUpdate({ mailingInfo: tempMailing, lastStatusUpdate: format(new Date(), 'yyyy-MM-dd') });
+    setIsEditMailingOpen(false);
   };
 
   const handleUpdateTags = () => {
@@ -373,6 +381,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const contentTextClass = "text-base xl:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight";
   const headerClass = "px-6 py-4 bg-slate-100 dark:bg-slate-800/80 flex justify-between items-center border-b border-slate-200 dark:border-slate-700";
   const editBtnStyle = "p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:text-blue-600 hover:shadow-sm transition-all active:scale-90 shadow-none";
+  const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
+  const valueClass = "font-black text-slate-900 dark:text-white text-sm xl:text-base text-right";
 
   const resetFilters = () => {
     setFilterType('all');
@@ -526,6 +536,40 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
                <div className="p-6">
                   <div className={contentTextClass + " whitespace-pre-wrap"}>{customer.productSummary || "No summary."}</div>
+               </div>
+            </Card>
+
+            <Card className="overflow-hidden border shadow-sm">
+               <div className={headerClass}>
+                  <h3 className={titleClass}><Mail className="w-5 h-5 text-blue-600"/> {t('mailingInfo')}</h3>
+                  <button onClick={() => { 
+                    setTempMailing(customer.mailingInfo || { recipient: '', phone: '', company: '', address: '' }); 
+                    setIsEditMailingOpen(true); 
+                  }} className={editBtnStyle}><PencilLine size={16}/></button>
+               </div>
+               <div className="p-6 space-y-2">
+                  {customer.mailingInfo ? (
+                    <>
+                      <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                        <span className={labelClass}>{t('recipient')}</span>
+                        <span className={valueClass}>{customer.mailingInfo.recipient || '-'}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                        <span className={labelClass}>{t('mailingPhone')}</span>
+                        <span className={valueClass}>{customer.mailingInfo.phone || '-'}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                        <span className={labelClass}>{t('mailingCompany')}</span>
+                        <span className={valueClass}>{customer.mailingInfo.company || '-'}</span>
+                      </div>
+                      <div className="pt-1">
+                        <span className={labelClass}>{t('address')}</span>
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1 leading-relaxed">{customer.mailingInfo.address || '-'}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-slate-400 italic text-[10px] font-black uppercase tracking-widest">{t('statusNoAction')}</div>
+                  )}
                </div>
             </Card>
 
@@ -851,6 +895,54 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
             </Card>
          </div>
        </div>
+
+       {/* Mailing Info Edit Modal */}
+       <Modal isOpen={isEditMailingOpen} onClose={() => setIsEditMailingOpen(false)} title={t('mailingInfo')}>
+          <div className="space-y-6">
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                   <label className={labelClass}>{t('recipient')}</label>
+                   <input 
+                      className="w-full p-3 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                      value={tempMailing.recipient}
+                      onChange={e => setTempMailing({...tempMailing, recipient: e.target.value})}
+                      placeholder="e.g. John Doe"
+                   />
+                </div>
+                <div className="space-y-1.5">
+                   <label className={labelClass}>{t('mailingPhone')}</label>
+                   <input 
+                      className="w-full p-3 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                      value={tempMailing.phone}
+                      onChange={e => setTempMailing({...tempMailing, phone: e.target.value})}
+                      placeholder="e.g. +86..."
+                   />
+                </div>
+             </div>
+             <div className="space-y-1.5">
+                <label className={labelClass}>{t('mailingCompany')}</label>
+                <input 
+                   className="w-full p-3 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-sm"
+                   value={tempMailing.company}
+                   onChange={e => setTempMailing({...tempMailing, company: e.target.value})}
+                   placeholder="e.g. Navi Material Co."
+                />
+             </div>
+             <div className="space-y-1.5">
+                <label className={labelClass}>{t('address')}</label>
+                <textarea 
+                   className="w-full p-3 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all shadow-sm min-h-[80px]"
+                   value={tempMailing.address}
+                   onChange={e => setTempMailing({...tempMailing, address: e.target.value})}
+                   placeholder="Full shipping address..."
+                />
+             </div>
+             <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-800">
+                <Button variant="secondary" onClick={() => setIsEditMailingOpen(false)}>{t('cancel')}</Button>
+                <Button onClick={handleUpdateMailing} className="bg-blue-600 px-10 shadow-lg shadow-blue-600/20 font-black uppercase text-sm tracking-widest">{t('save')}</Button>
+             </div>
+          </div>
+       </Modal>
 
        {/* Key Contacts Management Modal */}
        <Modal isOpen={isEditContactsOpen} onClose={() => { setIsEditContactsOpen(false); setEditingContactIndex(null); }} title={t('keyContacts')}>

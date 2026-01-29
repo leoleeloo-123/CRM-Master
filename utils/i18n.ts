@@ -179,6 +179,13 @@ export const translations = {
     fileLinks: 'File Links',
     addFileLink: 'Add Link',
     
+    // Mailing Info
+    mailingInfo: 'Mailing Info',
+    recipient: 'Recipient',
+    mailingPhone: 'Phone',
+    mailingCompany: 'Company',
+    address: 'Address',
+
     // Sample Columns & Statuses (UI Labels)
     colRequested: 'Waiting',
     colProcessing: 'Processing',
@@ -208,6 +215,18 @@ export const translations = {
     '对方回复': 'Customer Reply',
     '我方跟进': 'Our Follow-up',
     '对方回复及我方跟进': 'Customer Reply & Follow-up',
+
+    // Extra Variations for search grounding (for canonicalization)
+    'NONE': 'None',
+    'CUSTOMER EMAIL': 'Customer Email',
+    'OUR EMAIL': 'Our Email',
+    'BOTH EMAILS': 'Both Emails',
+    'MET AT EXHIBITION': 'Met at Exhibition',
+    'VIDEO CALL': 'Video Call',
+    'IN-PERSON MEETING': 'In-person Meeting',
+    'CUSTOMER REPLY': 'Customer Reply',
+    'OUR FOLLOW-UP': 'Our Follow-up',
+    'CUSTOMER REPLY & FOLLOW-UP': 'Customer Reply & Follow-up',
 
     // Status Data Keys
     '等待中': 'Waiting',
@@ -482,6 +501,13 @@ export const translations = {
     confirmDeleteSample: '您确定要删除此样品记录吗？此操作无法撤销。',
     fileLinks: '超链接 / 文档',
     addFileLink: '添加链接',
+    
+    // Mailing Info
+    mailingInfo: '邮寄信息',
+    recipient: '收件人',
+    mailingPhone: '电话',
+    mailingCompany: '公司名',
+    address: '地址',
 
     // Sample Columns & Statuses (UI Labels)
     colRequested: '等待中',

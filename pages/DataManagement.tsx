@@ -1,5 +1,6 @@
+
 import React, { useState, useRef } from 'react';
-import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink, Exhibition } from '../types';
+import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink, Exhibition, MailingInfo } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
 import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet, Eye, ClipboardList, Presentation, ChevronDown, Database, Info } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
@@ -146,7 +147,17 @@ const DataManagement: React.FC<DataManagementProps> = ({
        }
        return { id: `int_${tempIdPrefix}_${i}`, date: date, summary: summary };
     }).reverse();
-    return { id: `new_c_${tempIdPrefix}`, name: name, region: regions.length > 0 ? regions : ['Unknown'], tags: cleanTags, rank: rank, productSummary: productSummary, lastStatusUpdate: lastStatusUpdate, followUpStatus: followUpStatus, nextActionDate: nextActionDate, upcomingPlan: upcomingPlan, lastCustomerReplyDate: lastCustomerReplyDate, lastMyReplyDate: lastMyReplyDate, lastContactDate: lastMyReplyDate, contacts: contacts, docLinks: docLinks, status: 'Active' as CustomerStatus, interactions: interactions } as Customer;
+    
+    // Mailing Info Parsing (Column 22)
+    const mParts = splitByDelimiter(safeCol(22));
+    const mailingInfo: MailingInfo = {
+      recipient: mParts[0] || '',
+      phone: mParts[1] || '',
+      company: mParts[2] || '',
+      address: mParts[3] || ''
+    };
+
+    return { id: `new_c_${tempIdPrefix}`, name: name, region: regions.length > 0 ? regions : ['Unknown'], tags: cleanTags, rank: rank, productSummary: productSummary, lastStatusUpdate: lastStatusUpdate, followUpStatus: followUpStatus, nextActionDate: nextActionDate, upcomingPlan: upcomingPlan, lastCustomerReplyDate: lastCustomerReplyDate, lastMyReplyDate: lastMyReplyDate, lastContactDate: lastMyReplyDate, contacts: contacts, docLinks: docLinks, status: 'Active' as CustomerStatus, interactions: interactions, mailingInfo: mailingInfo } as Customer;
   };
 
   const rowToSample = (cols: any[], tempIdPrefix: string, indexMap: Map<string, number>, lookupCustomers: Customer[]): Sample => {
@@ -183,8 +194,11 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
   const handleExportExcel = () => {
     const wb = XLSX.utils.book_new();
-    const custHeaders = ["客户", "地区", "展会", "展会官网", "等级", "状态与产品总结", "状态更新", "未更新", "对接人员", "状态", "下一步", "关键日期", "DDL", "对接流程总结", "对方回复", "未回复", "我方跟进", "未跟进", "文档超链接", "联系方式", "File Link Titles", "File link URLs"];
-    const custRows = customers.map(c => [c.name, Array.isArray(c.region) ? c.region.join(' ||| ') : c.region, c.tags.join(' ||| '), "", c.rank, (c.productSummary || '').replace(/\n/g, ' ||| '), c.lastStatusUpdate, "", c.contacts.map(ct => `${ct.name}${ct.title?` (${ct.title})`:''}${ct.isPrimary?' 【主要联系人】':''}`).join(' ||| '), mapStatusToExport(c.followUpStatus), c.upcomingPlan || '', c.nextActionDate, "", [...c.interactions].reverse().map(i => `【${i.date}】 ${i.summary}`).join(' ||| '), c.lastCustomerReplyDate, "", c.lastMyReplyDate, "", c.docLinks ? c.docLinks.map(l => `${l.title}: ${l.url}`).join(' ||| ') : '', c.contacts.map(ct => ct.email || ct.phone || '').join(' ||| '), (c.docLinks || []).map(l => l.title).join(' ||| '), (c.docLinks || []).map(l => l.url).join(' ||| ')]);
+    const custHeaders = ["客户", "地区", "展会", "展会官网", "等级", "状态与产品总结", "状态更新", "未更新", "对接人员", "状态", "下一步", "关键日期", "DDL", "对接流程总结", "对方回复", "未回复", "我方跟进", "未跟进", "文档超链接", "联系方式", "File Link Titles", "File link URLs", "邮寄信息"];
+    const custRows = customers.map(c => {
+      const mailingStr = c.mailingInfo ? [c.mailingInfo.recipient, c.mailingInfo.phone, c.mailingInfo.company, c.mailingInfo.address].join(' ||| ') : '';
+      return [c.name, Array.isArray(c.region) ? c.region.join(' ||| ') : c.region, c.tags.join(' ||| '), "", c.rank, (c.productSummary || '').replace(/\n/g, ' ||| '), c.lastStatusUpdate, "", c.contacts.map(ct => `${ct.name}${ct.title?` (${ct.title})`:''}${ct.isPrimary?' 【主要联系人】':''}`).join(' ||| '), mapStatusToExport(c.followUpStatus), c.upcomingPlan || '', c.nextActionDate, "", [...c.interactions].reverse().map(i => `【${i.date}】 ${i.summary}`).join(' ||| '), c.lastCustomerReplyDate, "", c.lastMyReplyDate, "", c.docLinks ? c.docLinks.map(l => `${l.title}: ${l.url}`).join(' ||| ') : '', c.contacts.map(ct => ct.email || ct.phone || '').join(' ||| '), (c.docLinks || []).map(l => l.title).join(' ||| '), (c.docLinks || []).map(l => l.url).join(' ||| '), mailingStr];
+    });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]), "Customers");
     const sampHeaders = ["1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", "11.Details", "12.Quantity", "13.Customer Application", "14.Status Date", "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Link Titles", "21.File Link URLs", "22.Nickname", "23.Starred"];
     const sampRows = samples.map(s => [s.customerName, translateToZh(s.status || ''), s.testStatus === 'Finished' ? '完成' : s.testStatus === 'Terminated' ? '项目终止' : '未完成', translateToZh(s.crystalType || ''), (s.productCategory || []).map(c => translateToZh(c)).join(', '), translateToZh(s.productForm || ''), s.originalSize, s.processedSize, translateToZh(s.isGraded || ''), s.sampleSKU, s.sampleDetails, s.quantity, s.application, s.lastStatusDate, s.lastStatusDate ? String(differenceInDays(new Date(), new Date(s.lastStatusDate))) : "", (s.statusDetails || '').replace(/\n/g, ' ||| '), s.trackingNumber, s.upcomingPlan || '', s.nextActionDate || '', (s.docLinks || []).map(l => l.title).join(' ||| '), (s.docLinks || []).map(l => l.url).join(' ||| '), s.nickname || '', s.isStarredSample ? 'Yes' : 'No']);
@@ -346,7 +360,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       </h4>
                       <p className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                         {activeTab === 'customers' 
-                          ? "1.客户 | 2.地区 | 3.展会 | 4.官网 | 5.等级 | 6.产品总结 | 7.更新日期 | 8.NA | 9.人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.NA | 14.流程总结 | 15.对方回复 | 16.NA | 17.我方跟进 | 18.NA | 19.NA | 20.联系方式 | 21.Titles | 22.URLs"
+                          ? "1.客户 | 2.地区 | 3.展会 | 4.官网 | 5.等级 | 6.产品总结 | 7.更新日期 | 8.NA | 9.人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.NA | 14.流程总结 | 15.对方回复 | 16.NA | 17.我方跟进 | 18.NA | 19.NA | 20.联系方式 | 21.Titles | 22.URLs | 23.邮寄信息"
                           : activeTab === 'samples'
                           ? "1.Customer | 2.Status | 3.Test | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.NA | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs | 22.Nickname | 23.Starred"
                           : "1.Name | 2.Date | 3.Location | 4.Link | 5.Event Series | 6.Summary"

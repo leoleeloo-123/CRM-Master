@@ -32,6 +32,13 @@ export interface Exhibition {
   summary?: string; 
 }
 
+export interface MailingInfo {
+  recipient: string;
+  phone: string;
+  company: string;
+  address: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -50,6 +57,7 @@ export interface Customer {
   interactions: Interaction[]; 
   docLinks?: SampleDocLink[]; 
   upcomingPlan?: string;
+  mailingInfo?: MailingInfo;
 }
 
 export type SampleStatus = 'Requested' | 'Processing' | 'Sent' | 'Delivered' | 'Testing' | 'Feedback Received' | 'Closed' | string;
