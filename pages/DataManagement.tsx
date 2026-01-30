@@ -358,7 +358,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
                  </h4>
                  
                  <div className="flex items-stretch gap-4 h-12 xl:h-14">
-                   <div className="w-[60%] flex items-center px-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                   {/* Column description box - Width increased to 70% */}
+                   <div className="w-[70%] flex items-center px-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
                       <p className="font-mono text-[10px] xl:text-xs font-bold text-slate-500 dark:text-slate-400 truncate whitespace-nowrap">
                         {activeTab === 'customers' 
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网 | 5.等级 | 6.产品总结 | 7.更新日期 | 8.NA | 9.人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.NA | 14.流程总结 | 15.对方回复 | 16.NA | 17.我方跟进 | 18.NA | 19.NA | 20.联系方式 | 21.Titles | 22.URLs | 23.邮寄信息"
@@ -369,24 +370,40 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       </p>
                    </div>
                    
-                   <div className="w-[40%] flex items-stretch gap-3">
+                   {/* Control area - Width decreased to 30% */}
+                   <div className="w-[30%] flex items-stretch gap-3">
                      {!parsedPreview ? (
                        <>
-                        <div className="flex-1 flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border-2 border-slate-100 dark:border-slate-700 shadow-inner">
+                        <div className="flex-[2] flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border-2 border-slate-100 dark:border-slate-700 shadow-inner">
                           <button onClick={() => setImportMode('merge')} className={`flex-1 h-full text-[10px] xl:text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'merge' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Merge</button>
                           <button onClick={() => setImportMode('replace')} className={`flex-1 h-full text-[10px] xl:text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'replace' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>Replace</button>
                         </div>
-                        <div className="flex-1 py-1 flex items-stretch">
-                           <Button onClick={parsePasteData} className="w-full bg-blue-600 text-white rounded-xl shadow-xl shadow-blue-600/20 active:scale-95 font-black uppercase tracking-widest text-[10px] xl:text-xs">Parse Text Paste</Button>
+                        <div className="flex-1 flex items-stretch p-1">
+                           <button 
+                             onClick={parsePasteData} 
+                             className="w-full bg-blue-600 text-white rounded-lg shadow-xl shadow-blue-600/20 active:scale-95 font-black uppercase tracking-widest text-[10px] xl:text-xs flex items-center justify-center"
+                           >
+                             Parse Text Paste
+                           </button>
                         </div>
                        </>
                      ) : (
                        <>
-                        <div className="flex-1 py-1 flex items-stretch">
-                           <button onClick={clearPreview} className="w-full rounded-xl font-black uppercase tracking-widest text-[10px] xl:text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Cancel</button>
+                        <div className="flex-1 flex items-stretch p-1">
+                           <button 
+                             onClick={clearPreview} 
+                             className="w-full rounded-lg font-black uppercase tracking-widest text-[10px] xl:text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center transition-all active:scale-95"
+                           >
+                             Cancel
+                           </button>
                         </div>
-                        <div className="flex-[1.5] py-1 flex items-stretch">
-                           <Button onClick={confirmImport} className="w-full bg-emerald-600 text-white rounded-xl shadow-xl shadow-emerald-600/20 active:scale-95 font-black uppercase tracking-widest text-[10px] xl:text-xs">Confirm Import</Button>
+                        <div className="flex-[1.5] flex items-stretch p-1">
+                           <button 
+                             onClick={confirmImport} 
+                             className="w-full bg-emerald-600 text-white rounded-lg shadow-xl shadow-emerald-600/20 active:scale-95 font-black uppercase tracking-widest text-[10px] xl:text-xs flex items-center justify-center transition-all"
+                           >
+                             Confirm Import
+                           </button>
                         </div>
                        </>
                      )}
@@ -401,7 +418,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
               
               {!parsedPreview ? (
                 <textarea 
-                  className="w-full h-80 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-6 font-mono text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 shadow-inner"
+                  className="w-full h-44 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-6 font-mono text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 shadow-inner"
                   placeholder={`Paste ${activeTab} data here...`}
                   value={importData}
                   onChange={(e) => setImportData(e.target.value)}
