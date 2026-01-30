@@ -351,14 +351,15 @@ const DataManagement: React.FC<DataManagementProps> = ({
         <div className="p-8">
           {viewMode === 'review' ? renderCurrentDataTable() : (
             <div className="space-y-8">
-              {/* Instruction Box - Aligned with Profile Info style */}
-              <div className="bg-slate-50 dark:bg-slate-800/40 p-8 rounded-3xl border-2 border-slate-100 dark:border-slate-800 space-y-6">
-                 <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
-                   <div className="flex-1 space-y-3">
-                      <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-3">
-                        <Info size={18} className="text-blue-500" /> Instructions
-                      </h4>
-                      <p className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+              {/* Refactored Instruction Box - Compressed Layout */}
+              <div className="bg-slate-50 dark:bg-slate-800/40 p-6 rounded-3xl border-2 border-slate-100 dark:border-slate-800 space-y-4">
+                 <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-3 ml-1">
+                   <Info size={18} className="text-blue-500" /> Instructions
+                 </h4>
+                 
+                 <div className="flex items-stretch gap-4 h-12 xl:h-14">
+                   <div className="w-[60%] flex items-center px-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                      <p className="font-mono text-[10px] xl:text-xs font-bold text-slate-500 dark:text-slate-400 truncate whitespace-nowrap">
                         {activeTab === 'customers' 
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网 | 5.等级 | 6.产品总结 | 7.更新日期 | 8.NA | 9.人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.NA | 14.流程总结 | 15.对方回复 | 16.NA | 17.我方跟进 | 18.NA | 19.NA | 20.联系方式 | 21.Titles | 22.URLs | 23.邮寄信息"
                           : activeTab === 'samples'
@@ -368,28 +369,32 @@ const DataManagement: React.FC<DataManagementProps> = ({
                       </p>
                    </div>
                    
-                   <div className="shrink-0 flex flex-col items-end gap-6">
-                     {!parsedPreview && (
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-xl border-2 border-slate-100 dark:border-slate-700 shadow-inner">
-                          <button onClick={() => setImportMode('merge')} className={`px-5 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'merge' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Merge</button>
-                          <button onClick={() => setImportMode('replace')} className={`px-5 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'replace' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>Replace</button>
+                   <div className="w-[40%] flex items-stretch gap-3">
+                     {!parsedPreview ? (
+                       <>
+                        <div className="flex-1 flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border-2 border-slate-100 dark:border-slate-700 shadow-inner">
+                          <button onClick={() => setImportMode('merge')} className={`flex-1 h-full text-[10px] xl:text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'merge' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Merge</button>
+                          <button onClick={() => setImportMode('replace')} className={`flex-1 h-full text-[10px] xl:text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'replace' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>Replace</button>
                         </div>
+                        <div className="flex-1 py-1 flex items-stretch">
+                           <Button onClick={parsePasteData} className="w-full bg-blue-600 text-white rounded-xl shadow-xl shadow-blue-600/20 active:scale-95 font-black uppercase tracking-widest text-[10px] xl:text-xs">Parse Text Paste</Button>
+                        </div>
+                       </>
+                     ) : (
+                       <>
+                        <div className="flex-1 py-1 flex items-stretch">
+                           <button onClick={clearPreview} className="w-full rounded-xl font-black uppercase tracking-widest text-[10px] xl:text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Cancel</button>
+                        </div>
+                        <div className="flex-[1.5] py-1 flex items-stretch">
+                           <Button onClick={confirmImport} className="w-full bg-emerald-600 text-white rounded-xl shadow-xl shadow-emerald-600/20 active:scale-95 font-black uppercase tracking-widest text-[10px] xl:text-xs">Confirm Import</Button>
+                        </div>
+                       </>
                      )}
-                     <div className="flex gap-3">
-                        {parsedPreview ? (
-                          <>
-                            <button onClick={clearPreview} className="px-8 rounded-xl font-black uppercase tracking-widest text-xs py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Cancel</button>
-                            <Button onClick={confirmImport} className="px-10 bg-emerald-600 text-white rounded-xl shadow-xl shadow-emerald-600/20 active:scale-95 font-black uppercase tracking-widest text-xs">Confirm Import</Button>
-                          </>
-                        ) : (
-                          <Button onClick={parsePasteData} className="px-10 bg-blue-600 text-white rounded-xl shadow-xl shadow-blue-600/20 active:scale-95 font-black uppercase tracking-widest text-xs">Parse Text Paste</Button>
-                        )}
-                     </div>
                    </div>
                  </div>
                  {importStatus && (
-                    <div className={`flex items-center gap-3 p-4 rounded-2xl border font-black uppercase text-[10px] tracking-widest ${importStatus.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : importStatus.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
-                       {importStatus.type === 'success' ? <CheckCircle2 size={16}/> : <AlertCircle size={16}/>} {importStatus.message}
+                    <div className={`flex items-center gap-3 p-3 rounded-2xl border font-black uppercase text-[10px] tracking-widest ${importStatus.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : importStatus.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
+                       {importStatus.type === 'success' ? <CheckCircle2 size={14}/> : <AlertCircle size={14}/>} {importStatus.message}
                     </div>
                  )}
               </div>
