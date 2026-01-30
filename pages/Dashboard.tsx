@@ -566,41 +566,43 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </div>
             </div>
 
-            <div className="flex-[2] w-full flex flex-col sm:flex-row items-end gap-4 xl:gap-6 2xl:border-l border-slate-100 dark:border-slate-800 2xl:pl-8">
-              <div className="flex-1 space-y-1.5 xl:space-y-2 min-w-0">
-                  <span className="text-[9px] xl:text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">{t('reportDescription')}</span>
-                  <p className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 font-bold leading-tight opacity-90 truncate lg:whitespace-normal lg:line-clamp-2">
-                    {reportType === 'sample' 
-                      ? t('reportSubtitlePrefix') + (t(reviewStatus as any) || reviewStatus) + t('reportSubtitleSuffix')
-                      : t('exhibitionReportSubtitle') + selectedExhibitionName
-                    }
-                  </p>
-              </div>
-              
-              <div className="w-full sm:w-auto space-y-1.5 xl:space-y-2 shrink-0">
-                  <span className="text-[9px] xl:text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">
-                    {reportType === 'sample' ? t('filterByStage') : t('selectExhibition')}
-                  </span>
-                  <div className="relative min-w-[160px] xl:min-w-[200px]">
-                    {reportType === 'sample' ? (
-                      <select 
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 xl:py-2.5 text-[10px] xl:text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
-                        value={reviewStatus}
-                        onChange={e => setReviewStatus(e.target.value)}
-                      >
-                        {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
-                      </select>
-                    ) : (
-                      <select 
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 xl:py-2.5 text-[10px] xl:text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
-                        value={selectedExhibitionName}
-                        onChange={e => setSelectedExhibitionName(e.target.value)}
-                      >
-                        {sortedExhibitions.map(ex => <option key={ex.id} value={ex.name}>{ex.name} ({ex.date?.substring(0,7) || 'TBD'})</option>)}
-                      </select>
-                    )}
-                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
-                  </div>
+            <div className="flex-[2] w-full flex items-center 2xl:border-l border-slate-100 dark:border-slate-800 2xl:pl-8 self-stretch pt-0.5 2xl:pt-0">
+              <div className="w-full flex flex-col sm:flex-row items-start gap-4 xl:gap-6">
+                <div className="flex-1 space-y-1.5 xl:space-y-2 min-w-0">
+                    <span className="text-[9px] xl:text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">{t('reportDescription')}</span>
+                    <p className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 font-bold leading-tight opacity-90 truncate lg:whitespace-normal lg:line-clamp-2">
+                      {reportType === 'sample' 
+                        ? t('reportSubtitlePrefix') + (t(reviewStatus as any) || reviewStatus) + t('reportSubtitleSuffix')
+                        : t('exhibitionReportSubtitle') + selectedExhibitionName
+                      }
+                    </p>
+                </div>
+                
+                <div className="w-full sm:w-auto space-y-1.5 xl:space-y-2 shrink-0">
+                    <span className="text-[9px] xl:text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">
+                      {reportType === 'sample' ? t('filterByStage') : t('selectExhibition')}
+                    </span>
+                    <div className="relative min-w-[160px] xl:min-w-[200px]">
+                      {reportType === 'sample' ? (
+                        <select 
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 xl:py-2.5 text-[10px] xl:text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
+                          value={reviewStatus}
+                          onChange={e => setReviewStatus(e.target.value)}
+                        >
+                          {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
+                        </select>
+                      ) : (
+                        <select 
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 xl:py-2.5 text-[10px] xl:text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
+                          value={selectedExhibitionName}
+                          onChange={e => setSelectedExhibitionName(e.target.value)}
+                        >
+                          {sortedExhibitions.map(ex => <option key={ex.id} value={ex.name}>{ex.name} ({ex.date?.substring(0,7) || 'TBD'})</option>)}
+                        </select>
+                      )}
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
+                    </div>
+                </div>
               </div>
             </div>
 
