@@ -566,8 +566,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </div>
             </div>
 
-            <div className="flex-[2] w-full flex items-center 2xl:border-l border-slate-100 dark:border-slate-800 2xl:pl-8 self-stretch pt-0.5 2xl:pt-0">
-              <div className="w-full flex flex-col sm:flex-row items-start gap-4 xl:gap-6">
+            <div className="flex-[2] w-full flex items-center 2xl:border-l border-slate-100 dark:border-slate-800 2xl:pl-8 self-stretch">
+              <div className="w-full flex flex-col sm:flex-row items-start gap-4 xl:gap-6 py-1">
                 <div className="flex-1 space-y-1.5 xl:space-y-2 min-w-0">
                     <span className="text-[9px] xl:text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">{t('reportDescription')}</span>
                     <p className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 font-bold leading-tight opacity-90 truncate lg:whitespace-normal lg:line-clamp-2">

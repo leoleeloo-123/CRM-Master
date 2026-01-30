@@ -13,9 +13,6 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
   const { t, companyName } = useApp();
 
-  // Get first letter for the logo box
-  const initial = companyName.charAt(0).toUpperCase() || 'N';
-
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-4 py-4 xl:py-5 font-medium rounded-xl transition-all whitespace-nowrap group relative ${
       isCollapsed ? 'justify-center px-2' : 'px-6 text-base xl:text-xl'
@@ -45,29 +42,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
 
       {/* App Brand Header */}
       <div className={`border-b border-slate-100 dark:border-slate-800 ${isCollapsed ? 'p-4 flex flex-col items-center gap-4' : 'p-8 pb-4 xl:p-10 xl:pb-6'}`}>
-        <div className={`flex items-center transition-all duration-300 ${isCollapsed ? 'justify-center mb-4' : 'gap-3 mb-6 xl:mb-8'}`}>
+        <div className={`flex items-center transition-all duration-300 ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
           <CrmLogo className={`${isCollapsed ? 'w-10 h-10' : 'w-10 h-10 xl:w-12 xl:h-12'} shadow-lg rounded-full shrink-0`} />
           {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap">
               <h1 className="text-2xl xl:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">CRM Master</h1>
               <p className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest mt-1">Enterprise Edition</p>
-            </div>
-          )}
-        </div>
-
-        {/* Company Context Box */}
-        <div 
-          className={`bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 transition-all duration-300 ${
-            isCollapsed ? 'p-2 flex justify-center w-full' : 'p-4 xl:p-5 flex items-center gap-4'
-          }`}
-        >
-          <div className={`${isCollapsed ? 'w-10 h-10 text-lg' : 'w-12 h-12 xl:w-14 xl:h-14 text-xl xl:text-2xl'} bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold shadow-md shrink-0 transition-all`}>
-            {initial}
-          </div>
-          {!isCollapsed && (
-            <div className="overflow-hidden">
-              <p className="text-xs xl:text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Workspace</p>
-              <p className="font-bold text-slate-800 dark:text-white truncate text-base xl:text-lg" title={companyName}>{companyName}</p>
             </div>
           )}
         </div>
