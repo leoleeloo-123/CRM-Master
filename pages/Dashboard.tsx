@@ -142,13 +142,13 @@ const DashboardCalendar: React.FC<{
     const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
     return (
-      <div className="w-full flex flex-col h-full">
-         <div className="grid grid-cols-7 mb-3 px-1">
+      <div className="w-full flex flex-col h-full overflow-x-auto lg:overflow-x-visible">
+         <div className="grid grid-cols-7 mb-3 px-1 min-w-[700px] lg:min-w-0">
             {weekDays.map(d => (
               <div key={d} className="text-center text-xs xl:text-sm font-black text-slate-400 uppercase tracking-widest">{d}</div>
             ))}
          </div>
-         <div className="grid grid-cols-7 gap-1.5 p-1 flex-1">
+         <div className="grid grid-cols-7 gap-1.5 p-1 flex-1 min-w-[700px] lg:min-w-0">
             {days.map(day => {
                const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
                const dayStr = format(day, 'yyyy-MM-dd');
@@ -214,13 +214,13 @@ const DashboardCalendar: React.FC<{
     const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
     return (
-      <div className="w-full flex flex-col animate-in fade-in duration-300">
-         <div className="grid grid-cols-7 mb-3 px-1">
+      <div className="w-full flex flex-col animate-in fade-in duration-300 overflow-x-auto lg:overflow-x-visible">
+         <div className="grid grid-cols-7 mb-3 px-1 min-w-[700px] lg:min-w-0">
             {weekDays.map(d => (
               <div key={d} className="text-center text-xs xl:text-sm font-black text-slate-400 uppercase tracking-widest">{d}</div>
             ))}
          </div>
-         <div className="grid grid-cols-7 gap-3 p-1">
+         <div className="grid grid-cols-7 gap-3 p-1 min-w-[700px] lg:min-w-0">
             {days.map(day => {
                const dayCustEvents = customerEvents.filter(e => isSameDay(e.dateObj, day));
                const dayStr = format(day, 'yyyy-MM-dd');
@@ -286,14 +286,14 @@ const DashboardCalendar: React.FC<{
   return (
     <Card className="p-4 xl:p-8 flex flex-col shadow-sm border-2 h-full">
        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
              <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
              <h3 className="font-black text-slate-800 dark:text-white text-base xl:text-xl uppercase tracking-wider">{t('calendar')}</h3>
              <span className="text-sm xl:text-lg font-black text-slate-400 ml-2">
                 {view === 'month' ? format(currentDate, 'MMMM yyyy') : `Week of ${format(startOfWeek(currentDate), 'MMM do')}`}
              </span>
              
-             <div className="relative ml-4">
+             <div className="relative ml-1 lg:ml-4">
                 <button 
                   onClick={() => setIsHolidayMenuOpen(!isHolidayMenuOpen)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 text-[10px] xl:text-[11px] font-black transition-all ${isHolidayMenuOpen ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20 shadow-md scale-105' : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-50'}`}
@@ -326,21 +326,21 @@ const DashboardCalendar: React.FC<{
              </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap justify-center items-center gap-3 xl:gap-4">
              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner">
-                <button onClick={() => setView('week')} className={`px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-50 hover:text-slate-700'}`}>{t('viewWeek')}</button>
-                <button onClick={() => setView('month')} className={`px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-50 hover:text-slate-700'}`}>{t('viewMonth')}</button>
+                <button onClick={() => setView('week')} className={`px-3 lg:px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'week' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-50 hover:text-slate-700'}`}>{t('viewWeek')}</button>
+                <button onClick={() => setView('month')} className={`px-3 lg:px-6 py-1.5 text-xs xl:text-sm font-black rounded-lg transition-all ${view === 'month' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-slate-50 hover:text-slate-700'}`}>{t('viewMonth')}</button>
              </div>
 
-             <div className="flex items-center gap-2">
+             <div className="flex items-center gap-1.5 xl:gap-2">
                 <button onClick={handlePrev} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-all active:scale-90"><ChevronLeft className="w-4 h-4 xl:w-5 xl:h-5"/></button>
-                <button onClick={handleToday} className="px-5 py-1.5 text-xs xl:text-sm font-black bg-white border-2 border-slate-100 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-sm transition-all active:scale-95">{t('today')}</button>
+                <button onClick={handleToday} className="px-3 xl:px-5 py-1.5 text-xs xl:text-sm font-black bg-white border-2 border-slate-100 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-sm transition-all active:scale-95 whitespace-nowrap">{t('today')}</button>
                 <button onClick={handleNext} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-all active:scale-90"><ChevronRight className="w-4 h-4 xl:w-5 xl:h-5"/></button>
              </div>
           </div>
        </div>
        
-       <div className="animate-in fade-in duration-500 flex-1 min-h-0">
+       <div className="animate-in fade-in duration-500 flex-1 min-h-0 overflow-visible">
           {view === 'month' && renderMonthView()}
           {view === 'week' && renderWeekView()}
        </div>
@@ -441,7 +441,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
   
   const labelClass = "text-[10px] xl:text-[11px] font-black uppercase text-slate-400 tracking-widest";
   const sharedTitleClass = "font-black text-slate-800 dark:text-white text-base xl:text-xl uppercase tracking-wider flex items-center gap-3";
-  const statCardClass = "p-3 xl:p-4 flex items-center gap-4 border-l-4 shadow-sm border-2 rounded-lg flex-1 h-full transition-all";
+  const statCardClass = "p-3 xl:p-4 flex items-center gap-4 border-l-4 shadow-sm border-2 rounded-lg flex-1 min-w-0 transition-all h-full overflow-hidden";
 
   const handleDateFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = parseLocalDate(e.target.value);
@@ -514,49 +514,48 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
         }
       `}</style>
 
-      <div className="space-y-6 pb-20">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('dashboard')}</h2>
-            <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('dashboardDesc')}</p>
-          </div>
+      <div className="space-y-8 pb-20">
+        {/* Full-width Title Section */}
+        <div className="mb-4">
+          <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none truncate">{t('dashboard')}</h2>
+          <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2 leading-tight">{t('dashboardDesc')}</p>
         </div>
 
         {/* Main Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 xl:gap-8 items-stretch">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 xl:gap-8 items-stretch">
           
-          {/* TOP ROW: Stats + Generate Report Toolbar */}
-          <div className="lg:col-span-1 flex gap-4 items-stretch">
+          {/* Row 2, Col 1: Stats Block (Aligns with Daily Agenda below) */}
+          <div className="xl:col-span-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4 items-stretch">
             <Card className={`${statCardClass} border-l-blue-500`}>
               <div className="p-1.5 xl:p-2 bg-blue-50 dark:bg-blue-900/50 rounded-lg text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
-                <Activity className="w-4 h-4" />
+                <Activity className="w-4 h-4 xl:w-5 xl:h-5" />
               </div>
               <div className="min-w-0">
-                <p className={labelClass + " truncate"}>{t('totalCustomers')}</p>
+                <p className={labelClass + " truncate text-[9px] xl:text-[10px]"}>{t('totalCustomers')}</p>
                 <p className="text-lg xl:text-2xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{customers.length}</p>
               </div>
             </Card>
             <Card className={`${statCardClass} border-l-amber-500`}>
               <div className="p-1.5 xl:p-2 bg-amber-50 dark:bg-amber-900/50 rounded-lg text-amber-600 dark:text-amber-400 shadow-sm shrink-0">
-                <FlaskConical className="w-4 h-4" />
+                <FlaskConical className="w-4 h-4 xl:w-5 xl:h-5" />
               </div>
               <div className="min-w-0">
-                <p className={labelClass + " truncate"}>{t('activeSamples')}</p>
+                <p className={labelClass + " truncate text-[9px] xl:text-[10px]"}>{t('activeSamples')}</p>
                 <p className="text-lg xl:text-2xl font-black text-slate-800 dark:text-white leading-none tracking-tighter">{activeSamplesCount}</p>
               </div>
             </Card>
           </div>
 
-          {/* Row 1, Col 2-4: Generate Report Toolbar */}
-          <Card className="lg:col-span-3 p-5 xl:p-6 shadow-sm flex flex-col lg:flex-row items-center gap-6 xl:gap-8 border-2 overflow-hidden bg-white dark:bg-slate-900/20 transition-all h-full">
-            <div className="flex-1 w-full space-y-3">
+          {/* Row 2, Col 2-4: Generate Report Toolbar */}
+          <Card className="xl:col-span-3 p-4 xl:p-6 shadow-sm flex flex-col 2xl:flex-row items-center gap-4 xl:gap-8 border-2 overflow-hidden bg-white dark:bg-slate-900/20 transition-all h-full">
+            <div className="flex-1 w-full space-y-2 xl:space-y-3">
               <div className="flex items-center gap-3">
-                <FileBarChart2 className="text-blue-600 w-5 h-5" />
-                <h3 className="font-black text-slate-800 dark:text-white text-base xl:text-xl uppercase tracking-wider leading-none">{t('generateReport')}</h3>
+                <FileBarChart2 className="text-blue-600 w-4 h-4 xl:w-5 xl:h-5" />
+                <h3 className="font-black text-slate-800 dark:text-white text-sm xl:text-xl uppercase tracking-wider leading-none">{t('generateReport')}</h3>
               </div>
               <div className="relative">
                 <select 
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-slate-800 dark:text-white hover:border-blue-300 transition-all shadow-sm"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 xl:py-2.5 text-[10px] xl:text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-slate-800 dark:text-white hover:border-blue-300 transition-all shadow-sm"
                   value={reportType}
                   onChange={e => setReportType(e.target.value as any)}
                 >
@@ -567,10 +566,10 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </div>
             </div>
 
-            <div className="flex-[2] w-full flex flex-col sm:flex-row items-end gap-6 lg:border-l border-slate-100 dark:border-slate-800 lg:pl-8">
-              <div className="flex-1 space-y-2 min-w-0">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">{t('reportDescription')}</span>
-                  <p className="text-[11px] xl:text-xs text-slate-500 dark:text-slate-400 font-bold leading-tight opacity-90 truncate lg:whitespace-normal lg:line-clamp-2">
+            <div className="flex-[2] w-full flex flex-col sm:flex-row items-end gap-4 xl:gap-6 2xl:border-l border-slate-100 dark:border-slate-800 2xl:pl-8">
+              <div className="flex-1 space-y-1.5 xl:space-y-2 min-w-0">
+                  <span className="text-[9px] xl:text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">{t('reportDescription')}</span>
+                  <p className="text-[10px] xl:text-xs text-slate-500 dark:text-slate-400 font-bold leading-tight opacity-90 truncate lg:whitespace-normal lg:line-clamp-2">
                     {reportType === 'sample' 
                       ? t('reportSubtitlePrefix') + (t(reviewStatus as any) || reviewStatus) + t('reportSubtitleSuffix')
                       : t('exhibitionReportSubtitle') + selectedExhibitionName
@@ -578,14 +577,14 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                   </p>
               </div>
               
-              <div className="w-full sm:w-auto space-y-2 shrink-0">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">
+              <div className="w-full sm:w-auto space-y-1.5 xl:space-y-2 shrink-0">
+                  <span className="text-[9px] xl:text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">
                     {reportType === 'sample' ? t('filterByStage') : t('selectExhibition')}
                   </span>
-                  <div className="relative min-w-[200px]">
+                  <div className="relative min-w-[160px] xl:min-w-[200px]">
                     {reportType === 'sample' ? (
                       <select 
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2.5 text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 xl:py-2.5 text-[10px] xl:text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
                         value={reviewStatus}
                         onChange={e => setReviewStatus(e.target.value)}
                       >
@@ -593,7 +592,7 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
                       </select>
                     ) : (
                       <select 
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2.5 text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 xl:py-2.5 text-[10px] xl:text-xs font-black uppercase tracking-tight outline-none cursor-pointer appearance-none text-blue-700 dark:text-blue-300 hover:border-blue-300 transition-all shadow-sm"
                         value={selectedExhibitionName}
                         onChange={e => setSelectedExhibitionName(e.target.value)}
                       >
@@ -605,10 +604,10 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               </div>
             </div>
 
-            <div className="flex-none w-full lg:w-auto flex items-center justify-end lg:pl-8 lg:border-l border-slate-100 dark:border-slate-800 self-stretch">
+            <div className="flex-none w-full 2xl:w-auto flex items-center justify-end 2xl:pl-8 2xl:border-l border-slate-100 dark:border-slate-800 self-stretch">
                 <button 
                     onClick={() => setIsPreviewModalOpen(true)}
-                    className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl font-black text-xs xl:text-sm uppercase tracking-widest shadow-md hover:bg-blue-700 active:scale-95 transition-all w-full lg:w-auto"
+                    className="flex items-center justify-center gap-2 px-6 xl:px-8 py-2.5 xl:py-3 bg-blue-600 text-white rounded-xl font-black text-xs xl:text-sm uppercase tracking-widest shadow-md hover:bg-blue-700 active:scale-95 transition-all w-full 2xl:w-auto"
                 >
                     <FileText size={18} />
                     {t('previewExportJpg')}
@@ -616,18 +615,18 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             </div>
           </Card>
 
-          {/* Daily Agenda Card */}
-          <div className="lg:col-span-1">
-            <Card className="p-5 xl:p-8 shadow-sm flex flex-col border-2 overflow-hidden bg-white dark:bg-slate-900/40 h-full">
-              <div className="flex justify-between items-center mb-6 pb-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          {/* Row 3, Col 1: Daily Agenda Card */}
+          <div className="xl:col-span-1">
+            <Card className="p-4 xl:p-8 shadow-sm flex flex-col border-2 overflow-visible bg-white dark:bg-slate-900/40 h-full">
+              <div className="flex flex-wrap justify-between items-center mb-6 pb-5 border-b border-slate-100 dark:border-slate-800 shrink-0 gap-3">
                 <h3 className={sharedTitleClass}>
-                  <ListTodo className="w-6 h-6 text-blue-600" />
-                  {t('dailyAgenda')}
+                  <ListTodo className="w-5 h-5 xl:w-6 xl:h-6 text-blue-600 shrink-0" />
+                  <span className="truncate">{t('dailyAgenda')}</span>
                 </h3>
-                <div className="relative group min-w-[120px]">
+                <div className="relative group min-w-[100px] xl:min-w-[120px]">
                   <input 
                     type="date" 
-                    className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-[10px] xl:text-xs font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer shadow-sm text-right"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-2 xl:px-3 py-1.5 text-[9px] xl:text-xs font-black uppercase tracking-tighter outline-none focus:border-blue-500 transition-all dark:text-white cursor-pointer shadow-sm text-right"
                     value={selectedDateStr}
                     onChange={handleDateFilterChange}
                   />
@@ -636,28 +635,28 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
               <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
                 {dailyCustomers.length === 0 && dailySamples.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem] opacity-30 text-center p-4">
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-400 italic">No Scheduled Actions</span>
+                    <span className="text-[10px] xl:text-xs font-black uppercase tracking-widest text-slate-400 italic">No Scheduled Actions</span>
                   </div>
                 ) : (
                   <>
                     {dailyCustomers.length > 0 && (
                       <div className="space-y-3">
-                        <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">{t('agendaCustomers')}</span>
+                        <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">{t('agendaCustomers')}</span>
                         {dailyCustomers.map(c => (
                             <Card key={c.id} className="p-4 hover:shadow-md border-l-4 border-l-rose-500 bg-rose-50/20 transition-all cursor-pointer border-2 dark:border-slate-700" onClick={() => navigate(`/customers/${c.id}`)}>
-                                <h4 className="font-black text-rose-800 dark:text-rose-400 text-sm xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
-                                <p className="text-xs xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || t('actionNeeded')}</p>
+                                <h4 className="font-black text-rose-800 dark:text-rose-400 text-xs xl:text-base tracking-tight uppercase truncate">{c.name}</h4>
+                                <p className="text-[10px] xl:text-sm font-bold text-slate-500 dark:text-slate-400 line-clamp-2 italic pl-2 border-l-2 border-rose-100 dark:border-slate-800 mt-2">{c.upcomingPlan || t('actionNeeded')}</p>
                             </Card>
                         ))}
                       </div>
                     )}
                     {dailySamples.length > 0 && (
                       <div className="space-y-3 pt-2">
-                        <span className="text-[11px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">{t('agendaSamples')}</span>
+                        <span className="text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-1">{t('agendaSamples')}</span>
                         {dailySamples.map(s => (
                           <Card key={s.id} className="p-4 hover:shadow-md border-l-4 border-l-blue-500 bg-blue-50/20 transition-all cursor-pointer border-2 dark:border-slate-700 group" onClick={() => navigate(`/samples/${s.id}`)}>
-                            <h4 className="font-black text-blue-800 dark:text-blue-400 text-sm xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
-                            <p className="text-xs xl:text-sm font-bold text-slate-500 line-clamp-2 italic pl-2 border-l-2 border-blue-100 mt-1">{s.customerName}</p>
+                            <h4 className="font-black text-blue-800 dark:text-blue-400 text-xs xl:text-base tracking-tight uppercase truncate">{s.sampleName}</h4>
+                            <p className="text-[10px] xl:text-sm font-bold text-slate-500 line-clamp-2 italic pl-2 border-l-2 border-blue-100 mt-1">{s.customerName}</p>
                           </Card>
                         ))}
                       </div>
@@ -668,8 +667,8 @@ const Dashboard: React.FC<DashboardProps> = ({ customers, samples }) => {
             </Card>
           </div>
 
-          {/* Calendar Card */}
-          <div className="lg:col-span-3">
+          {/* Row 3, Col 2-4: Calendar Card */}
+          <div className="xl:col-span-3">
             <DashboardCalendar 
               customers={customers} 
               samples={samples} 
