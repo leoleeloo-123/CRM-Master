@@ -190,7 +190,7 @@ const FinanceTracker: React.FC = () => {
 
   const handleOpenAddExpense = () => {
     setEditingExpense({
-      category: tagOptions.expenseCategory[0] || '其它',
+      category: '',
       detail: '',
       expInc: '支出',
       party: '',
@@ -580,31 +580,21 @@ const FinanceTracker: React.FC = () => {
                </div>
                <div className="space-y-1.5">
                   <label className={labelClass}>{t('feeType')}</label>
-                  <div className="flex gap-2 p-1 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2">
-                     <button 
-                       onClick={() => setEditingExpense({...editingExpense, expInc: '支出'})}
-                       className={`flex-1 py-2 rounded-xl text-xs font-black uppercase transition-all ${editingExpense?.expInc === '支出' ? 'bg-rose-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-                     >
-                       {t('expense')}
-                     </button>
-                     <button 
-                       onClick={() => setEditingExpense({...editingExpense, expInc: '收入'})}
-                       className={`flex-1 py-2 rounded-xl text-xs font-black uppercase transition-all ${editingExpense?.expInc === '收入' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-                     >
-                       {t('income')}
-                     </button>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700">
+                     <span className="text-sm font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
+                        <ArrowDownRight size={16} /> {t('expense')}
+                     </span>
                   </div>
                </div>
                
                <div className="space-y-1.5">
                   <label className={labelClass}>{t('feeCategory')}</label>
-                  <select 
-                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                  <input 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all uppercase"
                     value={editingExpense?.category || ''}
                     onChange={e => setEditingExpense({...editingExpense, category: e.target.value})}
-                  >
-                    {tagOptions.expenseCategory.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                  </select>
+                    placeholder="e.g. TRAVEL / LOGISTICS"
+                  />
                </div>
                <div className="space-y-1.5">
                   <label className={labelClass}>{t('party')}</label>
@@ -636,34 +626,36 @@ const FinanceTracker: React.FC = () => {
                </div>
 
                <div className="space-y-1.5">
-                  <label className={labelClass}>{t('balance')} / {t('currency')} *</label>
-                  <div className="flex gap-2">
-                     <input 
-                       className="flex-1 p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
-                       value={editingExpense?.balance || ''}
-                       onChange={e => setEditingExpense({...editingExpense, balance: e.target.value})}
-                       placeholder="0.00"
-                     />
-                     <input 
-                       className="w-24 p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all uppercase"
-                       value={editingExpense?.currency || ''}
-                       onChange={e => setEditingExpense({...editingExpense, currency: e.target.value.toUpperCase()})}
-                       placeholder="USD"
-                     />
-                  </div>
+                  <label className={labelClass}>{t('balance')} *</label>
+                  <input 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                    value={editingExpense?.balance || ''}
+                    onChange={e => setEditingExpense({...editingExpense, balance: e.target.value})}
+                    placeholder="0.00"
+                  />
                </div>
                <div className="space-y-1.5">
-                  <label className={labelClass}>{t('status')}</label>
-                  <select 
-                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
-                    value={editingExpense?.status || ''}
-                    onChange={e => setEditingExpense({...editingExpense, status: e.target.value})}
-                  >
-                    <option value="Paid">Paid / 已付</option>
-                    <option value="Pending">Pending / 待付</option>
-                    <option value="Canceled">Canceled / 取消</option>
-                  </select>
+                  <label className={labelClass}>{t('currency')} *</label>
+                  <input 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all uppercase"
+                    value={editingExpense?.currency || ''}
+                    onChange={e => setEditingExpense({...editingExpense, currency: e.target.value.toUpperCase()})}
+                    placeholder="USD"
+                  />
                </div>
+            </div>
+
+            <div className="space-y-1.5 pt-2">
+               <label className={labelClass}>{t('status')}</label>
+               <select 
+                 className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                 value={editingExpense?.status || ''}
+                 onChange={e => setEditingExpense({...editingExpense, status: e.target.value})}
+               >
+                 <option value="Paid">Paid / 已付</option>
+                 <option value="Pending">Pending / 待付</option>
+                 <option value="Canceled">Canceled / 取消</option>
+               </select>
             </div>
 
             <div className="space-y-1.5">
