@@ -39,6 +39,7 @@ export const translations = {
     remove: 'Remove',
     other: 'Other Info',
     results: 'Results',
+    nameLabel: 'Name',
     
     // Dashboard
     totalCustomers: 'Total Customers',
@@ -343,6 +344,7 @@ export const translations = {
     remove: '移除',
     other: '其它',
     results: '结果',
+    nameLabel: '名字',
 
     // Dashboard
     totalCustomers: '客户总数',

@@ -5,8 +5,10 @@ import { Card, Badge, Button } from '../components/Common';
 import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { translateDisplay } from '../utils/i18n';
+import { useNavigate } from 'react-router-dom';
 
 interface UnifiedTransaction {
+  id: string;
   source: 'Sample' | 'Expense';
   category: string;
   detail: string;
@@ -24,6 +26,7 @@ interface UnifiedTransaction {
 
 const FinanceTracker: React.FC = () => {
   const { t, samples, expenses, language } = useApp();
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -38,6 +41,7 @@ const FinanceTracker: React.FC = () => {
     const sampleFees: UnifiedTransaction[] = samples
       .filter(s => s.isPaid)
       .map(s => ({
+        id: s.id,
         source: 'Sample',
         category: s.feeCategory || '',
         detail: s.nickname || '',
@@ -54,6 +58,7 @@ const FinanceTracker: React.FC = () => {
       }));
 
     const expenseRecords: UnifiedTransaction[] = expenses.map(e => ({
+      id: e.id,
       source: 'Expense',
       category: e.category,
       detail: e.detail,
@@ -139,6 +144,12 @@ const FinanceTracker: React.FC = () => {
   };
 
   const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
+
+  const handleRowClick = (d: UnifiedTransaction) => {
+    if (d.source === 'Sample') {
+      navigate(`/samples/${d.id}`);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -236,7 +247,7 @@ const FinanceTracker: React.FC = () => {
                     <th className="p-6">{t('feeType')}</th>
                     <th className="p-6">{t('feeCategory')}</th>
                     <th className="p-6">{t('party')}</th>
-                    <th className="p-6">NAME</th>
+                    <th className="p-6">{t('nameLabel')}</th>
                     <th className="p-6">{t('detail')}</th>
                     <th className="p-6">{t('balance')}</th>
                     <th className="p-6">{t('status')}</th>
@@ -247,7 +258,11 @@ const FinanceTracker: React.FC = () => {
                   {filteredData.map((d, i) => {
                     const isIncome = d.expInc === '收入' || d.expInc === 'Income';
                     return (
-                      <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group">
+                      <tr 
+                        key={i} 
+                        className={`hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group ${d.source === 'Sample' ? 'cursor-pointer' : ''}`}
+                        onClick={() => handleRowClick(d)}
+                      >
                         <td className="p-6">
                            <div className={`flex items-center gap-2 font-black uppercase text-xs ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
                               {isIncome ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
@@ -258,7 +273,7 @@ const FinanceTracker: React.FC = () => {
                         <td className="p-6 font-black text-blue-600 dark:text-blue-400 uppercase text-sm truncate max-w-[150px]">{d.party}</td>
                         <td className="p-6 font-black text-slate-900 dark:text-white text-sm truncate max-w-[200px] uppercase">{d.name}</td>
                         <td className="p-6 italic text-slate-500 text-xs truncate max-w-[150px]">{d.detail}</td>
-                        <td className={`p-6 font-black text-base ${isIncome ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>{isIncome ? '+' : '-'}{d.balance} <span className="text-[10px] opacity-40">{d.currency}</span></td>
+                        <td className={`p-6 font-black text-base ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>{isIncome ? '+' : '-'}{d.balance} <span className="text-[10px] opacity-40">{d.currency}</span></td>
                         <td className="p-6"><Badge color="blue">{translateDisplay(d.status, language)}</Badge></td>
                         <td className="p-6 font-black text-slate-400 text-xs whitespace-nowrap">{d.transDate || d.origDate}</td>
                       </tr>
