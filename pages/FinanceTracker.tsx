@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Card, Badge, Button } from '../components/Common';
@@ -5,7 +6,7 @@ import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, E
 import { format, isValid, startOfMonth, parseISO } from 'date-fns';
 import { translateDisplay } from '../utils/i18n';
 import { useNavigate } from 'react-router-dom';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend, ReferenceLine } from 'recharts';
 
 interface UnifiedTransaction {
   id: string;
@@ -40,6 +41,7 @@ const FinanceTracker: React.FC = () => {
   const [filterCurrency, setFilterCurrency] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterParty, setFilterParty] = useState('');
+  const [filterYear, setFilterYear] = useState('');
 
   // Unified Conversion Function
   const convertAmount = (val: string, fromCurr: string, toCurr: string) => {
@@ -69,12 +71,25 @@ const FinanceTracker: React.FC = () => {
     const categories = new Set<string>();
     const statuses = new Set<string>();
     const parties = new Set<string>();
+    const years = new Set<string>();
+    
     unifiedData.forEach(d => { 
       if (d.category) categories.add(d.category); 
       if (d.status) statuses.add(d.status); 
       if (d.party) parties.add(d.party); 
+      
+      const date = d.transDate || d.origDate;
+      if (date && date.length >= 4) {
+        years.add(date.substring(0, 4));
+      }
     });
-    return { categories: Array.from(categories).sort(), statuses: Array.from(statuses).sort(), parties: Array.from(parties).sort() };
+
+    return { 
+      categories: Array.from(categories).sort(), 
+      statuses: Array.from(statuses).sort(), 
+      parties: Array.from(parties).sort(),
+      years: Array.from(years).sort((a, b) => b.localeCompare(a)) // Newest years first
+    };
   }, [unifiedData]);
 
   const filteredData = useMemo(() => {
@@ -86,9 +101,13 @@ const FinanceTracker: React.FC = () => {
       const matchesCurrency = filterCurrency === '' || d.currency === filterCurrency;
       const matchesStatus = filterStatus === '' || d.status === filterStatus;
       const matchesParty = filterParty === '' || d.party === filterParty;
-      return matchesSearch && matchesExpInc && matchesCategory && matchesCurrency && matchesStatus && matchesParty;
+      
+      const date = d.transDate || d.origDate || '';
+      const matchesYear = filterYear === '' || date.startsWith(filterYear);
+
+      return matchesSearch && matchesExpInc && matchesCategory && matchesCurrency && matchesStatus && matchesParty && matchesYear;
     });
-  }, [unifiedData, searchTerm, filterExpInc, filterCategory, filterCurrency, filterStatus, filterParty]);
+  }, [unifiedData, searchTerm, filterExpInc, filterCategory, filterCurrency, filterStatus, filterParty, filterYear]);
 
   const summaryInDisplayCurrency = useMemo(() => {
     let incomeTotal = 0;
@@ -103,8 +122,8 @@ const FinanceTracker: React.FC = () => {
 
   // Dashboard Visual Logic
   const visualStats = useMemo(() => {
-    const monthsMap: Record<string, { month: string, income: number, expense: number, net: number }> = {};
-    const categoriesMap: Record<string, { name: string, income: number, expense: number }> = {};
+    const monthsMap: Record<string, { month: string, income: number, expense: number, chartExpense: number }> = {};
+    const categoriesMap: Record<string, { name: string, income: number, expense: number, chartExpense: number }> = {};
     const statusesMap: Record<string, { name: string, income: number, expense: number, count: number }> = {};
 
     filteredData.forEach(d => {
@@ -114,16 +133,22 @@ const FinanceTracker: React.FC = () => {
       
       // 1. Time Trend
       const monthKey = date !== 'Unknown' ? format(startOfMonth(parseISO(date)), 'MMM yyyy') : 'Other';
-      if (!monthsMap[monthKey]) monthsMap[monthKey] = { month: monthKey, income: 0, expense: 0, net: 0 };
+      if (!monthsMap[monthKey]) monthsMap[monthKey] = { month: monthKey, income: 0, expense: 0, chartExpense: 0 };
       if (isIncome) monthsMap[monthKey].income += val;
-      else monthsMap[monthKey].expense += val;
-      monthsMap[monthKey].net = monthsMap[monthKey].income - monthsMap[monthKey].expense;
+      else {
+        monthsMap[monthKey].expense += val;
+        // chartExpense is negative for "below 0" visualization
+        monthsMap[monthKey].chartExpense -= val;
+      }
 
       // 2. Categories
       const cat = d.category || 'Other';
-      if (!categoriesMap[cat]) categoriesMap[cat] = { name: cat, income: 0, expense: 0 };
+      if (!categoriesMap[cat]) categoriesMap[cat] = { name: cat, income: 0, expense: 0, chartExpense: 0 };
       if (isIncome) categoriesMap[cat].income += val;
-      else categoriesMap[cat].expense += val;
+      else {
+        categoriesMap[cat].expense += val;
+        categoriesMap[cat].chartExpense -= val; // For Diverging Bar Chart
+      }
 
       // 3. Status
       const st = d.status || 'Pending';
@@ -209,6 +234,13 @@ const FinanceTracker: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-4 pb-4">
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Calendar size={18} className="text-slate-400" />
+                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+                   <option value="">{language === 'zh' ? '年度: 全部' : 'YEAR: ALL'}</option>
+                   {uniqueOptions.years.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+             </div>
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Filter size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none" value={filterExpInc} onChange={e => setFilterExpInc(e.target.value)}>
                    <option value="">{t('feeType')}: ALL</option>
@@ -278,92 +310,112 @@ const FinanceTracker: React.FC = () => {
             </div>
           ) : (
              <div className="space-y-10 animate-in fade-in duration-700">
+                {/* 1. Trend Chart */}
                 <Card className="p-8 border-2 rounded-[2rem] bg-slate-50/30 dark:bg-slate-900/10">
                    <div className="flex items-center justify-between mb-10">
                       <h3 className="font-black text-xl text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-3">
-                         <TrendingUp className="text-blue-600" /> Cash Flow Trend ({displayCurrency})
+                         <TrendingUp className="text-blue-600" /> {language === 'zh' ? '现金流趋势' : 'Cash Flow Trend'} ({displayCurrency})
                       </h3>
                       <div className="flex gap-4">
                          <div className="flex items-center gap-2">
                             <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                            <span className="text-[10px] font-black uppercase text-slate-400">Income</span>
+                            <span className="text-[10px] font-black uppercase text-slate-400">{t('income')}</span>
                          </div>
                          <div className="flex items-center gap-2">
                             <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
-                            <span className="text-[10px] font-black uppercase text-slate-400">Expense</span>
+                            <span className="text-[10px] font-black uppercase text-slate-400">{t('expense')}</span>
                          </div>
                       </div>
                    </div>
-                   <div className="h-[350px] w-full">
+                   <div className="h-[400px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                         <AreaChart data={visualStats.trend}>
+                         <AreaChart data={visualStats.trend} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <defs>
                                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
                                   <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                                </linearGradient>
-                               <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1}/>
+                               <linearGradient id="colorExpense" x1="0" y1="1" x2="0" y2="0">
+                                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2}/>
                                   <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
                                </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} dy={10} />
-                            <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
+                            <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} tickFormatter={(value) => Math.abs(value).toLocaleString()} />
                             <Tooltip 
                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', fontWeight: 900, textTransform: 'uppercase', fontSize: '10px' }}
-                               formatter={(val: number) => val.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                               labelStyle={{ color: '#64748b', marginBottom: '8px' }}
+                               formatter={(val: number, name: string) => {
+                                  const label = name === 'income' ? t('income') : t('expense');
+                                  return [Math.abs(val).toLocaleString(undefined, { minimumFractionDigits: 2 }), label];
+                               }}
                             />
-                            <Area type="monotone" dataKey="income" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorIncome)" />
-                            <Area type="monotone" dataKey="expense" stroke="#f43f5e" strokeWidth={4} fillOpacity={1} fill="url(#colorExpense)" />
+                            <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} />
+                            <Area type="monotone" dataKey="income" name="income" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorIncome)" />
+                            <Area type="monotone" dataKey="chartExpense" name="expense" stroke="#f43f5e" strokeWidth={4} fillOpacity={1} fill="url(#colorExpense)" />
                          </AreaChart>
                       </ResponsiveContainer>
                    </div>
                 </Card>
 
+                {/* 2 & 3. Breakdowns */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                   {/* Category Distribution - Adjusted to Back-to-Back Diverging Bars */}
                    <Card className="p-8 border-2 rounded-[2rem]">
                       <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3 mb-8">
-                         <Layers className="text-indigo-600" size={20} /> {t('feeCategory')} Breakdown
+                         <Layers className="text-indigo-600" size={20} /> {t('feeCategory')} {language === 'zh' ? '分布' : 'Breakdown'}
                       </h3>
                       <div className="h-[300px]">
                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={visualStats.categories} layout="vertical" margin={{ left: 40 }}>
+                            <BarChart data={visualStats.categories} layout="vertical" margin={{ left: 10, right: 30 }}>
                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                                <XAxis type="number" hide />
-                               <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#64748b'}} width={120} />
+                               <YAxis 
+                                  dataKey="name" 
+                                  type="category" 
+                                  axisLine={false} 
+                                  tickLine={false} 
+                                  tick={{fontSize: 9, fontWeight: 900, fill: '#64748b'}} 
+                                  width={100} 
+                                  tickFormatter={(v) => translateDisplay(v, language)} 
+                               />
                                <Tooltip 
                                   cursor={{fill: '#f8fafc'}}
                                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', fontSize: '10px', fontWeight: 900 }}
+                                  formatter={(val: number, name: string) => [Math.abs(val).toLocaleString(), name === 'income' ? t('income') : t('expense')]}
                                />
-                               <Bar dataKey="income" fill="#10b981" radius={[0, 4, 4, 0]} barSize={12} />
-                               <Bar dataKey="expense" fill="#f43f5e" radius={[0, 4, 4, 0]} barSize={12} />
+                               <ReferenceLine x={0} stroke="#cbd5e1" strokeWidth={1} />
+                               {/* Negative values go left, positive go right. Using [0, 4, 4, 0] for expense to fix visual bug based on Recharts swap behavior for horizontal negative bars */}
+                               <Bar dataKey="chartExpense" name="expense" fill="#f43f5e" radius={[0, 4, 4, 0]} barSize={12} />
+                               <Bar dataKey="income" name="income" fill="#10b981" radius={[0, 4, 4, 0]} barSize={12} />
                             </BarChart>
                          </ResponsiveContainer>
                       </div>
                    </Card>
 
+                   {/* Status Breakdown Cards */}
                    <Card className="p-8 border-2 rounded-[2rem]">
                       <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3 mb-8">
-                         <Activity className="text-amber-500" size={20} /> Status Distribution
+                         <Activity className="text-amber-500" size={20} /> {language === 'zh' ? '状态分布' : 'Status Distribution'}
                       </h3>
                       <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
                          {visualStats.statuses.map((st, i) => (
                             <div key={i} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
                                <div className="flex items-center gap-4">
                                   <Badge color="blue">{translateDisplay(st.name, language)}</Badge>
-                                  <span className="text-[10px] font-black text-slate-400 uppercase">{st.count} Transactions</span>
+                                  <span className="text-[10px] font-black text-slate-400 uppercase">{st.count} {language === 'zh' ? '条记录' : 'Transactions'}</span>
                                </div>
                                <div className="flex gap-6 text-right">
                                   {st.income > 0 && (
                                      <div>
-                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Income</p>
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{t('income')}</p>
                                         <p className="text-sm font-black text-emerald-600">+{st.income.toLocaleString(undefined, {maximumFractionDigits:0})}</p>
                                      </div>
                                   )}
                                   {st.expense > 0 && (
                                      <div>
-                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Expense</p>
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{t('expense')}</p>
                                         <p className="text-sm font-black text-rose-600">-{st.expense.toLocaleString(undefined, {maximumFractionDigits:0})}</p>
                                      </div>
                                   )}
@@ -374,14 +426,15 @@ const FinanceTracker: React.FC = () => {
                    </Card>
                 </div>
 
+                {/* 4. Top Transactions */}
                 <Card className="p-8 border-2 rounded-[2rem]">
                    <div className="flex items-center justify-between mb-8">
                       <div className="space-y-1">
                          <h3 className="font-black text-xl text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
-                            <Star className="text-amber-400 fill-amber-400" size={24} /> Top Transactions Analysis
+                            <Star className="text-amber-400 fill-amber-400" size={24} /> {language === 'zh' ? '高额交易分析' : 'Top Transactions Analysis'}
                          </h3>
                          <p className="text-xs text-slate-500 font-bold max-w-2xl leading-relaxed italic">
-                            Identified high-impact records including major single expenses and significant incoming payments across your filtered selection.
+                            {language === 'zh' ? '识别出筛选范围内的高影响记录，包括重大单笔支出和显著的回款收入。' : 'Identified high-impact records including major single expenses and significant incoming payments across your filtered selection.'}
                          </p>
                       </div>
                    </div>
