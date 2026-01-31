@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink } from '../types';
 import { Card, Badge, Button, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check, Star, Info, Timer, Calendar } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check, Star, Info, Timer, Calendar, DollarSign, CreditCard } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 
@@ -22,6 +22,7 @@ const SampleProfile: React.FC = () => {
   const [isEditingContext, setIsEditingContext] = useState(false);
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
   const [isEditingPlan, setIsEditingPlan] = useState(false);
+  const [isEditingFee, setIsEditingFee] = useState(false);
   
   const [editAppText, setEditAppText] = useState('');
   const [editDetailsText, setEditDetailsText] = useState('');
@@ -32,6 +33,9 @@ const SampleProfile: React.FC = () => {
   const [editNicknameText, setEditNicknameText] = useState('');
   const [editPlanText, setEditPlanText] = useState('');
   const [editPlanDate, setEditPlanDate] = useState('');
+
+  // Fee state
+  const [tempFee, setTempFee] = useState<Partial<Sample>>({});
 
   // Link Management State
   const [newLinkTitle, setNewLinkTitle] = useState('');
@@ -58,9 +62,22 @@ const SampleProfile: React.FC = () => {
       setEditNicknameText(sample.nickname || '');
       setEditPlanText(sample.upcomingPlan || '');
       setEditPlanDate(sample.nextActionDate || format(new Date(), 'yyyy-MM-dd'));
+      setTempFee({
+        isPaid: sample.isPaid || false,
+        feeCategory: sample.feeCategory || t('defaultFeeCategory'),
+        feeType: sample.feeType || t('income'),
+        actualUnitPrice: sample.actualUnitPrice || '',
+        standardUnitPrice: sample.standardUnitPrice || '',
+        originationDate: sample.originationDate || '',
+        transactionDate: sample.transactionDate || '',
+        feeStatus: sample.feeStatus || '等待中',
+        currency: sample.currency || 'USD',
+        balance: sample.balance || '',
+        feeComment: sample.feeComment || ''
+      });
       parseHistory(sample.statusDetails);
     }
-  }, [sample]);
+  }, [sample, t]);
 
   const parseHistory = (detailsStr?: string) => {
     if (!detailsStr) {
@@ -195,6 +212,11 @@ const SampleProfile: React.FC = () => {
   const handleSavePlan = () => {
     saveSampleUpdate({ upcomingPlan: editPlanText, nextActionDate: editPlanDate });
     setIsEditingPlan(false);
+  };
+
+  const handleSaveFee = () => {
+    saveSampleUpdate({ ...tempFee });
+    setIsEditingFee(false);
   };
 
   const handleToggleStar = () => {
@@ -415,6 +437,121 @@ const SampleProfile: React.FC = () => {
                           </div>
                         ))}
                      </div>
+                   )}
+                </div>
+             </Card>
+
+             {/* Fee Information Block */}
+             <Card className={`overflow-hidden shadow-sm border rounded-3xl transition-all ${isEditingFee ? 'ring-4 ring-blue-500/20 border-blue-500' : 'border-slate-200 dark:border-slate-700'}`}>
+                <div className={headerClass}>
+                   <h3 className={titleClass}><CreditCard className="w-5 h-5 text-amber-600" /> {t('feeInfo')}</h3>
+                   <button onClick={() => setIsEditingFee(!isEditingFee)} className={editBtnStyle}>
+                      {isEditingFee ? <X className="w-4 h-4" /> : <PencilLine className="w-4 h-4" />}
+                   </button>
+                </div>
+                <div className="p-8 space-y-6 bg-white dark:bg-slate-900/40">
+                   {isEditingFee ? (
+                      <div className="space-y-6">
+                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700">
+                            <span className="text-sm font-black uppercase tracking-widest text-slate-500">{t('isPaid')}</span>
+                            <div className="flex gap-2 bg-white dark:bg-slate-900 p-1 rounded-xl shadow-inner border border-slate-100 dark:border-slate-800">
+                               <button 
+                                 onClick={() => setTempFee({...tempFee, isPaid: false})} 
+                                 className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${!tempFee.isPaid ? 'bg-slate-100 text-slate-700' : 'text-slate-400'}`}
+                               >
+                                 {t('free')}
+                               </button>
+                               <button 
+                                 onClick={() => setTempFee({...tempFee, isPaid: true})} 
+                                 className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${tempFee.isPaid ? 'bg-amber-100 text-amber-700' : 'text-slate-400'}`}
+                               >
+                                 {t('paid')}
+                               </button>
+                            </div>
+                         </div>
+                         
+                         {tempFee.isPaid && (
+                           <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div className="space-y-1">
+                                    <label className={labelClass}>{t('feeCategory')}</label>
+                                    <input className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner" value={tempFee.feeCategory} onChange={e => setTempFee({...tempFee, feeCategory: e.target.value})} />
+                                 </div>
+                                 <div className="space-y-1">
+                                    <label className={labelClass}>{t('feeType')}</label>
+                                    <input className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed opacity-60" value={tempFee.feeType} readOnly />
+                                 </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div className="space-y-1">
+                                    <label className={labelClass}>{t('actualUnitPrice')}</label>
+                                    <input className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner" value={tempFee.actualUnitPrice} onChange={e => setTempFee({...tempFee, actualUnitPrice: e.target.value})} />
+                                 </div>
+                                 <div className="space-y-1">
+                                    <label className={labelClass}>{t('standardUnitPrice')}</label>
+                                    <input className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner" value={tempFee.standardUnitPrice} onChange={e => setTempFee({...tempFee, standardUnitPrice: e.target.value})} />
+                                 </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div className="space-y-1">
+                                    <label className={labelClass}>{t('originationDate')}</label>
+                                    <input type="date" className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner" value={tempFee.originationDate} onChange={e => setTempFee({...tempFee, originationDate: e.target.value})} />
+                                 </div>
+                                 <div className="space-y-1">
+                                    <label className={labelClass}>{t('transactionDate')}</label>
+                                    <input type="date" className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner" value={tempFee.transactionDate} onChange={e => setTempFee({...tempFee, transactionDate: e.target.value})} />
+                                 </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div className="space-y-1">
+                                    <label className={labelClass}>{t('feeStatus')}</label>
+                                    <select className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner" value={tempFee.feeStatus} onChange={e => setTempFee({...tempFee, feeStatus: e.target.value})}>
+                                       {tagOptions.feeStatus.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                 </div>
+                                 <div className="space-y-1">
+                                    <label className={labelClass}>{t('currency')}</label>
+                                    <input className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner" value={tempFee.currency} onChange={e => setTempFee({...tempFee, currency: e.target.value})} placeholder="e.g. USD" />
+                                 </div>
+                              </div>
+                              <div className="space-y-1">
+                                 <label className={labelClass}>{t('balance')}</label>
+                                 <input className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner" value={tempFee.balance} onChange={e => setTempFee({...tempFee, balance: e.target.value})} />
+                              </div>
+                              <div className="space-y-1">
+                                 <label className={labelClass}>{t('feeComment')}</label>
+                                 <textarea className="w-full p-3 border-2 border-slate-100 rounded-xl font-bold dark:bg-slate-800 shadow-inner h-20" value={tempFee.feeComment} onChange={e => setTempFee({...tempFee, feeComment: e.target.value})} />
+                              </div>
+                           </div>
+                         )}
+                         
+                         <Button onClick={handleSaveFee} className="w-full bg-blue-600 py-3 font-black shadow-lg shadow-blue-600/20"><Save size={18} className="mr-2" /> {t('save')}</Button>
+                      </div>
+                   ) : (
+                      <div className="space-y-6">
+                         <div className="flex justify-between items-center">
+                            <span className={labelClass}>{t('isPaid')}</span>
+                            {sample.isPaid ? <Badge color="yellow">{t('paid')}</Badge> : <Badge color="gray">{t('free')}</Badge>}
+                         </div>
+                         
+                         {sample.isPaid && (
+                           <div className="divide-y divide-slate-50 dark:divide-slate-800 pt-2">
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('feeCategory')}</span><span className={valueClass}>{sample.feeCategory}</span></div>
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('feeType')}</span><span className={valueClass}>{sample.feeType}</span></div>
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('actualUnitPrice')}</span><span className={valueClass}>{sample.actualUnitPrice}</span></div>
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('standardUnitPrice')}</span><span className={valueClass}>{sample.standardUnitPrice}</span></div>
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('originationDate')}</span><span className={valueClass}>{sample.originationDate}</span></div>
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('transactionDate')}</span><span className={valueClass}>{sample.transactionDate || '-'}</span></div>
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('feeStatus')}</span><span className={valueClass}><Badge color="blue">{sample.feeStatus}</Badge></span></div>
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('currency')}</span><span className={valueClass}>{sample.currency}</span></div>
+                              <div className="flex justify-between py-2"><span className={labelClass}>{t('balance')}</span><span className="font-black text-amber-600 text-base">{sample.balance}</span></div>
+                              <div className="pt-4 space-y-1">
+                                 <span className={labelClass}>{t('feeComment')}</span>
+                                 <p className="text-xs font-bold text-slate-500 italic leading-relaxed">{sample.feeComment || '-'}</p>
+                              </div>
+                           </div>
+                         )}
+                      </div>
                    )}
                 </div>
              </Card>

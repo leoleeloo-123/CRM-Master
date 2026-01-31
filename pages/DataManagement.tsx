@@ -37,12 +37,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
   // --- HELPERS ---
 
-  // Toggles between import configuration and database review
   const toggleReviewMode = () => {
     setViewMode(prev => prev === 'import' ? 'review' : 'import');
   };
 
-  // Clears any active import preview and input state
   const clearPreview = () => {
     setParsedPreview(null);
     setExcelPreview(null);
@@ -148,7 +146,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
        return { id: `int_${tempIdPrefix}_${i}`, date: date, summary: summary };
     }).reverse();
     
-    // Mailing Info Parsing (Column 22)
     const mParts = splitByDelimiter(safeCol(22));
     const mailingInfo: MailingInfo = {
       recipient: mParts[0] || '',
@@ -167,14 +164,17 @@ const DataManagement: React.FC<DataManagementProps> = ({
     const lowerCustName = custName.toLowerCase();
     let nextIndex = (indexMap.get(lowerCustName) || 0) + 1;
     indexMap.set(lowerCustName, nextIndex);
+    
     const status = getCanonicalTag(safeCol(1)) as SampleStatus || 'Requested';
     const crystal = getCanonicalTag(safeCol(3)) || '';
     const form = getCanonicalTag(safeCol(5)) || 'Powder';
     const categories = safeCol(4) ? safeCol(4).split(',').map(c => getCanonicalTag(c.trim()) as ProductCategory) : [];
+    
     const testFinishedColVal = (safeCol(2) || '').trim().toLowerCase();
     let testStatus: TestStatus = 'Ongoing';
     if (['yes', 'finished', '测试完成', 'true', '1', '是', '完成'].includes(testFinishedColVal)) testStatus = 'Finished';
     else if (['terminated', '终止', '项目终止', '放弃', 'canceled'].includes(testFinishedColVal)) testStatus = 'Terminated';
+    
     const titles = splitByDelimiter(safeCol(19));
     const urls = splitByDelimiter(safeCol(20));
     let docLinks: SampleDocLink[] = [];
@@ -183,8 +183,36 @@ const DataManagement: React.FC<DataManagementProps> = ({
         if (entry.includes(': ')) { const [t, u] = entry.split(': '); return { title: t, url: u }; }
         return { title: `Link ${idx + 1}`, url: entry };
     });
+    
     const genName = `${crystal} ${categories.join(', ')} ${form} - ${safeCol(6)}${safeCol(7) ? ` > ${safeCol(7)}` : ''}${safeCol(21) ? ` (${safeCol(21)})` : ''}`.trim();
-    return { id: `new_s_${tempIdPrefix}`, customerId: matchedCustomer ? matchedCustomer.id : 'unknown', customerName: custName, sampleIndex: nextIndex, status: status, testStatus: testStatus, crystalType: crystal as CrystalType, productCategory: categories, productForm: form as ProductForm, originalSize: safeCol(6), processedSize: safeCol(7), nickname: safeCol(21), isStarredSample: (safeCol(22) || '').toLowerCase() === 'true', isGraded: (safeCol(8) as GradingStatus) || 'Graded', sampleSKU: safeCol(9), sampleDetails: safeCol(10), quantity: safeCol(11), application: safeCol(12), lastStatusDate: normalizeDate(safeCol(13)) || new Date().toISOString().split('T')[0], statusDetails: safeCol(15), trackingNumber: safeCol(16), sampleName: genName, requestDate: new Date().toISOString().split('T')[0], upcomingPlan: safeCol(17), nextActionDate: normalizeDate(safeCol(18)), docLinks: docLinks } as Sample;
+    
+    // --- Optimized Fee Information Parsing ---
+    const rawPaidValue = safeCol(23).toLowerCase();
+    const otherFeeFields = [24, 25, 26, 27, 28, 29, 30, 31, 32, 33];
+    // Check if user filled any detail information in the fee columns manually
+    const hasAnyFeeDetail = otherFeeFields.some(idx => safeCol(idx) !== '');
+    
+    // Aggressive paid detection: 
+    // True if column 24 matches "Paid" keywords OR if any detail columns (25-34) have content.
+    const isPaid = ['yes', 'paid', 'true', '1', '付费', '是'].includes(rawPaidValue) || hasAnyFeeDetail;
+
+    return { 
+      id: `new_s_${tempIdPrefix}`, customerId: matchedCustomer ? matchedCustomer.id : 'unknown', customerName: custName, sampleIndex: nextIndex, status: status, testStatus: testStatus, crystalType: crystal as CrystalType, productCategory: categories, productForm: form as ProductForm, originalSize: safeCol(6), processedSize: safeCol(7), nickname: safeCol(21), 
+      isStarredSample: ['yes', 'paid', 'true', '1', '付费', '是', 'yes'].includes((safeCol(22) || '').toLowerCase()), 
+      isGraded: (safeCol(8) as GradingStatus) || 'Graded', sampleSKU: safeCol(9), sampleDetails: safeCol(10), quantity: safeCol(11), application: safeCol(12), lastStatusDate: normalizeDate(safeCol(13)) || new Date().toISOString().split('T')[0], statusDetails: safeCol(15), trackingNumber: safeCol(16), sampleName: genName, requestDate: new Date().toISOString().split('T')[0], upcomingPlan: safeCol(17), nextActionDate: normalizeDate(safeCol(18)), docLinks: docLinks,
+      // Fee fields import
+      isPaid: isPaid,
+      feeCategory: safeCol(24) || (isPaid ? translateToZh('defaultFeeCategory') : ''),
+      feeType: safeCol(25) || (isPaid ? translateToZh('Income') : ''),
+      actualUnitPrice: safeCol(26),
+      standardUnitPrice: safeCol(27),
+      originationDate: normalizeDate(safeCol(28)),
+      transactionDate: normalizeDate(safeCol(29)),
+      feeStatus: safeCol(30),
+      currency: safeCol(31),
+      balance: safeCol(32),
+      feeComment: safeCol(33)
+    } as Sample;
   };
 
   const rowToExhibition = (cols: any[], tempIdPrefix: string): Exhibition => {
@@ -200,9 +228,46 @@ const DataManagement: React.FC<DataManagementProps> = ({
       return [c.name, Array.isArray(c.region) ? c.region.join(' ||| ') : c.region, c.tags.join(' ||| '), "", c.rank, (c.productSummary || '').replace(/\n/g, ' ||| '), c.lastStatusUpdate, "", c.contacts.map(ct => `${ct.name}${ct.title?` (${ct.title})`:''}${ct.isPrimary?' 【主要联系人】':''}`).join(' ||| '), mapStatusToExport(c.followUpStatus), c.upcomingPlan || '', c.nextActionDate, "", [...c.interactions].reverse().map(i => `【${i.date}】 ${i.summary}`).join(' ||| '), c.lastCustomerReplyDate, "", c.lastMyReplyDate, "", c.docLinks ? c.docLinks.map(l => `${l.title}: ${l.url}`).join(' ||| ') : '', c.contacts.map(ct => ct.email || ct.phone || '').join(' ||| '), (c.docLinks || []).map(l => l.title).join(' ||| '), (c.docLinks || []).map(l => l.url).join(' ||| '), mailingStr];
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]), "Customers");
-    const sampHeaders = ["1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", "11.Details", "12.Quantity", "13.Customer Application", "14.Status Date", "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Link Titles", "21.File Link URLs", "22.Nickname", "23.Starred"];
-    const sampRows = samples.map(s => [s.customerName, translateToZh(s.status || ''), s.testStatus === 'Finished' ? '完成' : s.testStatus === 'Terminated' ? '项目终止' : '未完成', translateToZh(s.crystalType || ''), (s.productCategory || []).map(c => translateToZh(c)).join(', '), translateToZh(s.productForm || ''), s.originalSize, s.processedSize, translateToZh(s.isGraded || ''), s.sampleSKU, s.sampleDetails, s.quantity, s.application, s.lastStatusDate, s.lastStatusDate ? String(differenceInDays(new Date(), new Date(s.lastStatusDate))) : "", (s.statusDetails || '').replace(/\n/g, ' ||| '), s.trackingNumber, s.upcomingPlan || '', s.nextActionDate || '', (s.docLinks || []).map(l => l.title).join(' ||| '), (s.docLinks || []).map(l => l.url).join(' ||| '), s.nickname || '', s.isStarredSample ? 'Yes' : 'No']);
+    
+    const sampHeaders = ["1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", "11.Details", "12.Quantity", "13.Customer Application", "14.Status Date", "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Link Titles", "21.File Link URLs", "22.Nickname", "23.Starred", "24.Is Paid", "25.Fee Category", "26.Fee Type", "27.Actual Unit Price", "28.Standard Unit Price", "29.Origination Date", "30.Transaction Date", "31.Fee Status", "32.Currency", "33.Balance", "34.Fee Comment"];
+    const sampRows = samples.map(s => [
+      s.customerName, 
+      translateToZh(s.status || ''), 
+      s.testStatus === 'Finished' ? '完成' : s.testStatus === 'Terminated' ? '项目终止' : '未完成', 
+      translateToZh(s.crystalType || ''), 
+      (s.productCategory || []).map(c => translateToZh(c)).join(', '), 
+      translateToZh(s.productForm || ''), 
+      s.originalSize, 
+      s.processedSize, 
+      translateToZh(s.isGraded || ''), 
+      s.sampleSKU, 
+      s.sampleDetails, 
+      s.quantity, 
+      s.application, 
+      s.lastStatusDate, 
+      s.lastStatusDate ? String(differenceInDays(new Date(), new Date(s.lastStatusDate))) : "", 
+      (s.statusDetails || '').replace(/\n/g, ' ||| '), 
+      s.trackingNumber, 
+      s.upcomingPlan || '', 
+      s.nextActionDate || '', 
+      (s.docLinks || []).map(l => l.title).join(' ||| '), 
+      (s.docLinks || []).map(l => l.url).join(' ||| '), 
+      s.nickname || '', 
+      s.isStarredSample ? 'True' : 'False',
+      s.isPaid ? 'Yes' : 'No',
+      s.feeCategory || '',
+      s.feeType || '',
+      s.actualUnitPrice || '',
+      s.standardUnitPrice || '',
+      s.originationDate || '',
+      s.transactionDate || '',
+      s.feeStatus || '',
+      s.currency || '',
+      s.balance || '',
+      s.feeComment || ''
+    ]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]), "Samples");
+    
     const exhHeaders = ["Name", "Date", "Location", "Link", "Event Series", "Summary"];
     const exhRows = exhibitions.map(e => [e.name, e.date, e.location, e.link, (e.eventSeries || []).join(' ||| '), e.summary || '']);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([exhHeaders, ...exhRows]), "Exhibitions");
@@ -278,7 +343,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                 {activeTab === 'customers' ? (
                   <><th className="p-4 pl-6">Name</th><th className="p-4">Rank</th><th className="p-4">Region</th><th className="p-4">Summary</th><th className="p-4">Status</th><th className="p-4">Next</th><th className="p-4">Contacts</th><th className="p-4 pr-6">Date</th></>
                 ) : activeTab === 'samples' ? (
-                  <><th className="p-4 pl-6">Customer</th><th className="p-4">Idx</th><th className="p-4">Name</th><th className="p-4">Specs</th><th className="p-4">Qty</th><th className="p-4">Status</th><th className="p-4">Test</th><th className="p-4">Updated</th><th className="p-4">Next</th><th className="p-4 pr-6">History</th></>
+                  <><th className="p-4 pl-6">Customer</th><th className="p-4">Idx</th><th className="p-4">Name</th><th className="p-4">Specs</th><th className="p-4">Qty</th><th className="p-4">Status</th><th className="p-4">Test</th><th className="p-4">Paid</th><th className="p-4">Balance</th><th className="p-4 pr-6">Next</th></>
                 ) : (
                   <><th className="p-4 pl-6">Name</th><th className="p-4">Date</th><th className="p-4">Location</th><th className="p-4">Link</th><th className="p-4">Series</th><th className="p-4 pr-6">Summary</th></>
                 )}
@@ -290,7 +355,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   {activeTab === 'customers' ? (
                     <><td className="p-4 pl-6 text-blue-600 font-black uppercase">{row.name}</td><td className="p-4"><RankStars rank={row.rank} /></td><td className="p-4 text-[10px]">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td><td className="p-4 truncate max-w-[150px] italic">{row.productSummary}</td><td className="p-4"><Badge color="blue">{row.followUpStatus}</Badge></td><td className="p-4 truncate max-w-[120px]">{row.upcomingPlan}</td><td className="p-4 text-[10px] uppercase">{row.contacts?.map((c:any) => c.name).join(', ')}</td><td className="p-4 pr-6 whitespace-nowrap">{row.lastStatusUpdate}</td></>
                   ) : activeTab === 'samples' ? (
-                    <><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4 text-[9px] uppercase"><div>{row.crystalType}/{row.productForm}</div><div>{row.originalSize}{" -> "}{row.processedSize}</div></td><td className="p-4 font-black">{row.quantity}</td><td className="p-4"><Badge color="blue">{row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{row.testStatus}</Badge></td><td className="p-4">{row.lastStatusDate}</td><td className="p-4 italic truncate max-w-[120px]">{row.upcomingPlan}</td><td className="p-4 pr-6 truncate max-w-[120px] text-slate-400">{row.statusDetails}</td></>
+                    <><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4 text-[9px] uppercase"><div>{row.crystalType}/{row.productForm}</div><div>{row.originalSize}{" -> "}{row.processedSize}</div></td><td className="p-4 font-black">{row.quantity}</td><td className="p-4"><Badge color="blue">{row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{row.testStatus}</Badge></td><td className="p-4">{row.isPaid ? 'Yes' : 'No'}</td><td className="p-4 text-amber-600 font-black">{row.balance || '-'}</td><td className="p-4 pr-6 italic truncate max-w-[120px]">{row.upcomingPlan}</td></>
                   ) : (
                     <><td className="p-4 pl-6 font-black uppercase text-blue-600">{row.name}</td><td className="p-4 whitespace-nowrap">{row.date}</td><td className="p-4">{row.location}</td><td className="p-4 text-blue-500 underline text-[10px]">{row.link}</td><td className="p-4 text-[10px] uppercase">{row.eventSeries?.join(', ')}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.summary}</td></>
                   )}
@@ -306,7 +371,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-      {/* Title Section - Aligned with CustomerList */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-4xl xl:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{t('dataManagement')}</h2>
@@ -330,7 +394,6 @@ const DataManagement: React.FC<DataManagementProps> = ({
       </div>
 
       <Card className="p-0 border-2 rounded-3xl overflow-hidden shadow-sm">
-        {/* Navigation Tabs - Aligned with CustomerProfile style */}
         <div className="flex border-b-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
            {[
              { id: 'customers', icon: <Users size={20} />, label: 'Customers' },
@@ -351,26 +414,23 @@ const DataManagement: React.FC<DataManagementProps> = ({
         <div className="p-8">
           {viewMode === 'review' ? renderCurrentDataTable() : (
             <div className="space-y-8">
-              {/* Refactored Instruction Box - Compressed Layout */}
               <div className="bg-slate-50 dark:bg-slate-800/40 p-6 rounded-3xl border-2 border-slate-100 dark:border-slate-800 space-y-4">
                  <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-3 ml-1">
                    <Info size={18} className="text-blue-500" /> Instructions
                  </h4>
                  
                  <div className="flex items-stretch gap-4 h-12 xl:h-14">
-                   {/* Column description box - Width increased to 70% */}
                    <div className="w-[70%] flex items-center px-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
                       <p className="font-mono text-[10px] xl:text-xs font-bold text-slate-500 dark:text-slate-400 truncate whitespace-nowrap">
                         {activeTab === 'customers' 
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网 | 5.等级 | 6.产品总结 | 7.更新日期 | 8.NA | 9.人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.NA | 14.流程总结 | 15.对方回复 | 16.NA | 17.我方跟进 | 18.NA | 19.NA | 20.联系方式 | 21.Titles | 22.URLs | 23.邮寄信息"
                           : activeTab === 'samples'
-                          ? "1.Customer | 2.Status | 3.Test | 4.Crystal | 5.Category | 6.Form | 7.OrigSize | 8.ProcSize | 9.Graded | 10.SKU | 11.Details | 12.Qty | 13.App | 14.Date | 15.NA | 16.History | 17.Tracking | 18.Next Step | 19.Key Date | 20.Titles | 21.URLs | 22.Nickname | 23.Starred"
+                          ? "1.Customer | ... | 23.Starred | 24.Paid | 25.FeeCat | 26.Type | 27.ActualPrice | 28.StdPrice | 29.OrigDate | 30.TransDate | 31.FeeStatus | 32.Currency | 33.Balance | 34.Comment"
                           : "1.Name | 2.Date | 3.Location | 4.Link | 5.Event Series | 6.Summary"
                         }
                       </p>
                    </div>
                    
-                   {/* Control area - Width decreased to 30% */}
                    <div className="w-[30%] flex items-stretch gap-3">
                      {!parsedPreview ? (
                        <>
@@ -434,8 +494,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
                        <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 font-black uppercase text-[10px] tracking-widest sticky top-0 z-10 border-b border-slate-100 dark:border-slate-800">
                          <tr>
                            {activeTab === 'customers' ? (<><th className="p-4 pl-6">Name</th><th className="p-4">Rank</th><th className="p-4">Region</th><th className="p-4">Summary</th><th className="p-4">Status</th><th className="p-4">Next</th><th className="p-4">Contacts</th><th className="p-4 pr-6">Updated</th></>) : 
-                            activeTab === 'samples' ? (<><th className="p-4 pl-6">Customer</th><th className="p-4">Idx</th><th className="p-4">Name</th><th className="p-4">Specs</th><th className="p-4">Qty</th><th className="p-4">Status</th><th className="p-4">Test</th><th className="p-4">Date</th><th className="p-4 pr-6">History</th></>) : 
-                            (<><th className="p-4 pl-6">Name</th><th className="p-4">Date</th><th className="p-4">Location</th><th className="p-4">Link</th><th className="p-4">Series</th><th className="p-4 pr-6">Summary</th></>)}
+                            activeTab === 'samples' ? (<><th className="p-4 pl-6">Customer</th><th className="p-4">Idx</th><th className="p-4">Name</th><th className="p-4">Paid</th><th className="p-4">Balance</th><th className="p-4">Status</th><th className="p-4">Test</th><th className="p-4">Date</th><th className="p-4 pr-6">History</th></>) : 
+                            (<><th className="p-4 pl-6">Name</th><th className="p-4">{t('dateLabel')}</th><th className="p-4">Location</th><th className="p-4">Link</th><th className="p-4">Series</th><th className="p-4 pr-6">Summary</th></>)}
                          </tr>
                        </thead>
                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400">
@@ -444,7 +504,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                              {activeTab === 'customers' ? (
                                <><td className="p-4 pl-6 font-black text-blue-600 uppercase">{row.name}</td><td className="p-4"><RankStars rank={row.rank} /></td><td className="p-4">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td><td className="p-4 truncate max-w-[150px]">{row.productSummary}</td><td className="p-4"><Badge color="blue">{row.followUpStatus}</Badge></td><td className="p-4 truncate max-w-[120px]">{row.upcomingPlan}</td><td className="p-4 truncate max-w-[120px] uppercase">{row.contacts?.map((c:any) => c.name).join(', ')}</td><td className="p-4 pr-6">{row.lastStatusUpdate}</td></>
                              ) : activeTab === 'samples' ? (
-                               <><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4 text-[9px] uppercase"><div>{row.crystalType}/{row.productForm}</div><div>{row.originalSize}{" -> "}{row.processedSize}</div></td><td className="p-4">{row.quantity}</td><td className="p-4"><Badge color="blue">{row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{row.testStatus}</Badge></td><td className="p-4">{row.lastStatusDate}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.statusDetails}</td></>
+                               <><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4">{row.isPaid ? 'Yes' : 'No'}</td><td className="p-4 font-black text-amber-600">{row.balance || '-'}</td><td className="p-4"><Badge color="blue">{row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{row.testStatus}</Badge></td><td className="p-4">{row.lastStatusDate}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.statusDetails}</td></>
                              ) : (
                                <><td className="p-4 pl-6 font-black uppercase text-blue-600">{row.name}</td><td className="p-4">{row.date}</td><td className="p-4">{row.location}</td><td className="p-4">{row.link}</td><td className="p-4 text-[10px] uppercase">{row.eventSeries?.join(', ')}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.summary}</td></>
                              )}

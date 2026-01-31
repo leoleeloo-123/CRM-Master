@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../components/Common';
 import { useApp } from '../contexts/AppContext';
-import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation, Activity, ClipboardList, Coffee, CloudMoon, Leaf } from 'lucide-react';
+// Add CreditCard to the list of icons imported from lucide-react to fix reference error on line 189
+import { Moon, Sun, Monitor, Languages, Building2, Save, Type, Tags, Plus, Trash2, Presentation, Activity, ClipboardList, Coffee, CloudMoon, Leaf, CreditCard } from 'lucide-react';
 import { TagOptions } from '../types';
 import { getCanonicalTag } from '../utils/i18n';
 
@@ -180,6 +181,16 @@ const Settings: React.FC = () => {
                 {renderTagEditor("tagsCrystalType", 'crystalType')}
                 {renderTagEditor("tagsProductCategory", 'productCategory')}
                 {renderTagEditor("tagsProductForm", 'productForm')}
+              </div>
+            </div>
+
+            {/* NEW: Fee Status Tags Section */}
+            <div className="space-y-6 pt-10 border-t dark:border-slate-800">
+               <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-3 uppercase tracking-widest opacity-70">
+                <CreditCard size={18} className="text-amber-600" /> {t('feeInfo')}
+              </h4>
+              <div className="grid grid-cols-1 gap-8">
+                {renderTagEditor("tagsFeeStatus", 'feeStatus')}
               </div>
             </div>
 

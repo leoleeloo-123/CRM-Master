@@ -284,6 +284,25 @@ export const translations = {
     starred: 'Starred',
     noApplicationProvided: 'No application details provided.',
     
+    // Fee Info
+    feeInfo: 'Fee Information',
+    isPaid: 'Is Paid',
+    free: 'Free',
+    paid: 'Paid',
+    feeCategory: 'Category',
+    feeType: 'Exp / Inc',
+    actualUnitPrice: 'Actual Unit Price',
+    standardUnitPrice: 'Standard Unit Price',
+    originationDate: 'Origination Date',
+    transactionDate: 'Transaction Date',
+    feeStatus: 'Fee Status',
+    currency: 'Currency',
+    balance: 'Balance',
+    feeComment: 'Comment',
+    income: 'Income',
+    expense: 'Expense',
+    defaultFeeCategory: 'Sample/Product Fee',
+
     // Data Management
     bulkImport: 'Bulk Import',
     importDesc: 'Copy and paste rows directly from your Excel spreadsheet.',
@@ -318,6 +337,7 @@ export const translations = {
     interactionType: 'Interaction Type',
     interactionEffect: 'Interaction Effect',
     availableTags: 'Available Tags',
+    tagsFeeStatus: 'Fee Status Tags',
     
     // Font Size
     fontSize: '字体大小',
@@ -595,6 +615,25 @@ export const translations = {
     starred: '标星',
     noApplicationProvided: '暂无应用详情。',
 
+    // Fee Info
+    feeInfo: '收费信息',
+    isPaid: '是否付费',
+    free: '免费',
+    paid: '付费',
+    feeCategory: '费用类别',
+    feeType: '支出 / 收入',
+    actualUnitPrice: '实际单价',
+    standardUnitPrice: '标准单价',
+    originationDate: '费用产生日期',
+    transactionDate: '实际付款日期',
+    feeStatus: '费用状态',
+    currency: '币种',
+    balance: '金额/余额',
+    feeComment: '备注',
+    income: '收入',
+    expense: '支出',
+    defaultFeeCategory: '样品/产品费用',
+
     // Data Management
     bulkImport: '批量导入',
     importDesc: '直接从Excel电子表格复制并粘贴行。',
@@ -629,6 +668,7 @@ export const translations = {
     interactionType: '对接流程类型',
     interactionEffect: '流程作用标签',
     availableTags: '可用标签',
+    tagsFeeStatus: '收费状态标签',
     
     // Font Size
     fontSize: '字体大小',

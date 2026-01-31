@@ -130,7 +130,8 @@ const DEFAULT_TAGS: TagOptions = {
   productForm: ['微粉', '悬浮液'],
   eventSeries: ['Semicon', 'Optical Expo', 'Industrial Fair'],
   interactionTypes: ['无', '对方邮件', '我方邮件', '双方邮件', '展会相见', '视频会议', '线下会面'],
-  interactionEffects: ['无', '对方回复', '我方跟进', '对方回复及我方跟进']
+  interactionEffects: ['无', '对方回复', '我方跟进', '对方回复及我方跟进'],
+  feeStatus: ['等待中', '待付款', '已付款']
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -201,7 +202,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...parsed,
         sampleStatus: DEFAULT_TAGS.sampleStatus,
         interactionTypes: Array.isArray(parsed.interactionTypes) ? parsed.interactionTypes : DEFAULT_TAGS.interactionTypes,
-        interactionEffects: Array.isArray(parsed.interactionEffects) ? parsed.interactionEffects : DEFAULT_TAGS.interactionEffects
+        interactionEffects: Array.isArray(parsed.interactionEffects) ? parsed.interactionEffects : DEFAULT_TAGS.interactionEffects,
+        feeStatus: Array.isArray(parsed.feeStatus) ? parsed.feeStatus : DEFAULT_TAGS.feeStatus
       };
     } catch (e) {
       return DEFAULT_TAGS;
@@ -304,7 +306,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           productForm: [],
           eventSeries: [...prev.eventSeries],
           interactionTypes: [...prev.interactionTypes],
-          interactionEffects: [...prev.interactionEffects]
+          interactionEffects: [...prev.interactionEffects],
+          feeStatus: [...DEFAULT_TAGS.feeStatus]
       } : { 
           sampleStatus: [...DEFAULT_TAGS.sampleStatus],
           crystalType: [...prev.crystalType],
@@ -312,7 +315,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           productForm: [...prev.productForm],
           eventSeries: [...prev.eventSeries],
           interactionTypes: [...prev.interactionTypes],
-          interactionEffects: [...prev.interactionEffects]
+          interactionEffects: [...prev.interactionEffects],
+          feeStatus: [...prev.feeStatus]
       };
       const addUnique = (list: string[], item: string) => { if (item && !list.includes(item)) list.push(item); };
       sampleList.forEach(s => {

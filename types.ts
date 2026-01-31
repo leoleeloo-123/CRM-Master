@@ -117,6 +117,18 @@ export interface Sample {
   upcomingPlan?: string;
   nextActionDate?: string;
   docLinks?: SampleDocLink[];
+  // NEW: Fee Information Fields
+  isPaid?: boolean;
+  feeCategory?: string;
+  feeType?: string; // Default: Income
+  actualUnitPrice?: string;
+  standardUnitPrice?: string;
+  originationDate?: string;
+  transactionDate?: string;
+  feeStatus?: string;
+  currency?: string;
+  balance?: string;
+  feeComment?: string;
 }
 
 export interface TagOptions {
@@ -127,4 +139,5 @@ export interface TagOptions {
   eventSeries: string[];
   interactionTypes: string[];   // New: <Type>
   interactionEffects: string[]; // New: {Effect}
+  feeStatus: string[];         // New for fee module
 }
