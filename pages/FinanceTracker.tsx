@@ -1,12 +1,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Card, Badge, Button } from '../components/Common';
-import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity, RefreshCw, TrendingUp, LayoutDashboard, History, Layers, AlertCircle, Star } from 'lucide-react';
+import { Card, Badge, Button, Modal } from '../components/Common';
+// Fix error: Add missing ArrowRight import from lucide-react
+import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ArrowRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity, RefreshCw, TrendingUp, LayoutDashboard, History, Layers, AlertCircle, Star, Plus, PencilLine, Trash2, Link as LinkIcon, Save } from 'lucide-react';
 import { format, isValid, startOfMonth, parseISO } from 'date-fns';
 import { translateDisplay } from '../utils/i18n';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend, ReferenceLine } from 'recharts';
+import { Expense } from '../types';
 
 interface UnifiedTransaction {
   id: string;
@@ -26,11 +28,15 @@ interface UnifiedTransaction {
 }
 
 const FinanceTracker: React.FC = () => {
-  const { t, samples, expenses, fxRates, language, updateGlobalFXRates } = useApp();
+  const { t, samples, expenses, setExpenses, fxRates, language, updateGlobalFXRates, tagOptions } = useApp();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [isUpdatingRates, setIsUpdatingRates] = useState(false);
+
+  // Modal State
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Partial<Expense> | null>(null);
 
   // FX Display Config
   const [displayCurrency, setDisplayCurrency] = useState('USD');
@@ -182,6 +188,62 @@ const FinanceTracker: React.FC = () => {
     setTimeout(() => setIsUpdatingRates(false), 500);
   };
 
+  const handleOpenAddExpense = () => {
+    setEditingExpense({
+      category: tagOptions.expenseCategory[0] || '其它',
+      detail: '',
+      expInc: '支出',
+      party: '',
+      name: '',
+      originationDate: format(new Date(), 'yyyy-MM-dd'),
+      transactionDate: '',
+      status: 'Pending',
+      currency: 'USD',
+      balance: '',
+      comment: '',
+      link: ''
+    });
+    setIsExpenseModalOpen(true);
+  };
+
+  const handleEditExpense = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const target = expenses.find(ex => ex.id === id);
+    if (target) {
+      setEditingExpense({ ...target });
+      setIsExpenseModalOpen(true);
+    }
+  };
+
+  const handleDeleteExpense = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(t('confirmDeleteExpense'))) {
+      setExpenses(prev => prev.filter(ex => ex.id !== id));
+    }
+  };
+
+  const handleSaveExpense = () => {
+    if (!editingExpense) return;
+    if (!editingExpense.name || !editingExpense.balance) {
+      alert("Name and Amount are required.");
+      return;
+    }
+
+    if (editingExpense.id) {
+      // Edit
+      setExpenses(prev => prev.map(ex => ex.id === editingExpense.id ? { ...editingExpense } as Expense : ex));
+    } else {
+      // Create
+      const newEx: Expense = {
+        ...editingExpense,
+        id: `exp_${Date.now()}`
+      } as Expense;
+      setExpenses(prev => [newEx, ...prev]);
+    }
+    setIsExpenseModalOpen(false);
+    setEditingExpense(null);
+  };
+
   const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
 
   return (
@@ -207,6 +269,10 @@ const FinanceTracker: React.FC = () => {
              <button onClick={() => setViewMode('list')} className={`px-8 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>{t('list')}</button>
              <button onClick={() => setViewMode('board')} className={`px-8 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>{t('board')}</button>
           </div>
+          <Button onClick={handleOpenAddExpense} className="flex items-center gap-2 px-8 py-3 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
+             <Plus size={20} />
+             <span className="font-black uppercase tracking-widest text-sm">{t('addExpense')}</span>
+          </Button>
         </div>
       </div>
 
@@ -280,6 +346,7 @@ const FinanceTracker: React.FC = () => {
                     <th className="p-6 text-blue-600">{displayCurrency} (CALC)</th>
                     <th className="p-6">{t('status')}</th>
                     <th className="p-6">{t('transactionDate')}</th>
+                    <th className="p-6 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -302,6 +369,20 @@ const FinanceTracker: React.FC = () => {
                         </td>
                         <td className="p-6"><Badge color="blue">{translateDisplay(d.status, language)}</Badge></td>
                         <td className="p-6 font-black text-slate-400 text-xs whitespace-nowrap">{d.transDate || d.origDate}</td>
+                        <td className="p-6 text-right">
+                           {d.source === 'Expense' ? (
+                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={(e) => handleEditExpense(d.id, e)} className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-90">
+                                   <PencilLine size={16} />
+                                </button>
+                                <button onClick={(e) => handleDeleteExpense(d.id, e)} className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all active:scale-90">
+                                   <Trash2 size={16} />
+                                </button>
+                             </div>
+                           ) : (
+                             <ArrowRight size={20} className="text-slate-200 group-hover:text-blue-600 transition-all group-hover:translate-x-1 inline-block" />
+                           )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -479,6 +560,143 @@ const FinanceTracker: React.FC = () => {
           )}
         </div>
       </Card>
+
+      {/* Expense Modal */}
+      <Modal 
+        isOpen={isExpenseModalOpen} 
+        onClose={() => { setIsExpenseModalOpen(false); setEditingExpense(null); }} 
+        title={editingExpense?.id ? t('editExpense') : t('addExpense')}
+      >
+         <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-1.5">
+                  <label className={labelClass}>{t('nameLabel')} / {t('detail')} *</label>
+                  <input 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all uppercase"
+                    value={editingExpense?.name || ''}
+                    onChange={e => setEditingExpense({...editingExpense, name: e.target.value})}
+                    placeholder="e.g. Travel tickets"
+                  />
+               </div>
+               <div className="space-y-1.5">
+                  <label className={labelClass}>{t('feeType')}</label>
+                  <div className="flex gap-2 p-1 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2">
+                     <button 
+                       onClick={() => setEditingExpense({...editingExpense, expInc: '支出'})}
+                       className={`flex-1 py-2 rounded-xl text-xs font-black uppercase transition-all ${editingExpense?.expInc === '支出' ? 'bg-rose-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                     >
+                       {t('expense')}
+                     </button>
+                     <button 
+                       onClick={() => setEditingExpense({...editingExpense, expInc: '收入'})}
+                       className={`flex-1 py-2 rounded-xl text-xs font-black uppercase transition-all ${editingExpense?.expInc === '收入' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                     >
+                       {t('income')}
+                     </button>
+                  </div>
+               </div>
+               
+               <div className="space-y-1.5">
+                  <label className={labelClass}>{t('feeCategory')}</label>
+                  <select 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                    value={editingExpense?.category || ''}
+                    onChange={e => setEditingExpense({...editingExpense, category: e.target.value})}
+                  >
+                    {tagOptions.expenseCategory.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+               </div>
+               <div className="space-y-1.5">
+                  <label className={labelClass}>{t('party')}</label>
+                  <input 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all uppercase"
+                    value={editingExpense?.party || ''}
+                    onChange={e => setEditingExpense({...editingExpense, party: e.target.value})}
+                    placeholder="e.g. Airline Co."
+                  />
+               </div>
+
+               <div className="space-y-1.5">
+                  <label className={labelClass}>{t('originationDate')}</label>
+                  <input 
+                    type="date"
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                    value={editingExpense?.originationDate || ''}
+                    onChange={e => setEditingExpense({...editingExpense, originationDate: e.target.value})}
+                  />
+               </div>
+               <div className="space-y-1.5">
+                  <label className={labelClass}>{t('transactionDate')}</label>
+                  <input 
+                    type="date"
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                    value={editingExpense?.transactionDate || ''}
+                    onChange={e => setEditingExpense({...editingExpense, transactionDate: e.target.value})}
+                  />
+               </div>
+
+               <div className="space-y-1.5">
+                  <label className={labelClass}>{t('balance')} / {t('currency')} *</label>
+                  <div className="flex gap-2">
+                     <input 
+                       className="flex-1 p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                       value={editingExpense?.balance || ''}
+                       onChange={e => setEditingExpense({...editingExpense, balance: e.target.value})}
+                       placeholder="0.00"
+                     />
+                     <input 
+                       className="w-24 p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all uppercase"
+                       value={editingExpense?.currency || ''}
+                       onChange={e => setEditingExpense({...editingExpense, currency: e.target.value.toUpperCase()})}
+                       placeholder="USD"
+                     />
+                  </div>
+               </div>
+               <div className="space-y-1.5">
+                  <label className={labelClass}>{t('status')}</label>
+                  <select 
+                    className="w-full p-4 border-2 rounded-2xl font-black bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                    value={editingExpense?.status || ''}
+                    onChange={e => setEditingExpense({...editingExpense, status: e.target.value})}
+                  >
+                    <option value="Paid">Paid / 已付</option>
+                    <option value="Pending">Pending / 待付</option>
+                    <option value="Canceled">Canceled / 取消</option>
+                  </select>
+               </div>
+            </div>
+
+            <div className="space-y-1.5">
+               <label className={labelClass}>{t('feeComment')}</label>
+               <textarea 
+                 className="w-full p-4 border-2 rounded-2xl font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all min-h-[80px]"
+                 value={editingExpense?.comment || ''}
+                 onChange={e => setEditingExpense({...editingExpense, comment: e.target.value})}
+                 placeholder="Notes..."
+               />
+            </div>
+
+            <div className="space-y-1.5">
+               <label className={labelClass}>Link / URL</label>
+               <div className="relative">
+                  <LinkIcon className="absolute left-4 top-4 text-slate-400" size={18} />
+                  <input 
+                    className="w-full p-4 pl-12 border-2 rounded-2xl font-bold bg-white dark:bg-slate-900 outline-none focus:border-blue-500 transition-all"
+                    value={editingExpense?.link || ''}
+                    onChange={e => setEditingExpense({...editingExpense, link: e.target.value})}
+                    placeholder="https://..."
+                  />
+               </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t dark:border-slate-800">
+               <Button variant="secondary" onClick={() => { setIsExpenseModalOpen(false); setEditingExpense(null); }}>{t('cancel')}</Button>
+               <Button onClick={handleSaveExpense} className="bg-blue-600 px-12 shadow-lg shadow-blue-600/20 font-black uppercase text-sm tracking-widest">
+                  <Save size={18} className="mr-2" /> {t('save')}
+               </Button>
+            </div>
+         </div>
+      </Modal>
     </div>
   );
 };

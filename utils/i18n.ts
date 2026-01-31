@@ -280,6 +280,9 @@ export const translations = {
     expenses: 'Expenses',
     totalExpenses: 'Total Expenses',
     totalIncome: 'Total Income',
+    addExpense: 'Add Expense',
+    editExpense: 'Edit Expense',
+    confirmDeleteExpense: 'Are you sure you want to delete this expense record?',
 
     // Data Management
     bulkImport: 'Bulk Import',
@@ -623,6 +626,9 @@ export const translations = {
     expenses: '支出记录',
     totalExpenses: '累计支出',
     totalIncome: '累计收入',
+    addExpense: '新增支出',
+    editExpense: '编辑支出记录',
+    confirmDeleteExpense: '确定要删除这条支出记录吗？',
 
     // Data Management
     bulkImport: '批量导入',
