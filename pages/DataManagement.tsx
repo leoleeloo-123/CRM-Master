@@ -165,9 +165,12 @@ const DataManagement: React.FC<DataManagementProps> = ({
     let nextIndex = (indexMap.get(lowerCustName) || 0) + 1;
     indexMap.set(lowerCustName, nextIndex);
     
-    const status = getCanonicalTag(safeCol(1)) as SampleStatus || 'Requested';
+    // Status normalization - Ensure we get the Canonical Key (The Chinese string used by board)
+    const rawStatus = safeCol(1);
+    const status = getCanonicalTag(rawStatus) as SampleStatus || '等待中';
+    
     const crystal = getCanonicalTag(safeCol(3)) || '';
-    const form = getCanonicalTag(safeCol(5)) || 'Powder';
+    const form = getCanonicalTag(safeCol(5)) || '微粉';
     const categories = safeCol(4) ? safeCol(4).split(',').map(c => getCanonicalTag(c.trim()) as ProductCategory) : [];
     
     const testFinishedColVal = (safeCol(2) || '').trim().toLowerCase();
@@ -186,14 +189,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
     
     const genName = `${crystal} ${categories.join(', ')} ${form} - ${safeCol(6)}${safeCol(7) ? ` > ${safeCol(7)}` : ''}${safeCol(21) ? ` (${safeCol(21)})` : ''}`.trim();
     
-    // --- Optimized Fee Information Parsing ---
+    // Fee Information Parsing
     const rawPaidValue = safeCol(23).toLowerCase();
     const otherFeeFields = [24, 25, 26, 27, 28, 29, 30, 31, 32, 33];
-    // Check if user filled any detail information in the fee columns manually
     const hasAnyFeeDetail = otherFeeFields.some(idx => safeCol(idx) !== '');
-    
-    // Aggressive paid detection: 
-    // True if column 24 matches "Paid" keywords OR if any detail columns (25-34) have content.
     const isPaid = ['yes', 'paid', 'true', '1', '付费', '是'].includes(rawPaidValue) || hasAnyFeeDetail;
 
     return { 
@@ -203,7 +202,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
       // Fee fields import
       isPaid: isPaid,
       feeCategory: safeCol(24) || (isPaid ? translateToZh('defaultFeeCategory') : ''),
-      feeType: safeCol(25) || (isPaid ? translateToZh('Income') : ''),
+      feeType: safeCol(25) || (isPaid ? translateToZh('income') : ''),
       actualUnitPrice: safeCol(26),
       standardUnitPrice: safeCol(27),
       originationDate: normalizeDate(safeCol(28)),
@@ -504,7 +503,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                              {activeTab === 'customers' ? (
                                <><td className="p-4 pl-6 font-black text-blue-600 uppercase">{row.name}</td><td className="p-4"><RankStars rank={row.rank} /></td><td className="p-4">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td><td className="p-4 truncate max-w-[150px]">{row.productSummary}</td><td className="p-4"><Badge color="blue">{row.followUpStatus}</Badge></td><td className="p-4 truncate max-w-[120px]">{row.upcomingPlan}</td><td className="p-4 truncate max-w-[120px] uppercase">{row.contacts?.map((c:any) => c.name).join(', ')}</td><td className="p-4 pr-6">{row.lastStatusUpdate}</td></>
                              ) : activeTab === 'samples' ? (
-                               <><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4">{row.isPaid ? 'Yes' : 'No'}</td><td className="p-4 font-black text-amber-600">{row.balance || '-'}</td><td className="p-4"><Badge color="blue">{row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{row.testStatus}</Badge></td><td className="p-4">{row.lastStatusDate}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.statusDetails}</td></>
+                               <><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4">{row.isPaid ? 'Yes' : 'No'}</td><td className="p-4 font-black text-amber-600">{row.balance || '-'}</td><td className="p-4"><Badge color="blue">{t(row.status as any) || row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{t(row.testStatus as any) || row.testStatus}</Badge></td><td className="p-4">{row.lastStatusDate}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.statusDetails}</td></>
                              ) : (
                                <><td className="p-4 pl-6 font-black uppercase text-blue-600">{row.name}</td><td className="p-4">{row.date}</td><td className="p-4">{row.location}</td><td className="p-4">{row.link}</td><td className="p-4 text-[10px] uppercase">{row.eventSeries?.join(', ')}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.summary}</td></>
                              )}
