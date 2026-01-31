@@ -1,11 +1,11 @@
-
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Card, Badge, Button } from '../components/Common';
-import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity, RefreshCw } from 'lucide-react';
-import { format, isValid } from 'date-fns';
+import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity, RefreshCw, TrendingUp, LayoutDashboard, History, Layers, AlertCircle, Star } from 'lucide-react';
+import { format, isValid, startOfMonth, parseISO } from 'date-fns';
 import { translateDisplay } from '../utils/i18n';
 import { useNavigate } from 'react-router-dom';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend } from 'recharts';
 
 interface UnifiedTransaction {
   id: string;
@@ -41,6 +41,14 @@ const FinanceTracker: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterParty, setFilterParty] = useState('');
 
+  // Unified Conversion Function
+  const convertAmount = (val: string, fromCurr: string, toCurr: string) => {
+    const amount = parseFloat(val.replace(/[^0-9.]/g, '')) || 0;
+    const rateFrom = fxRates.find(r => r.currency.toUpperCase() === fromCurr.toUpperCase())?.rateToUSD || 1.0;
+    const rateTo = fxRates.find(r => r.currency.toUpperCase() === toCurr.toUpperCase())?.rateToUSD || 1.0;
+    return (amount * rateFrom) / rateTo;
+  };
+
   const unifiedData: UnifiedTransaction[] = useMemo(() => {
     const sampleFees: UnifiedTransaction[] = samples
       .filter(s => s.isPaid)
@@ -57,20 +65,15 @@ const FinanceTracker: React.FC = () => {
     });
   }, [samples, expenses]);
 
-  // Unified Conversion Function
-  const convertAmount = (val: string, fromCurr: string, toCurr: string) => {
-    const amount = parseFloat(val.replace(/[^0-9.]/g, '')) || 0;
-    const rateFrom = fxRates.find(r => r.currency.toUpperCase() === fromCurr.toUpperCase())?.rateToUSD || 1.0;
-    const rateTo = fxRates.find(r => r.currency.toUpperCase() === toCurr.toUpperCase())?.rateToUSD || 1.0;
-    // Conversion Logic: Amount * (Source Rate to USD / Target Rate to USD)
-    return (amount * rateFrom) / rateTo;
-  };
-
   const uniqueOptions = useMemo(() => {
     const categories = new Set<string>();
     const statuses = new Set<string>();
     const parties = new Set<string>();
-    unifiedData.forEach(d => { if (d.category) categories.add(d.category); if (d.status) statuses.add(d.status); if (d.party) parties.add(d.party); });
+    unifiedData.forEach(d => { 
+      if (d.category) categories.add(d.category); 
+      if (d.status) statuses.add(d.status); 
+      if (d.party) parties.add(d.party); 
+    });
     return { categories: Array.from(categories).sort(), statuses: Array.from(statuses).sort(), parties: Array.from(parties).sort() };
   }, [unifiedData]);
 
@@ -96,6 +99,56 @@ const FinanceTracker: React.FC = () => {
       else expenseTotal += converted;
     });
     return { income: incomeTotal, expense: expenseTotal, net: incomeTotal - expenseTotal };
+  }, [filteredData, displayCurrency, fxRates]);
+
+  // Dashboard Visual Logic
+  const visualStats = useMemo(() => {
+    const monthsMap: Record<string, { month: string, income: number, expense: number, net: number }> = {};
+    const categoriesMap: Record<string, { name: string, income: number, expense: number }> = {};
+    const statusesMap: Record<string, { name: string, income: number, expense: number, count: number }> = {};
+
+    filteredData.forEach(d => {
+      const val = convertAmount(d.balance, d.currency, displayCurrency);
+      const isIncome = d.expInc === '收入' || d.expInc === 'Income';
+      const date = d.transDate || d.origDate || 'Unknown';
+      
+      // 1. Time Trend
+      const monthKey = date !== 'Unknown' ? format(startOfMonth(parseISO(date)), 'MMM yyyy') : 'Other';
+      if (!monthsMap[monthKey]) monthsMap[monthKey] = { month: monthKey, income: 0, expense: 0, net: 0 };
+      if (isIncome) monthsMap[monthKey].income += val;
+      else monthsMap[monthKey].expense += val;
+      monthsMap[monthKey].net = monthsMap[monthKey].income - monthsMap[monthKey].expense;
+
+      // 2. Categories
+      const cat = d.category || 'Other';
+      if (!categoriesMap[cat]) categoriesMap[cat] = { name: cat, income: 0, expense: 0 };
+      if (isIncome) categoriesMap[cat].income += val;
+      else categoriesMap[cat].expense += val;
+
+      // 3. Status
+      const st = d.status || 'Pending';
+      if (!statusesMap[st]) statusesMap[st] = { name: st, income: 0, expense: 0, count: 0 };
+      if (isIncome) statusesMap[st].income += val;
+      else statusesMap[st].expense += val;
+      statusesMap[st].count++;
+    });
+
+    const trend = Object.values(monthsMap).sort((a, b) => {
+        return new Date(a.month).getTime() - new Date(b.month).getTime();
+    });
+
+    const topTransactions = [...filteredData].sort((a, b) => {
+      const valA = convertAmount(a.balance, a.currency, displayCurrency);
+      const valB = convertAmount(b.balance, b.currency, displayCurrency);
+      return valB - valA;
+    }).slice(0, 8);
+
+    return { 
+      trend, 
+      categories: Object.values(categoriesMap), 
+      statuses: Object.values(statusesMap),
+      topTransactions 
+    };
   }, [filteredData, displayCurrency, fxRates]);
 
   const handleUpdateRates = async () => {
@@ -134,7 +187,6 @@ const FinanceTracker: React.FC = () => {
 
       <Card className="p-6 xl:p-8 border-2 rounded-2xl">
         <div className="space-y-6">
-          {/* Quick Stat Bar */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
              <div className="p-5 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border-2 border-emerald-100 dark:border-emerald-800/50 flex flex-col gap-1">
                 <span className={labelClass + " text-emerald-600"}>{t('totalIncome')} ({displayCurrency})</span>
@@ -155,7 +207,7 @@ const FinanceTracker: React.FC = () => {
             <input className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all shadow-sm" placeholder={t('search')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 pb-4">
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Filter size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none" value={filterExpInc} onChange={e => setFilterExpInc(e.target.value)}>
@@ -225,7 +277,152 @@ const FinanceTracker: React.FC = () => {
               </table>
             </div>
           ) : (
-             <div className="p-20 text-center text-slate-300 font-black uppercase italic tracking-widest">Detail Visuals Under Maintenance. Use List View.</div>
+             <div className="space-y-10 animate-in fade-in duration-700">
+                <Card className="p-8 border-2 rounded-[2rem] bg-slate-50/30 dark:bg-slate-900/10">
+                   <div className="flex items-center justify-between mb-10">
+                      <h3 className="font-black text-xl text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-3">
+                         <TrendingUp className="text-blue-600" /> Cash Flow Trend ({displayCurrency})
+                      </h3>
+                      <div className="flex gap-4">
+                         <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                            <span className="text-[10px] font-black uppercase text-slate-400">Income</span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
+                            <span className="text-[10px] font-black uppercase text-slate-400">Expense</span>
+                         </div>
+                      </div>
+                   </div>
+                   <div className="h-[350px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <AreaChart data={visualStats.trend}>
+                            <defs>
+                               <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                               </linearGradient>
+                               <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1}/>
+                                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                               </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
+                            <Tooltip 
+                               contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', fontWeight: 900, textTransform: 'uppercase', fontSize: '10px' }}
+                               formatter={(val: number) => val.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            />
+                            <Area type="monotone" dataKey="income" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorIncome)" />
+                            <Area type="monotone" dataKey="expense" stroke="#f43f5e" strokeWidth={4} fillOpacity={1} fill="url(#colorExpense)" />
+                         </AreaChart>
+                      </ResponsiveContainer>
+                   </div>
+                </Card>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                   <Card className="p-8 border-2 rounded-[2rem]">
+                      <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3 mb-8">
+                         <Layers className="text-indigo-600" size={20} /> {t('feeCategory')} Breakdown
+                      </h3>
+                      <div className="h-[300px]">
+                         <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={visualStats.categories} layout="vertical" margin={{ left: 40 }}>
+                               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                               <XAxis type="number" hide />
+                               <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#64748b'}} width={120} />
+                               <Tooltip 
+                                  cursor={{fill: '#f8fafc'}}
+                                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', fontSize: '10px', fontWeight: 900 }}
+                               />
+                               <Bar dataKey="income" fill="#10b981" radius={[0, 4, 4, 0]} barSize={12} />
+                               <Bar dataKey="expense" fill="#f43f5e" radius={[0, 4, 4, 0]} barSize={12} />
+                            </BarChart>
+                         </ResponsiveContainer>
+                      </div>
+                   </Card>
+
+                   <Card className="p-8 border-2 rounded-[2rem]">
+                      <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3 mb-8">
+                         <Activity className="text-amber-500" size={20} /> Status Distribution
+                      </h3>
+                      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
+                         {visualStats.statuses.map((st, i) => (
+                            <div key={i} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+                               <div className="flex items-center gap-4">
+                                  <Badge color="blue">{translateDisplay(st.name, language)}</Badge>
+                                  <span className="text-[10px] font-black text-slate-400 uppercase">{st.count} Transactions</span>
+                               </div>
+                               <div className="flex gap-6 text-right">
+                                  {st.income > 0 && (
+                                     <div>
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Income</p>
+                                        <p className="text-sm font-black text-emerald-600">+{st.income.toLocaleString(undefined, {maximumFractionDigits:0})}</p>
+                                     </div>
+                                  )}
+                                  {st.expense > 0 && (
+                                     <div>
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Expense</p>
+                                        <p className="text-sm font-black text-rose-600">-{st.expense.toLocaleString(undefined, {maximumFractionDigits:0})}</p>
+                                     </div>
+                                  )}
+                               </div>
+                            </div>
+                         ))}
+                      </div>
+                   </Card>
+                </div>
+
+                <Card className="p-8 border-2 rounded-[2rem]">
+                   <div className="flex items-center justify-between mb-8">
+                      <div className="space-y-1">
+                         <h3 className="font-black text-xl text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
+                            <Star className="text-amber-400 fill-amber-400" size={24} /> Top Transactions Analysis
+                         </h3>
+                         <p className="text-xs text-slate-500 font-bold max-w-2xl leading-relaxed italic">
+                            Identified high-impact records including major single expenses and significant incoming payments across your filtered selection.
+                         </p>
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {visualStats.topTransactions.map((d, i) => {
+                         const isIncome = d.expInc === '收入' || d.expInc === 'Income';
+                         const val = convertAmount(d.balance, d.currency, displayCurrency);
+                         return (
+                            <div key={i} className="flex items-center gap-5 p-5 border-2 border-slate-50 dark:border-slate-800 rounded-2xl hover:border-blue-200 transition-all group">
+                               <div className={`p-4 rounded-xl shadow-sm ${isIncome ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                  {isIncome ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-start mb-1">
+                                     <h4 className="font-black text-slate-900 dark:text-white uppercase truncate text-sm xl:text-base">{d.name}</h4>
+                                     <span className={`text-base xl:text-lg font-black tabular-nums ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                        {val.toLocaleString(undefined, {maximumFractionDigits: 0})}
+                                     </span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                     <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">{d.party}</span>
+                                        <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">{d.transDate || d.origDate}</span>
+                                     </div>
+                                     <Badge color="gray">{translateDisplay(d.category, language)}</Badge>
+                                  </div>
+                               </div>
+                            </div>
+                         );
+                      })}
+                      {visualStats.topTransactions.length === 0 && (
+                         <div className="col-span-2 py-20 text-center flex flex-col items-center opacity-30">
+                            <AlertCircle size={48} className="mb-4 text-slate-400" />
+                            <p className="font-black uppercase tracking-widest text-slate-500">Insufficient Data for Ranking</p>
+                         </div>
+                      )}
+                   </div>
+                </Card>
+             </div>
           )}
         </div>
       </Card>
