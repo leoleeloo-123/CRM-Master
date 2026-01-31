@@ -1,8 +1,8 @@
 
 import React, { useState, useRef } from 'react';
-import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink, Exhibition, MailingInfo } from '../types';
+import { Customer, Sample, Rank, SampleStatus, CustomerStatus, FollowUpStatus, ProductCategory, ProductForm, Interaction, CrystalType, GradingStatus, TestStatus, SampleDocLink, Exhibition, MailingInfo, Expense } from '../types';
 import { Card, Button, Badge, Modal, RankStars } from '../components/Common';
-import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet, Eye, ClipboardList, Presentation, ChevronDown, Database, Info } from 'lucide-react';
+import { Download, Upload, FileText, AlertCircle, CheckCircle2, Users, FlaskConical, Search, X, Trash2, RefreshCcw, FileSpreadsheet, Eye, ClipboardList, Presentation, ChevronDown, Database, Info, CreditCard } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { differenceInDays, isValid, format } from 'date-fns';
 import * as XLSX from 'xlsx';
@@ -17,8 +17,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
   onImportCustomers, 
   onImportSamples
 }) => {
-  const { t, clearDatabase, customers, samples, exhibitions, setExhibitions, syncSampleToCatalog, companyName, userName, refreshTagsFromSamples } = useApp();
-  const [activeTab, setActiveTab] = useState<'customers' | 'samples' | 'exhibitions'>('customers');
+  const { t, clearDatabase, customers, samples, exhibitions, setExhibitions, expenses, setExpenses, syncSampleToCatalog, companyName, userName, refreshTagsFromSamples } = useApp();
+  const [activeTab, setActiveTab] = useState<'customers' | 'samples' | 'exhibitions' | 'expenses'>('customers');
   const [viewMode, setViewMode] = useState<'import' | 'review'>('import');
   
   // Text Import State
@@ -26,7 +26,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   
   // Excel Import State
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [excelPreview, setExcelPreview] = useState<{ customers: Customer[], samples: Sample[], exhibitions: Exhibition[] } | null>(null);
+  const [excelPreview, setExcelPreview] = useState<{ customers: Customer[], samples: Sample[], exhibitions: Exhibition[], expenses: Expense[] } | null>(null);
 
   // Common Preview State
   const [parsedPreview, setParsedPreview] = useState<any[] | null>(null);
@@ -219,8 +219,28 @@ const DataManagement: React.FC<DataManagementProps> = ({
     return { id: `new_ex_${tempIdPrefix}`, name: safeCol(0) || 'Unnamed Event', date: normalizeDate(safeCol(1)), location: safeCol(2) || 'TBD', link: safeCol(3) || '#', eventSeries: safeCol(4) ? safeCol(4).split('|||').map(s => s.trim()) : [], summary: safeCol(5) || '' };
   };
 
+  const rowToExpense = (cols: any[], tempIdPrefix: string): Expense => {
+    const safeCol = (i: number) => cols[i] !== undefined && cols[i] !== null ? String(cols[i]).trim() : '';
+    return {
+      id: `new_exp_${tempIdPrefix}`,
+      category: safeCol(0),
+      detail: safeCol(1),
+      expInc: safeCol(2),
+      party: safeCol(3),
+      name: safeCol(4),
+      originationDate: normalizeDate(safeCol(5)),
+      transactionDate: normalizeDate(safeCol(6)),
+      status: safeCol(7),
+      currency: safeCol(8),
+      balance: safeCol(9),
+      comment: safeCol(10),
+      link: safeCol(11)
+    };
+  };
+
   const handleExportExcel = () => {
     const wb = XLSX.utils.book_new();
+    // Customers
     const custHeaders = ["客户", "地区", "展会", "展会官网", "等级", "状态与产品总结", "状态更新", "未更新", "对接人员", "状态", "下一步", "关键日期", "DDL", "对接流程总结", "对方回复", "未回复", "我方跟进", "未跟进", "文档超链接", "联系方式", "File Link Titles", "File link URLs", "邮寄信息"];
     const custRows = customers.map(c => {
       const mailingStr = c.mailingInfo ? [c.mailingInfo.recipient, c.mailingInfo.phone, c.mailingInfo.company, c.mailingInfo.address].join(' ||| ') : '';
@@ -228,48 +248,29 @@ const DataManagement: React.FC<DataManagementProps> = ({
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]), "Customers");
     
+    // Samples
     const sampHeaders = ["1.Customer", "2.Status", "3.Test Finished", "4.Crystal Type", "5.Sample Category", "6.Form", "7.Original Size", "8.Processed Size", "9.Is Graded", "10.Sample SKU", "11.Details", "12.Quantity", "13.Customer Application", "14.Status Date", "15.Days Since Update", "16.Status Details", "17.Tracking #", "18.Next Step", "19.Key Date", "20.File Link Titles", "21.File Link URLs", "22.Nickname", "23.Starred", "24.Is Paid", "25.Fee Category", "26.Fee Type", "27.Actual Unit Price", "28.Standard Unit Price", "29.Origination Date", "30.Transaction Date", "31.Fee Status", "32.Currency", "33.Balance", "34.Fee Comment"];
     const sampRows = samples.map(s => [
-      s.customerName, 
-      translateToZh(s.status || ''), 
-      s.testStatus === 'Finished' ? '完成' : s.testStatus === 'Terminated' ? '项目终止' : '未完成', 
-      translateToZh(s.crystalType || ''), 
-      (s.productCategory || []).map(c => translateToZh(c)).join(', '), 
-      translateToZh(s.productForm || ''), 
-      s.originalSize, 
-      s.processedSize, 
-      translateToZh(s.isGraded || ''), 
-      s.sampleSKU, 
-      s.sampleDetails, 
-      s.quantity, 
-      s.application, 
-      s.lastStatusDate, 
-      s.lastStatusDate ? String(differenceInDays(new Date(), new Date(s.lastStatusDate))) : "", 
-      (s.statusDetails || '').replace(/\n/g, ' ||| '), 
-      s.trackingNumber, 
-      s.upcomingPlan || '', 
-      s.nextActionDate || '', 
-      (s.docLinks || []).map(l => l.title).join(' ||| '), 
-      (s.docLinks || []).map(l => l.url).join(' ||| '), 
-      s.nickname || '', 
-      s.isStarredSample ? 'True' : 'False',
-      s.isPaid ? 'Yes' : 'No',
-      s.feeCategory || '',
-      s.feeType || '',
-      s.actualUnitPrice || '',
-      s.standardUnitPrice || '',
-      s.originationDate || '',
-      s.transactionDate || '',
-      s.feeStatus || '',
-      s.currency || '',
-      s.balance || '',
-      s.feeComment || ''
+      s.customerName, translateToZh(s.status || ''), s.testStatus === 'Finished' ? '完成' : s.testStatus === 'Terminated' ? '项目终止' : '未完成', 
+      translateToZh(s.crystalType || ''), (s.productCategory || []).map(c => translateToZh(c)).join(', '), translateToZh(s.productForm || ''), 
+      s.originalSize, s.processedSize, translateToZh(s.isGraded || ''), s.sampleSKU, s.sampleDetails, s.quantity, s.application, s.lastStatusDate, 
+      s.lastStatusDate ? String(differenceInDays(new Date(), new Date(s.lastStatusDate))) : "", (s.statusDetails || '').replace(/\n/g, ' ||| '), 
+      s.trackingNumber, s.upcomingPlan || '', s.nextActionDate || '', (s.docLinks || []).map(l => l.title).join(' ||| '), (s.docLinks || []).map(l => l.url).join(' ||| '), 
+      s.nickname || '', s.isStarredSample ? 'True' : 'False', s.isPaid ? 'Yes' : 'No', s.feeCategory || '', s.feeType || '', s.actualUnitPrice || '', 
+      s.standardUnitPrice || '', s.originationDate || '', s.transactionDate || '', s.feeStatus || '', s.currency || '', s.balance || '', s.feeComment || ''
     ]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([sampHeaders, ...sampRows]), "Samples");
     
+    // Exhibitions
     const exhHeaders = ["Name", "Date", "Location", "Link", "Event Series", "Summary"];
     const exhRows = exhibitions.map(e => [e.name, e.date, e.location, e.link, (e.eventSeries || []).join(' ||| '), e.summary || '']);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([exhHeaders, ...exhRows]), "Exhibitions");
+
+    // Expenses
+    const expHeaders = ["Category", "Detail", "Exp/Inc", "Party", "Name", "Origination Date", "Transaction Date", "Status", "Currency", "Balance", "Comment", "Link"];
+    const expRows = expenses.map(e => [e.category, e.detail, e.expInc, e.party, e.name, e.originationDate, e.transactionDate, e.status, e.currency, e.balance, e.comment, e.link]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([expHeaders, ...expRows]), "Expenses");
+    
     XLSX.writeFile(wb, `Master TB_${companyName.replace(/[^a-z0-9]/gi, '_')}_${userName.replace(/[^a-z0-9]/gi, '_')}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`);
   };
 
@@ -285,10 +286,12 @@ const DataManagement: React.FC<DataManagementProps> = ({
         if (importMode === 'merge') samples.forEach(s => { const cur = indexMap.get(s.customerName.toLowerCase()) || 0; if (s.sampleIndex > cur) indexMap.set(s.customerName.toLowerCase(), s.sampleIndex); });
         const pSamp = wb.Sheets['Samples'] ? XLSX.utils.sheet_to_json(wb.Sheets['Samples'], { header: 1 }).slice(1).filter((r: any) => r.length > 0).map((row: any) => rowToSample(row, Math.random().toString(36).substr(2, 9), indexMap, [...pCust, ...customers])) : [];
         const pExh = wb.Sheets['Exhibitions'] ? XLSX.utils.sheet_to_json(wb.Sheets['Exhibitions'], { header: 1 }).slice(1).filter((r: any) => r.length > 0).map((row: any) => rowToExhibition(row, Math.random().toString(36).substr(2, 9))) : [];
-        if (!pCust.length && !pSamp.length && !pExh.length) { setImportStatus({ type: 'error', message: 'No valid data found.' }); return; }
-        setExcelPreview({ customers: pCust, samples: pSamp, exhibitions: pExh });
-        setParsedPreview(activeTab === 'customers' ? pCust : activeTab === 'samples' ? pSamp : pExh);
-        setImportStatus({ type: 'info', message: `File Loaded. Found: ${pCust.length} Customers, ${pSamp.length} Samples, ${pExh.length} Events.` });
+        const pExp = wb.Sheets['Expenses'] ? XLSX.utils.sheet_to_json(wb.Sheets['Expenses'], { header: 1 }).slice(1).filter((r: any) => r.length > 0).map((row: any) => rowToExpense(row, Math.random().toString(36).substr(2, 9))) : [];
+        
+        if (!pCust.length && !pSamp.length && !pExh.length && !pExp.length) { setImportStatus({ type: 'error', message: 'No valid data found.' }); return; }
+        setExcelPreview({ customers: pCust, samples: pSamp, exhibitions: pExh, expenses: pExp });
+        setParsedPreview(activeTab === 'customers' ? pCust : activeTab === 'samples' ? pSamp : activeTab === 'exhibitions' ? pExh : pExp);
+        setImportStatus({ type: 'info', message: `File Loaded. Found: ${pCust.length} Cust, ${pSamp.length} Samp, ${pExh.length} Events, ${pExp.length} Expenses.` });
       } catch (err) { setImportStatus({ type: 'error', message: 'Failed to read Excel file.' }); }
     };
     reader.readAsBinaryString(file);
@@ -302,7 +305,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
         const tid = Math.random().toString(36).substr(2, 9);
         if (activeTab === 'customers') return rowToCustomer(cols, tid);
         if (activeTab === 'samples') { const im = new Map(); if (importMode === 'merge') samples.forEach(s => im.set(s.customerName.toLowerCase(), Math.max(im.get(s.customerName.toLowerCase()) || 0, s.sampleIndex))); return rowToSample(cols, tid, im, customers); }
-        return rowToExhibition(cols, tid);
+        if (activeTab === 'exhibitions') return rowToExhibition(cols, tid);
+        return rowToExpense(cols, tid);
       });
       setParsedPreview(parsed);
       setImportStatus({ type: 'info', message: `Previewing ${parsed.length} rows.` });
@@ -315,18 +319,20 @@ const DataManagement: React.FC<DataManagementProps> = ({
        if (excelPreview.customers.length) onImportCustomers(excelPreview.customers, override);
        if (excelPreview.samples.length) { excelPreview.samples.forEach(s => syncSampleToCatalog(s)); onImportSamples(excelPreview.samples, override); refreshTagsFromSamples(excelPreview.samples, override); }
        if (excelPreview.exhibitions.length) setExhibitions(prev => override ? excelPreview.exhibitions : [...prev, ...excelPreview.exhibitions]);
+       if (excelPreview.expenses.length) setExpenses(prev => override ? excelPreview.expenses : [...prev, ...excelPreview.expenses]);
        setImportStatus({ type: 'success', message: 'Excel import complete.' });
     } else if (parsedPreview) {
        if (activeTab === 'customers') onImportCustomers(parsedPreview, override);
        else if (activeTab === 'samples') { parsedPreview.forEach(s => syncSampleToCatalog(s)); onImportSamples(parsedPreview, override); refreshTagsFromSamples(parsedPreview, override); }
        else if (activeTab === 'exhibitions') setExhibitions(prev => override ? parsedPreview : [...prev, ...parsedPreview]);
+       else if (activeTab === 'expenses') setExpenses(prev => override ? parsedPreview : [...prev, ...parsedPreview]);
        setImportStatus({ type: 'success', message: `Imported ${parsedPreview.length} records.` });
     }
     setParsedPreview(null); setExcelPreview(null); setImportData(''); if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const renderCurrentDataTable = () => {
-    const data = activeTab === 'customers' ? customers : activeTab === 'samples' ? samples : exhibitions;
+    const data = activeTab === 'customers' ? customers : activeTab === 'samples' ? samples : activeTab === 'exhibitions' ? exhibitions : expenses;
     return (
       <div className="overflow-hidden border-2 rounded-2xl border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="bg-slate-100 dark:bg-slate-800/80 p-5 border-b-2 border-slate-200 dark:border-slate-700 flex justify-between items-center">
@@ -343,8 +349,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
                   <><th className="p-4 pl-6">Name</th><th className="p-4">Rank</th><th className="p-4">Region</th><th className="p-4">Summary</th><th className="p-4">Status</th><th className="p-4">Next</th><th className="p-4">Contacts</th><th className="p-4 pr-6">Date</th></>
                 ) : activeTab === 'samples' ? (
                   <><th className="p-4 pl-6">Customer</th><th className="p-4">Idx</th><th className="p-4">Name</th><th className="p-4">Specs</th><th className="p-4">Qty</th><th className="p-4">Status</th><th className="p-4">Test</th><th className="p-4">Paid</th><th className="p-4">Balance</th><th className="p-4 pr-6">Next</th></>
-                ) : (
+                ) : activeTab === 'exhibitions' ? (
                   <><th className="p-4 pl-6">Name</th><th className="p-4">Date</th><th className="p-4">Location</th><th className="p-4">Link</th><th className="p-4">Series</th><th className="p-4 pr-6">Summary</th></>
+                ) : (
+                  <><th className="p-4 pl-6">Cat</th><th className="p-4">Party</th><th className="p-4">Name</th><th className="p-4">Detail</th><th className="p-4">Exp/Inc</th><th className="p-4">Balance</th><th className="p-4 pr-6">Date</th></>
                 )}
               </tr>
             </thead>
@@ -355,8 +363,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
                     <><td className="p-4 pl-6 text-blue-600 font-black uppercase">{row.name}</td><td className="p-4"><RankStars rank={row.rank} /></td><td className="p-4 text-[10px]">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td><td className="p-4 truncate max-w-[150px] italic">{row.productSummary}</td><td className="p-4"><Badge color="blue">{row.followUpStatus}</Badge></td><td className="p-4 truncate max-w-[120px]">{row.upcomingPlan}</td><td className="p-4 text-[10px] uppercase">{row.contacts?.map((c:any) => c.name).join(', ')}</td><td className="p-4 pr-6 whitespace-nowrap">{row.lastStatusUpdate}</td></>
                   ) : activeTab === 'samples' ? (
                     <><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4 text-[9px] uppercase"><div>{row.crystalType}/{row.productForm}</div><div>{row.originalSize}{" -> "}{row.processedSize}</div></td><td className="p-4 font-black">{row.quantity}</td><td className="p-4"><Badge color="blue">{row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{row.testStatus}</Badge></td><td className="p-4">{row.isPaid ? 'Yes' : 'No'}</td><td className="p-4 text-amber-600 font-black">{row.balance || '-'}</td><td className="p-4 pr-6 italic truncate max-w-[120px]">{row.upcomingPlan}</td></>
-                  ) : (
+                  ) : activeTab === 'exhibitions' ? (
                     <><td className="p-4 pl-6 font-black uppercase text-blue-600">{row.name}</td><td className="p-4 whitespace-nowrap">{row.date}</td><td className="p-4">{row.location}</td><td className="p-4 text-blue-500 underline text-[10px]">{row.link}</td><td className="p-4 text-[10px] uppercase">{row.eventSeries?.join(', ')}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.summary}</td></>
+                  ) : (
+                    <><td className="p-4 pl-6 uppercase text-blue-600">{row.category}</td><td className="p-4 uppercase">{row.party}</td><td className="p-4 uppercase">{row.name}</td><td className="p-4 italic">{row.detail}</td><td className="p-4 uppercase">{row.expInc}</td><td className="p-4 font-black text-amber-600">{row.balance} {row.currency}</td><td className="p-4 pr-6 whitespace-nowrap">{row.transactionDate || row.originationDate}</td></>
                   )}
                 </tr>
               ))}
@@ -397,7 +407,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
            {[
              { id: 'customers', icon: <Users size={20} />, label: 'Customers' },
              { id: 'samples', icon: <FlaskConical size={20} />, label: 'Samples' },
-             { id: 'exhibitions', icon: <Presentation size={20} />, label: 'Exhibitions' }
+             { id: 'exhibitions', icon: <Presentation size={20} />, label: 'Exhibitions' },
+             { id: 'expenses', icon: <CreditCard size={20} />, label: 'Expenses' }
            ].map(tab => (
              <button 
                key={tab.id}
@@ -425,7 +436,9 @@ const DataManagement: React.FC<DataManagementProps> = ({
                           ? "1.客户 | 2.地区 | 3.展会 | 4.官网 | 5.等级 | 6.产品总结 | 7.更新日期 | 8.NA | 9.人员 | 10.状态 | 11.下一步 | 12.关键日期 | 13.NA | 14.流程总结 | 15.对方回复 | 16.NA | 17.我方跟进 | 18.NA | 19.NA | 20.联系方式 | 21.Titles | 22.URLs | 23.邮寄信息"
                           : activeTab === 'samples'
                           ? "1.Customer | ... | 23.Starred | 24.Paid | 25.FeeCat | 26.Type | 27.ActualPrice | 28.StdPrice | 29.OrigDate | 30.TransDate | 31.FeeStatus | 32.Currency | 33.Balance | 34.Comment"
-                          : "1.Name | 2.Date | 3.Location | 4.Link | 5.Event Series | 6.Summary"
+                          : activeTab === 'exhibitions'
+                          ? "1.Name | 2.Date | 3.Location | 4.Link | 5.Event Series | 6.Summary"
+                          : "1.Category | 2.Detail | 3.Exp/Inc | 4.Party | 5.Name | 6.OrigDate | 7.TransDate | 8.Status | 9.Currency | 10.Balance | 11.Comment | 12.Link"
                         }
                       </p>
                    </div>
@@ -435,7 +448,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
                        <>
                         <div className="flex-[2] flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border-2 border-slate-100 dark:border-slate-700 shadow-inner">
                           <button onClick={() => setImportMode('merge')} className={`flex-1 h-full text-[10px] xl:text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'merge' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Merge</button>
-                          <button onClick={() => setImportMode('replace')} className={`flex-1 h-full text-[10px] xl:text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'replace' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>Replace</button>
+                          <button onClick={() => setImportMode('replace')} className={`flex-1 h-full text-[10px] xl:text-xs font-black uppercase tracking-widest rounded-lg transition-all ${importMode === 'replace' ? 'bg-rose-50 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>Replace</button>
                         </div>
                         <div className="flex-1 flex items-stretch p-1">
                            <button 
@@ -494,7 +507,8 @@ const DataManagement: React.FC<DataManagementProps> = ({
                          <tr>
                            {activeTab === 'customers' ? (<><th className="p-4 pl-6">Name</th><th className="p-4">Rank</th><th className="p-4">Region</th><th className="p-4">Summary</th><th className="p-4">Status</th><th className="p-4">Next</th><th className="p-4">Contacts</th><th className="p-4 pr-6">Updated</th></>) : 
                             activeTab === 'samples' ? (<><th className="p-4 pl-6">Customer</th><th className="p-4">Idx</th><th className="p-4">Name</th><th className="p-4">Paid</th><th className="p-4">Balance</th><th className="p-4">Status</th><th className="p-4">Test</th><th className="p-4">Date</th><th className="p-4 pr-6">History</th></>) : 
-                            (<><th className="p-4 pl-6">Name</th><th className="p-4">{t('dateLabel')}</th><th className="p-4">Location</th><th className="p-4">Link</th><th className="p-4">Series</th><th className="p-4 pr-6">Summary</th></>)}
+                            activeTab === 'exhibitions' ? (<><th className="p-4 pl-6">Name</th><th className="p-4">{t('dateLabel')}</th><th className="p-4">Location</th><th className="p-4">Link</th><th className="p-4">Series</th><th className="p-4 pr-6">Summary</th></>) :
+                            (<><th className="p-4 pl-6">Cat</th><th className="p-4">Party</th><th className="p-4">Name</th><th className="p-4">Detail</th><th className="p-4">Exp/Inc</th><th className="p-4">Balance</th><th className="p-4 pr-6">Date</th></>)}
                          </tr>
                        </thead>
                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400">
@@ -504,8 +518,10 @@ const DataManagement: React.FC<DataManagementProps> = ({
                                <><td className="p-4 pl-6 font-black text-blue-600 uppercase">{row.name}</td><td className="p-4"><RankStars rank={row.rank} /></td><td className="p-4">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td><td className="p-4 truncate max-w-[150px]">{row.productSummary}</td><td className="p-4"><Badge color="blue">{row.followUpStatus}</Badge></td><td className="p-4 truncate max-w-[120px]">{row.upcomingPlan}</td><td className="p-4 truncate max-w-[120px] uppercase">{row.contacts?.map((c:any) => c.name).join(', ')}</td><td className="p-4 pr-6">{row.lastStatusUpdate}</td></>
                              ) : activeTab === 'samples' ? (
                                <><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4">{row.isPaid ? 'Yes' : 'No'}</td><td className="p-4 font-black text-amber-600">{row.balance || '-'}</td><td className="p-4"><Badge color="blue">{t(row.status as any) || row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{t(row.testStatus as any) || row.testStatus}</Badge></td><td className="p-4">{row.lastStatusDate}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.statusDetails}</td></>
-                             ) : (
+                             ) : activeTab === 'exhibitions' ? (
                                <><td className="p-4 pl-6 font-black uppercase text-blue-600">{row.name}</td><td className="p-4">{row.date}</td><td className="p-4">{row.location}</td><td className="p-4">{row.link}</td><td className="p-4 text-[10px] uppercase">{row.eventSeries?.join(', ')}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.summary}</td></>
+                             ) : (
+                               <><td className="p-4 pl-6 uppercase text-blue-600">{row.category}</td><td className="p-4 uppercase">{row.party}</td><td className="p-4 uppercase">{row.name}</td><td className="p-4 italic">{row.detail}</td><td className="p-4 uppercase">{row.expInc}</td><td className="p-4 font-black text-amber-600">{row.balance}</td><td className="p-4 pr-6 whitespace-nowrap">{row.transactionDate || row.originationDate}</td></>
                              )}
                            </tr>
                          ))}

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Language, translations, getCanonicalTag } from '../utils/i18n';
-import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction } from '../types';
+import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction, Expense } from '../types';
 import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS, MOCK_EXHIBITIONS } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
@@ -105,9 +105,11 @@ interface AppContextType {
   samples: Sample[];
   masterProducts: MasterProduct[];
   exhibitions: Exhibition[];
+  expenses: Expense[];
   setCustomers: (customers: Customer[] | ((prev: Customer[]) => Customer[])) => void;
   setSamples: (samples: Sample[] | ((prev: Sample[]) => Sample[])) => void;
   setExhibitions: (exhibitions: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => void;
+  setExpenses: (expenses: Expense[] | ((prev: Expense[]) => Expense[])) => void;
   syncSampleToCatalog: (sample: Partial<Sample>) => void;
   refreshAllCustomerDates: () => void;
   
@@ -131,7 +133,8 @@ const DEFAULT_TAGS: TagOptions = {
   eventSeries: ['Semicon', 'Optical Expo', 'Industrial Fair'],
   interactionTypes: ['无', '对方邮件', '我方邮件', '双方邮件', '展会相见', '视频会议', '线下会面'],
   interactionEffects: ['无', '对方回复', '我方跟进', '对方回复及我方跟进'],
-  feeStatus: ['等待中', '待付款', '已付款']
+  feeStatus: ['等待中', '待付款', '已付款'],
+  expenseCategory: ['差旅费用', '展会摊位', '样品运输', '材料采购', '日常运营', '研发投入', '其他支出']
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -180,7 +183,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [exhibitions, setExhibitionsState] = useState<Exhibition[]>(() => {
     const saved = localStorage.getItem('exhibitions');
-    if (!saved) return MOCK_EXHIBITIONS; // Seed with mock exhibitions if empty
+    if (!saved) return MOCK_EXHIBITIONS; 
     try {
       const parsed: Exhibition[] = JSON.parse(saved);
       return parsed.map(exh => ({
@@ -190,6 +193,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       return MOCK_EXHIBITIONS;
     }
+  });
+
+  const [expenses, setExpensesState] = useState<Expense[]>(() => {
+    const saved = localStorage.getItem('expenses');
+    return saved ? JSON.parse(saved) : [];
   });
   
   const [tagOptions, setTagOptionsState] = useState<TagOptions>(() => {
@@ -203,7 +211,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sampleStatus: DEFAULT_TAGS.sampleStatus,
         interactionTypes: Array.isArray(parsed.interactionTypes) ? parsed.interactionTypes : DEFAULT_TAGS.interactionTypes,
         interactionEffects: Array.isArray(parsed.interactionEffects) ? parsed.interactionEffects : DEFAULT_TAGS.interactionEffects,
-        feeStatus: Array.isArray(parsed.feeStatus) ? parsed.feeStatus : DEFAULT_TAGS.feeStatus
+        feeStatus: Array.isArray(parsed.feeStatus) ? parsed.feeStatus : DEFAULT_TAGS.feeStatus,
+        expenseCategory: Array.isArray(parsed.expenseCategory) ? parsed.expenseCategory : DEFAULT_TAGS.expenseCategory
       };
     } catch (e) {
       return DEFAULT_TAGS;
@@ -272,6 +281,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem('samples', JSON.stringify(samples)); }, [samples]);
   useEffect(() => { localStorage.setItem('masterProducts', JSON.stringify(masterProducts)); }, [masterProducts]);
   useEffect(() => { localStorage.setItem('exhibitions', JSON.stringify(exhibitions)); }, [exhibitions]);
+  useEffect(() => { localStorage.setItem('expenses', JSON.stringify(expenses)); }, [expenses]);
   useEffect(() => { localStorage.setItem('isDemoData', String(isDemoData)); }, [isDemoData]);
   useEffect(() => { localStorage.setItem('tagOptions', JSON.stringify(tagOptions)); }, [tagOptions]);
 
@@ -283,6 +293,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setCustomers = (val: Customer[] | ((prev: Customer[]) => Customer[])) => setCustomersState(val);
   const setSamples = (val: Sample[] | ((prev: Sample[]) => Sample[])) => setSamplesState(val);
   const setExhibitions = (val: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => setExhibitionsState(val);
+  const setExpenses = (val: Expense[] | ((prev: Expense[]) => Expense[])) => setExpensesState(val);
   const setTagOptions = (val: TagOptions | ((prev: TagOptions) => TagOptions)) => setTagOptionsState(val);
 
   const refreshAllCustomerDates = useCallback(() => {
@@ -307,7 +318,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           eventSeries: [...prev.eventSeries],
           interactionTypes: [...prev.interactionTypes],
           interactionEffects: [...prev.interactionEffects],
-          feeStatus: [...DEFAULT_TAGS.feeStatus]
+          feeStatus: [...DEFAULT_TAGS.feeStatus],
+          expenseCategory: [...prev.expenseCategory]
       } : { 
           sampleStatus: [...DEFAULT_TAGS.sampleStatus],
           crystalType: [...prev.crystalType],
@@ -316,7 +328,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           eventSeries: [...prev.eventSeries],
           interactionTypes: [...prev.interactionTypes],
           interactionEffects: [...prev.interactionEffects],
-          feeStatus: [...prev.feeStatus]
+          feeStatus: [...prev.feeStatus],
+          expenseCategory: [...prev.expenseCategory]
       };
       const addUnique = (list: string[], item: string) => { if (item && !list.includes(item)) list.push(item); };
       sampleList.forEach(s => {
@@ -358,6 +371,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSamplesState(MOCK_SAMPLES);
     setMasterProducts(MOCK_MASTER_PRODUCTS);
     setExhibitionsState(MOCK_EXHIBITIONS);
+    setExpensesState([]);
     setIsDemoData(true);
     setTagOptionsState(DEFAULT_TAGS); 
     setCompanyNameState('Zenith Advanced Materials');
@@ -370,7 +384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{ 
       theme, toggleTheme, language, setLanguage, fontSize, setFontSize, companyName, setCompanyName, userName, setUserName, t,
-      customers, setCustomers, samples, setSamples, exhibitions, setExhibitions, masterProducts, syncSampleToCatalog,
+      customers, setCustomers, samples, setSamples, exhibitions, setExhibitions, masterProducts, syncSampleToCatalog, expenses, setExpenses,
       clearDatabase, isDemoData, setIsDemoData, tagOptions, setTagOptions, refreshTagsFromSamples, refreshAllCustomerDates
     }}>
       {children}

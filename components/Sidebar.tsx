@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, FlaskConical, Database, Settings, ChevronLeft, ChevronRight, Presentation } from 'lucide-react';
+import { LayoutDashboard, Users, FlaskConical, Database, Settings, ChevronLeft, ChevronRight, Presentation, CreditCard } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { CrmLogo } from './Logo';
 
@@ -65,6 +65,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
         <NavLink to="/samples" className={linkClass} title={isCollapsed ? t('sampleTracking') : ''}>
           <FlaskConical className={iconClass} />
           {!isCollapsed && <span>{t('sampleTracking')}</span>}
+        </NavLink>
+        <NavLink to="/finance" className={linkClass} title={isCollapsed ? t('finance') : ''}>
+          <CreditCard className={iconClass} />
+          {!isCollapsed && <span>{t('finance')}</span>}
         </NavLink>
         <NavLink to="/exhibitions" className={linkClass} title={isCollapsed ? t('exhibitions') : ''}>
           <Presentation className={iconClass} />

@@ -9,6 +9,7 @@ import SampleTracker from './pages/SampleTracker';
 import SampleProfile from './pages/SampleProfile';
 import ExhibitionList from './pages/ExhibitionList';
 import ExhibitionProfile from './pages/ExhibitionProfile';
+import FinanceTracker from './pages/FinanceTracker';
 import DataManagement from './pages/DataManagement';
 import Settings from './pages/Settings';
 import { Customer, Sample } from './types';
@@ -55,7 +56,6 @@ const AppContent: React.FC = () => {
   };
 
   const handleImportCustomers = (importedCustomers: Customer[], override: boolean = false) => {
-    // If override is true or using demo data, we replace the list
     if (override || isDemoData) {
       setCustomers(importedCustomers);
       if (isDemoData) {
@@ -65,7 +65,6 @@ const AppContent: React.FC = () => {
       return;
     }
 
-    // Otherwise Merge Logic
     const customerMap = new Map<string, Customer>();
     customers.forEach(c => {
       customerMap.set(c.name.toLowerCase().trim(), c);
@@ -76,7 +75,6 @@ const AppContent: React.FC = () => {
       const existing = customerMap.get(normalizedName);
 
       if (existing) {
-        // Update existing but keep ID
         newCust.id = existing.id;
         customerMap.set(normalizedName, newCust);
       } else {
@@ -109,7 +107,6 @@ const AppContent: React.FC = () => {
       <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
         <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
         
-        {/* Adjusted left margin based on Sidebar state */}
         <div className={`flex-1 overflow-y-auto relative transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-80 xl:ml-96'}`}>
             {isDemoData && showDemoBanner && (
               <div className="bg-blue-600 text-white text-xs xl:text-sm font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
@@ -130,6 +127,7 @@ const AppContent: React.FC = () => {
               } />
               <Route path="/samples" element={<SampleTracker samples={samples} customers={customers} />} />
               <Route path="/samples/:id" element={<SampleProfile />} />
+              <Route path="/finance" element={<FinanceTracker />} />
               <Route path="/exhibitions" element={<ExhibitionList />} />
               <Route path="/exhibitions/:id" element={<ExhibitionProfile />} />
               <Route path="/data-management" element={
@@ -139,7 +137,6 @@ const AppContent: React.FC = () => {
                 />
               } />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/reports" element={<Navigate to="/data-management" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

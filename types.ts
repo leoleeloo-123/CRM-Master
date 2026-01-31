@@ -117,7 +117,7 @@ export interface Sample {
   upcomingPlan?: string;
   nextActionDate?: string;
   docLinks?: SampleDocLink[];
-  // NEW: Fee Information Fields
+  // Fee Information Fields
   isPaid?: boolean;
   feeCategory?: string;
   feeType?: string; // Default: Income
@@ -131,6 +131,23 @@ export interface Sample {
   feeComment?: string;
 }
 
+// NEW: Expense Data Object
+export interface Expense {
+  id: string;
+  category: string;
+  detail: string;
+  expInc: string;
+  party: string;
+  name: string;
+  originationDate: string;
+  transactionDate: string;
+  status: string;
+  currency: string;
+  balance: string;
+  comment: string;
+  link: string;
+}
+
 export interface TagOptions {
   sampleStatus: string[];
   crystalType: string[];
@@ -140,4 +157,5 @@ export interface TagOptions {
   interactionTypes: string[];   // New: <Type>
   interactionEffects: string[]; // New: {Effect}
   feeStatus: string[];         // New for fee module
+  expenseCategory: string[];   // New for expense module
 }
