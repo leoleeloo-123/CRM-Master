@@ -1,4 +1,3 @@
-
 export type Language = 'en' | 'zh';
 
 export const translations = {
@@ -81,6 +80,15 @@ export const translations = {
     customerDatabase: 'Customer Database',
     noCustomersFound: 'No customers found matching your criteria.',
     filterRank: 'All Ranks',
+    colAging: 'Aging',
+    colUnreplied: 'Unreplied',
+    colUnfollowed: 'Unfollowed',
+    colNextAction: 'Next Action',
+    colLatestLog: 'Latest Log',
+    agingAll: 'All',
+    agingUnder7: '< 7 Days',
+    aging7to21: '7-21 Days',
+    agingOver21: '> 21 Days',
     
     // Profile
     overview: 'Overview',
@@ -181,6 +189,7 @@ export const translations = {
     confirmDeleteSample: 'Are you sure you want to delete this sample record? This action cannot be undone.',
     fileLinks: 'File Links',
     addFileLink: 'Add Link',
+    samplesBadge: 'Samples',
     
     // Mailing Info
     mailingInfo: 'Mailing Info',
@@ -201,7 +210,7 @@ export const translations = {
     '微粉': 'Powder',
     '悬浮液': 'Suspension',
     '团聚': 'Agglomerated Diamond',
-    '纳米金刚石': 'Nano Diamond',
+    '纳米金刚师': 'Nano Diamond',
     '球形金刚石': 'Spherical Diamond',
     '金刚石球': 'Diamond Ball',
     '微米粉': 'Micron',
@@ -306,6 +315,27 @@ export const translations = {
     fontSmall: 'Small',
     fontStandard: 'Standard',
     fontLarge: 'Large',
+    crystal: 'Crystal',
+    form: 'Form',
+    grading: 'Grading',
+    qtyAbbr: 'Qty',
+    original: 'Original',
+    processed: 'Processed',
+    origLabel: 'Orig.',
+    procLabel: 'Proc.',
+    nickname: 'Nickname',
+    createSample: 'Create Sample',
+    selectCustomer: 'Select Customer',
+    category: 'Category',
+    sampleSku: 'Sample SKU',
+    currentStatus: 'Current Status',
+    testFinished: 'Test Finished',
+    statusHistory: 'Status History',
+    noApplicationProvided: 'No application context provided.',
+    application: 'Application',
+    confirmStarSample: 'Are you sure you want to star this sample? This will sync its DDL with the customer\'s next action date.',
+    confirmUnstarSample: 'Unstar this sample?',
+    starred: 'Starred',
   },
   zh: {
     // Navigation
@@ -386,6 +416,15 @@ export const translations = {
     customerDatabase: '客户数据库',
     noCustomersFound: '未找到符合条件的客户。',
     filterRank: '所有等级',
+    colAging: '更新天数',
+    colUnreplied: '未回复',
+    colUnfollowed: '未跟进',
+    colNextAction: '下一步',
+    colLatestLog: '最新记录',
+    agingAll: '全部',
+    agingUnder7: '7天内',
+    aging7to21: '7-21天',
+    agingOver21: '21天外',
 
     // Profile
     overview: '总览',
@@ -481,11 +520,12 @@ export const translations = {
     sampleInfo: '样品信息',
     statusInfo: '状态详情',
     sinceUpdate: '距更新',
-    test: '测试',
+    test: '测试状态',
     deleteSample: '删除样品',
     confirmDeleteSample: '您确定要删除此样品记录吗？此操作无法撤销。',
     fileLinks: '超链接 / 文档',
     addFileLink: '添加链接',
+    samplesBadge: '个样品',
     
     // Mailing Info
     mailingInfo: '邮寄信息',
@@ -611,6 +651,27 @@ export const translations = {
     fontSmall: '小',
     fontStandard: '标准',
     fontLarge: '大',
+    crystal: '晶体类型',
+    form: '产品形态',
+    grading: '分级状态',
+    qtyAbbr: '数量',
+    original: '初始粒度',
+    processed: '加工后粒度',
+    origLabel: '初始',
+    procLabel: '加工',
+    nickname: '昵称',
+    createSample: '创建样品记录',
+    selectCustomer: '选择所属客户',
+    category: '产品分类',
+    sampleSku: '样品 SKU',
+    currentStatus: '当前进度',
+    testFinished: '测试是否完成',
+    statusHistory: '状态流转记录',
+    noApplicationProvided: '未提供应用场景描述。',
+    application: '应用场景',
+    confirmStarSample: '确定要标记此样品吗？标记后将与其客户的 DDL 同步。',
+    confirmUnstarSample: '取消标记此样品？',
+    starred: '已标记',
   }
 };
 

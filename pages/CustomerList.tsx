@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Customer, Rank, CustomerStatus } from '../types';
 import { Card, Button, RankStars, StatusIcon, Modal, Badge } from '../components/Common';
@@ -204,7 +203,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
           <div className="flex flex-wrap items-center gap-4">
              {/* Multi-Rank Filter */}
              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border-2 border-slate-100 dark:border-slate-700">
-                <span className="text-[10px] font-black uppercase text-slate-400 px-2 tracking-widest">Rank:</span>
+                <span className="text-[10px] font-black uppercase text-slate-400 px-2 tracking-widest">{t('rank')}:</span>
                 {[1, 2, 3, 4, 5].map(r => {
                   const stars = 6 - r;
                   const isActive = selectedRanks.includes(r);
@@ -230,10 +229,10 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                   value={unrepliedFilter}
                   onChange={(e) => setUnrepliedFilter(e.target.value)}
                 >
-                  <option value="all">Unreplied: All</option>
-                  <option value="under7">&lt; 7 Days</option>
-                  <option value="7to21">7-21 Days</option>
-                  <option value="over21">&gt; 21 Days</option>
+                  <option value="all">{t('colUnreplied')}: {t('agingAll')}</option>
+                  <option value="under7">{t('agingUnder7')}</option>
+                  <option value="7to21">{t('aging7to21')}</option>
+                  <option value="over21">{t('agingOver21')}</option>
                 </select>
              </div>
 
@@ -245,10 +244,10 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                   value={unfollowedFilter}
                   onChange={(e) => setUnfollowedFilter(e.target.value)}
                 >
-                  <option value="all">Unfollowed: All</option>
-                  <option value="under7">&lt; 7 Days</option>
-                  <option value="7to21">7-21 Days</option>
-                  <option value="over21">&gt; 21 Days</option>
+                  <option value="all">{t('colUnfollowed')}: {t('agingAll')}</option>
+                  <option value="under7">{t('agingUnder7')}</option>
+                  <option value="7to21">{t('aging7to21')}</option>
+                  <option value="over21">{t('agingOver21')}</option>
                 </select>
              </div>
 
@@ -276,12 +275,12 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
                   <th className="p-6 pl-8">{t('customer')}</th>
                   <th className="p-6 text-center">{t('rank')}</th>
                   <th className="p-6">{t('docLinks')}</th>
-                  <th className="p-6 text-center">Aging</th>
-                  <th className="p-6 text-center">Unreplied</th>
-                  <th className="p-6 text-center">Unfollowed</th>
+                  <th className="p-6 text-center">{t('colAging')}</th>
+                  <th className="p-6 text-center">{t('colUnreplied')}</th>
+                  <th className="p-6 text-center">{t('colUnfollowed')}</th>
                   <th className="p-6">{t('status')}</th>
-                  <th className="p-6">Next Action</th>
-                  <th className="p-6">Latest Log</th>
+                  <th className="p-6">{t('colNextAction')}</th>
+                  <th className="p-6">{t('colLatestLog')}</th>
                   <th className="p-6 w-16"></th>
                 </tr>
               </thead>

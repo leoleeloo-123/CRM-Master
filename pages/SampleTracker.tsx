@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sample, SampleStatus, Customer, ProductCategory, CrystalType, ProductForm, GradingStatus, TestStatus } from '../types';
 import { Card, Badge, Button, Modal, parseLocalDate } from '../components/Common';
@@ -195,7 +194,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
 
       <Card className="p-6 xl:p-8 border-2 rounded-2xl">
         <div className="space-y-6">
-          {/* Main Search - Exact Match with ExhibitionList */}
+          {/* Main Search */}
           <div className="relative">
             <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
             <input 
@@ -206,7 +205,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
             />
           </div>
 
-          {/* Filter Bar - Unified Style & Alignment */}
+          {/* Filter Bar */}
           <div className="flex flex-wrap items-center gap-4">
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <User size={18} className="text-slate-400" />
@@ -227,7 +226,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   value={filterStatus}
                   onChange={e => setFilterStatus(e.target.value)}
                 >
-                  <option value="">Status: All</option>
+                  <option value="">{t('status')}: {t('agingAll')}</option>
                   {FIXED_BOARD_ORDER.map(s => <option key={s} value={s}>{t(s as any)}</option>)}
                 </select>
              </div>
@@ -239,7 +238,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   value={filterTestFinished}
                   onChange={e => setFilterTestFinished(e.target.value)}
                 >
-                  <option value="all">{t('test')}: All</option>
+                  <option value="all">{t('test')}: {t('agingAll')}</option>
                   <option value="ongoing">{t('filterTestOngoing')}</option>
                   <option value="finished">{t('filterTestFinished')}</option>
                   <option value="terminated">{t('filterTestTerminated')}</option>
@@ -253,7 +252,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   value={filterCrystal}
                   onChange={e => setFilterCrystal(e.target.value)}
                 >
-                  <option value="">{t('crystal')}: All</option>
+                  <option value="">{t('crystal')}: {t('agingAll')}</option>
                   {tagOptions.crystalType.map(c => <option key={c} value={c}>{t(c as any) || c}</option>)}
                 </select>
              </div>
@@ -265,7 +264,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   value={filterForm}
                   onChange={e => setFilterForm(e.target.value)}
                 >
-                  <option value="">{t('form')}: All</option>
+                  <option value="">{t('form')}: {t('agingAll')}</option>
                   {tagOptions.productForm.map(f => <option key={f} value={f}>{t(f as any) || f}</option>)}
                 </select>
              </div>
@@ -277,7 +276,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   value={filterGrading}
                   onChange={e => setFilterGrading(e.target.value)}
                 >
-                  <option value="">{t('grading')}: All</option>
+                  <option value="">{t('grading')}: {t('agingAll')}</option>
                   <option value="Graded">{t('graded')}</option>
                   <option value="Ungraded">{t('ungraded')}</option>
                 </select>
@@ -285,7 +284,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
 
              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
 
-             {/* Global Expand Toggle - Matches ExhibitionList Style */}
+             {/* Global Expand Toggle */}
              <button 
               onClick={toggleAllExpansion}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 text-xs font-black uppercase tracking-widest transition-all ${
@@ -314,7 +313,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
              </div>
           </div>
 
-          {/* List/Board View - Unified vertical spacing by removing pt-2 */}
+          {/* List/Board View */}
           <div className="overflow-visible">
             {viewMode === 'list' ? (
               <div className="overflow-hidden border-2 rounded-2xl border-slate-100 dark:border-slate-800">
@@ -322,15 +321,15 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                   <thead className="bg-slate-100 dark:bg-slate-800/80 border-b-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase text-sm font-black tracking-widest">
                     <tr>
                       <th className="p-6 pl-14 w-48">{t('customer')}</th>
-                      <th className="p-6 w-72">{t('product')} Spec</th>
+                      <th className="p-6 w-72">{t('product')} {t('specs')}</th>
                       <th className="p-6 w-44">{t('docLinks')}</th>
                       <th className="p-6 text-center">{t('grading')}</th>
                       <th className="p-6 text-center w-20">{t('qtyAbbr')}</th>
-                      <th className="p-6">Status</th>
+                      <th className="p-6">{t('status')}</th>
                       <th className="p-6 text-center">⭐</th>
-                      <th className="p-6">Next Step</th>
-                      <th className="p-6 text-center">Aging</th>
-                      <th className="p-6">Test</th>
+                      <th className="p-6">{t('colNextAction')}</th>
+                      <th className="p-6 text-center">{t('colAging')}</th>
+                      <th className="p-6">{t('test')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -338,7 +337,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                       const isExpanded = expandedCustomers.has(group.customerId);
                       return (
                         <React.Fragment key={group.customerId}>
-                          {/* Group Header Row - Match ExhibitionList Header Style */}
+                          {/* Group Header Row */}
                           <tr 
                             onClick={() => toggleCustomerExpansion(group.customerId)}
                             className="bg-slate-50/50 dark:bg-slate-800/30 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -349,7 +348,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
                                 <span className="font-black text-slate-900 dark:text-white uppercase tracking-[0.1em] text-sm">
                                   {group.customerName}
                                 </span>
-                                <Badge color="gray">{group.samples.length} Samples</Badge>
+                                <Badge color="gray">{group.samples.length} {t('samplesBadge')}</Badge>
                               </div>
                             </td>
                           </tr>
@@ -520,7 +519,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
         </div>
       </Card>
 
-      {/* Add Sample Modal - Styling refined to match overall aesthetic */}
+      {/* Add Sample Modal */}
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={t('createSample')}>
          <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
