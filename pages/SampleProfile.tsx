@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink } from '../types';
 import { Card, Badge, Button, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
-import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check, Star, Info, Timer, Calendar, DollarSign, CreditCard } from 'lucide-react';
+import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check, Star, Info, Timer, Calendar, DollarSign, CreditCard, Truck, Hash } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 
@@ -314,7 +314,7 @@ const SampleProfile: React.FC = () => {
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
           {/* Left Column (Narrow Cards) */}
           <div className="space-y-8">
-             {/* Integrated Status Card (Status + Test + Aging) - Fixed Border to match others */}
+             {/* Integrated Status Card (Status + Test + Aging) */}
              <Card className={`overflow-hidden border shadow-sm rounded-3xl transition-all ${isEditingStatus ? 'ring-4 ring-blue-500/20 border-blue-500' : 'border-slate-200 dark:border-slate-700'}`}>
                 <div className={headerClass}>
                    <h3 className={titleClass}><Activity className="w-5 h-5 text-blue-600" /> {t('status')}</h3>
@@ -555,47 +555,6 @@ const SampleProfile: React.FC = () => {
                    )}
                 </div>
              </Card>
-
-             {/* Merged Other Card (SKU + Tracking) */}
-             <Card className={`overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/40 transition-all ${isEditingOther ? 'ring-4 ring-blue-500/20' : ''}`}>
-                <div className={headerClass}>
-                   <h3 className={titleClass}><Info className="w-5 h-5 text-slate-600" /> {t('other')}</h3>
-                   <button onClick={() => setIsEditingOther(!isEditingOther)} className={editBtnStyle}>
-                      {isEditingOther ? <X className="w-4 h-4" /> : <PencilLine className="w-4 h-4" />}
-                   </button>
-                </div>
-                <div className="p-8 space-y-8">
-                  {isEditingOther ? (
-                     <div className="space-y-6">
-                        <div className="space-y-2">
-                           <label className={labelClass}>SKU</label>
-                           <input className="w-full p-4 border-2 border-slate-100 rounded-2xl text-lg font-mono font-bold dark:bg-slate-800 shadow-inner" value={editSKUText} onChange={e => setEditSKUText(e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                           <label className={labelClass}>{t('tracking')}</label>
-                           <input className="w-full p-4 border-2 border-slate-100 rounded-2xl text-lg font-mono font-bold dark:bg-slate-800 shadow-inner" value={editTrackingText} onChange={e => setEditTrackingText(e.target.value)} />
-                        </div>
-                        <Button onClick={handleSaveOther} className="w-full bg-blue-600 py-3 font-black shadow-lg shadow-blue-600/20"><Save size={18} className="mr-2" /> {t('save')}</Button>
-                     </div>
-                  ) : (
-                     <div className="space-y-8">
-                        <div className="space-y-3">
-                           <span className={labelClass}>SKU</span>
-                           <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-slate-100 dark:border-slate-800 shadow-inner">
-                              <span className="text-sm xl:text-base font-black text-slate-600 dark:text-slate-400 font-mono tracking-wider">{sample.sampleSKU || 'NO SKU'}</span>
-                           </div>
-                        </div>
-                        <div className="space-y-3">
-                           <span className={labelClass}>{t('tracking')}</span>
-                           <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-slate-100 dark:border-slate-800 shadow-inner flex items-center gap-3 text-blue-600 dark:text-blue-400 font-mono">
-                              <ExternalLink size={16} className="shrink-0" />
-                              <span className="text-sm xl:text-base font-black truncate">{sample.trackingNumber || '-'}</span>
-                           </div>
-                        </div>
-                     </div>
-                  )}
-                </div>
-             </Card>
           </div>
 
           {/* Right Column (Wider Cards) */}
@@ -690,81 +649,128 @@ const SampleProfile: React.FC = () => {
                   </div>
                </Card>
 
-               {/* Links Module */}
+               {/* Other Info & Links Module */}
                <Card className="overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/40">
                   <div className={headerClass}>
-                     <h3 className={titleClass}><LinkIcon className="w-5 h-5 text-blue-500" /> {t('fileLinks')}</h3>
+                     <h3 className={titleClass}><Info className="w-5 h-5 text-blue-600" /> {t('other')}</h3>
+                     <button onClick={() => setIsEditingOther(!isEditingOther)} className={editBtnStyle}>
+                        {isEditingOther ? <X className="w-4 h-4" /> : <PencilLine className="w-4 h-4" />}
+                     </button>
                   </div>
-                  <div className="p-8 space-y-4">
-                     <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <input 
-                           className="w-full p-2.5 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500 shadow-inner"
-                           placeholder="Link Title (e.g. Test Report)..."
-                           value={newLinkTitle}
-                           onChange={(e) => setNewLinkTitle(e.target.value)}
-                        />
-                        <div className="flex gap-2">
-                           <input 
-                              className="flex-1 p-2.5 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500 shadow-inner"
-                              placeholder="Paste URL here..."
-                              value={newLinkUrl}
-                              onChange={(e) => setNewLinkUrl(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
-                           />
-                           <button onClick={handleAddLink} className="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 active:scale-90 transition-all">
-                              <Plus size={18} />
-                           </button>
+                  <div className="p-8 space-y-6">
+                     {/* SKU & Tracking View */}
+                     {isEditingOther ? (
+                        <div className="space-y-6 border-b border-slate-100 dark:border-slate-800 pb-6">
+                           <div className="space-y-2">
+                              <label className={labelClass}>SKU</label>
+                              <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-mono font-bold dark:bg-slate-800 shadow-inner" value={editSKUText} onChange={e => setEditSKUText(e.target.value)} />
+                           </div>
+                           <div className="space-y-2">
+                              <label className={labelClass}>{t('tracking')}</label>
+                              <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-mono font-bold dark:bg-slate-800 shadow-inner" value={editTrackingText} onChange={e => setEditTrackingText(e.target.value)} />
+                           </div>
+                           <Button onClick={handleSaveOther} className="w-full bg-blue-600 py-3 font-black shadow-lg shadow-blue-600/20"><Save size={18} className="mr-2" /> {t('save')}</Button>
                         </div>
-                     </div>
+                     ) : (
+                        <div className="grid grid-cols-2 gap-4 border-b border-slate-50 dark:border-slate-800 pb-6">
+                           <div className="space-y-1">
+                              <div className="flex items-center gap-2 text-slate-400 mb-1">
+                                 <Hash size={12} />
+                                 <span className={labelClass}>SKU</span>
+                              </div>
+                              <span className="font-mono font-black text-slate-800 dark:text-slate-200 text-xs xl:text-sm bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 block truncate">
+                                 {sample.sampleSKU || 'N/A'}
+                              </span>
+                           </div>
+                           <div className="space-y-1">
+                              <div className="flex items-center gap-2 text-slate-400 mb-1">
+                                 <Truck size={12} />
+                                 <span className={labelClass}>{t('tracking')}</span>
+                              </div>
+                              <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-xs xl:text-sm bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/50 block truncate">
+                                 {sample.trackingNumber || 'N/A'}
+                              </span>
+                           </div>
+                        </div>
+                     )}
 
-                     <div className="space-y-3 max-h-64 overflow-y-auto pr-1 scrollbar-hide">
-                        {(sample.docLinks || []).length > 0 ? (sample.docLinks || []).map((link, idx) => (
-                          <div key={idx} className="space-y-2">
-                             {editingLinkIndex === idx ? (
-                               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-800 space-y-3 shadow-md">
-                                  <input 
-                                     className="w-full p-2 border-2 border-white dark:border-slate-800 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 shadow-inner"
-                                     value={editLinkTitle}
-                                     onChange={e => setEditLinkTitle(e.target.value)}
-                                     placeholder="Title"
-                                  />
-                                  <input 
-                                     className="w-full p-2 border-2 border-white dark:border-slate-800 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 shadow-inner"
-                                     value={editLinkUrl}
-                                     onChange={e => setEditLinkUrl(e.target.value)}
-                                     placeholder="URL"
-                                  />
-                                  <div className="flex gap-2 pt-1">
-                                     <button onClick={() => setEditingLinkIndex(null)} className="flex-1 p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-black uppercase text-slate-500">{t('cancel')}</button>
-                                     <button onClick={handleSaveEditLink} className="flex-1 p-2 bg-blue-600 rounded-lg text-[10px] font-black uppercase text-white flex items-center justify-center gap-1"><Check size={12}/> {t('save')}</button>
+                     {/* Hyperlinks Section */}
+                     <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-slate-400">
+                           <LinkIcon size={14} />
+                           <span className={labelClass}>{t('fileLinks')}</span>
+                        </div>
+                        
+                        <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-inner">
+                           <input 
+                              className="w-full p-2.5 border-2 border-white dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500 shadow-sm"
+                              placeholder="Link Title (e.g. Test Report)..."
+                              value={newLinkTitle}
+                              onChange={(e) => setNewLinkTitle(e.target.value)}
+                           />
+                           <div className="flex gap-2">
+                              <input 
+                                 className="flex-1 p-2.5 border-2 border-white dark:border-slate-800 rounded-xl text-xs xl:text-sm font-bold dark:bg-slate-800 outline-none focus:border-blue-500 shadow-sm"
+                                 placeholder="Paste URL here..."
+                                 value={newLinkUrl}
+                                 onChange={(e) => setNewLinkUrl(e.target.value)}
+                                 onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                              />
+                              <button onClick={handleAddLink} className="p-2.5 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 active:scale-90 transition-all">
+                                 <Plus size={18} />
+                              </button>
+                           </div>
+                        </div>
+
+                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1 scrollbar-hide">
+                           {(sample.docLinks || []).length > 0 ? (sample.docLinks || []).map((link, idx) => (
+                             <div key={idx} className="space-y-2">
+                                {editingLinkIndex === idx ? (
+                                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-800 space-y-3 shadow-md">
+                                     <input 
+                                        className="w-full p-2 border-2 border-white dark:border-slate-800 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 shadow-inner"
+                                        value={editLinkTitle}
+                                        onChange={e => setEditLinkTitle(e.target.value)}
+                                        placeholder="Title"
+                                     />
+                                     <input 
+                                        className="w-full p-2 border-2 border-white dark:border-slate-800 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 shadow-inner"
+                                        value={editLinkUrl}
+                                        onChange={e => setEditLinkUrl(e.target.value)}
+                                        placeholder="URL"
+                                     />
+                                     <div className="flex gap-2 pt-1">
+                                        <button onClick={() => setEditingLinkIndex(null)} className="flex-1 p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-black uppercase text-slate-500">{t('cancel')}</button>
+                                        <button onClick={handleSaveEditLink} className="flex-1 p-2 bg-blue-600 rounded-lg text-[10px] font-black uppercase text-white flex items-center justify-center gap-1"><Check size={12}/> {t('save')}</button>
+                                     </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 group shadow-sm hover:border-blue-200 transition-colors">
+                                     <a 
+                                        href={link.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1 pr-2"
+                                     >
+                                        <ExternalLink size={14} className="shrink-0" /> <span className="truncate">{link.title}</span>
+                                     </a>
+                                     <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleStartEditLink(idx, link)} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all">
+                                           <PencilLine size={14} />
+                                     </button>
+                                     <button onClick={() => handleDeleteLink(link)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                                        <Trash2 size={14} />
+                                     </button>
                                   </div>
                                </div>
-                             ) : (
-                               <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 group shadow-sm hover:border-blue-200 transition-colors">
-                                  <a 
-                                     href={link.url} 
-                                     target="_blank" 
-                                     rel="noopener noreferrer" 
-                                     className="text-blue-600 dark:text-blue-400 font-bold text-xs xl:text-sm truncate flex items-center gap-2 hover:underline flex-1 pr-2"
-                                  >
-                                     <ExternalLink size={14} className="shrink-0" /> <span className="truncate">{link.title}</span>
-                                  </a>
-                                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <button onClick={() => handleStartEditLink(idx, link)} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all">
-                                        <PencilLine size={14} />
-                                  </button>
-                                  <button onClick={() => handleDeleteLink(link)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
-                                     <Trash2 size={14} />
-                                  </button>
-                               </div>
-                            </div>
-                          )}
-                       </div>
-                     )) : (
-                       <div className="text-center py-10 text-slate-300 italic text-xs xl:text-sm border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-3xl">
-                          {t('statusNoAction')}
-                       </div>
-                     )}
+                             )}
+                          </div>
+                        )) : (
+                          <div className="text-center py-10 text-slate-300 italic text-xs xl:text-sm border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-3xl">
+                             No links added yet.
+                          </div>
+                        )}
+                     </div>
                   </div>
                </div>
             </Card>
