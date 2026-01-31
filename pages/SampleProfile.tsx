@@ -20,7 +20,6 @@ const SampleProfile: React.FC = () => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isEditingOther, setIsEditingOther] = useState(false);
   const [isEditingContext, setIsEditingContext] = useState(false);
-  const [isEditingQuantity, setIsEditingQuantity] = useState(false);
   const [isEditingPlan, setIsEditingPlan] = useState(false);
   const [isEditingFee, setIsEditingFee] = useState(false);
   
@@ -137,7 +136,8 @@ const SampleProfile: React.FC = () => {
       productCategory: categories,
       nickname: nickname,
       sampleName: newName,
-      productType: newName
+      productType: newName,
+      quantity: editQuantityText
     };
 
     saveSampleUpdate(updatedSampleData);
@@ -202,11 +202,6 @@ const SampleProfile: React.FC = () => {
   const handleSaveContext = () => {
     saveSampleUpdate({ application: editAppText, sampleDetails: editDetailsText });
     setIsEditingContext(false);
-  };
-
-  const handleSaveQuantity = () => {
-    saveSampleUpdate({ quantity: editQuantityText });
-    setIsEditingQuantity(false);
   };
 
   const handleSavePlan = () => {
@@ -404,6 +399,10 @@ const SampleProfile: React.FC = () => {
                                <option value="Ungraded">{t('ungraded')}</option>
                            </select>
                         </div>
+                        <div className="space-y-1">
+                           <label className={labelClass}>{t('quantity')}</label>
+                           <input className="w-full p-3 border-2 border-slate-100 rounded-2xl font-bold dark:bg-slate-800 shadow-inner" value={editQuantityText} onChange={e => setEditQuantityText(e.target.value)} placeholder="e.g. 500g" />
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-1">
                               <label className={labelClass}>{t('origLabel')}</label>
@@ -427,6 +426,7 @@ const SampleProfile: React.FC = () => {
                           { label: t('category'), value: sample.productCategory?.map(c => t(c as any)).join(', ') },
                           { label: t('form'), value: t(sample.productForm as any) },
                           { label: t('grading'), value: sample.isGraded === 'Graded' ? t('graded') : t('ungraded') },
+                          { label: t('quantity'), value: sample.quantity },
                           { label: t('original'), value: sample.originalSize },
                           { label: t('processed'), value: sample.processedSize || '-' },
                           { label: t('nickname'), value: sample.nickname || '-' }
@@ -553,26 +553,6 @@ const SampleProfile: React.FC = () => {
                          )}
                       </div>
                    )}
-                </div>
-             </Card>
-
-             {/* Quantity Card */}
-             <Card className="overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/40">
-                <div className={headerClass}>
-                   <h3 className={titleClass}><Ruler className="w-5 h-5 text-indigo-600" /> {t('quantity')}</h3>
-                   <button onClick={() => setIsEditingQuantity(!isEditingQuantity)} className={editBtnStyle}><PencilLine size={16}/></button>
-                </div>
-                <div className="p-8">
-                  {isEditingQuantity ? (
-                     <div className="space-y-4">
-                        <input className="w-full p-4 border-2 border-slate-100 rounded-2xl text-xl font-black dark:bg-slate-800 shadow-inner" value={editQuantityText} onChange={e => setEditQuantityText(e.target.value)} autoFocus />
-                        <Button onClick={handleSaveQuantity} className="w-full bg-blue-600 font-black shadow-lg shadow-blue-600/20">{t('save')}</Button>
-                     </div>
-                  ) : (
-                     <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[1.5rem] border-2 border-slate-100 dark:border-slate-800 text-center shadow-inner group">
-                        <span className="text-xl xl:text-3xl font-black text-slate-900 dark:text-white tracking-tight">{sample.quantity || t('statusNoAction')}</span>
-                     </div>
-                  )}
                 </div>
              </Card>
 
