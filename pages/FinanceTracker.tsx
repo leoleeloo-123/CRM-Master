@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Card, Badge, Button } from '../components/Common';
-import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity } from 'lucide-react';
+import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity, RefreshCw } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { translateDisplay } from '../utils/i18n';
 import { useNavigate } from 'react-router-dom';
@@ -25,10 +25,14 @@ interface UnifiedTransaction {
 }
 
 const FinanceTracker: React.FC = () => {
-  const { t, samples, expenses, language } = useApp();
+  const { t, samples, expenses, fxRates, language, updateGlobalFXRates } = useApp();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isUpdatingRates, setIsUpdatingRates] = useState(false);
+
+  // FX Display Config
+  const [displayCurrency, setDisplayCurrency] = useState('USD');
   
   // Filters
   const [filterExpInc, setFilterExpInc] = useState('');
@@ -41,39 +45,11 @@ const FinanceTracker: React.FC = () => {
     const sampleFees: UnifiedTransaction[] = samples
       .filter(s => s.isPaid)
       .map(s => ({
-        id: s.id,
-        source: 'Sample',
-        category: s.feeCategory || '',
-        detail: s.nickname || '',
-        expInc: s.feeType || '收入',
-        party: s.customerName,
-        name: s.sampleName || '',
-        origDate: s.originationDate || '',
-        transDate: s.transactionDate || '',
-        status: s.feeStatus || '',
-        currency: s.currency || 'USD',
-        balance: s.balance || '0',
-        comment: s.feeComment || '',
-        link: s.docLinks && s.docLinks.length > 0 ? s.docLinks[0].url : ''
+        id: s.id, source: 'Sample', category: s.feeCategory || '', detail: s.nickname || '', expInc: s.feeType || '收入', party: s.customerName, name: s.sampleName || '', origDate: s.originationDate || '', transDate: s.transactionDate || '', status: s.feeStatus || '', currency: (s.currency || 'USD').toUpperCase(), balance: s.balance || '0', comment: s.feeComment || '', link: s.docLinks && s.docLinks.length > 0 ? s.docLinks[0].url : ''
       }));
-
     const expenseRecords: UnifiedTransaction[] = expenses.map(e => ({
-      id: e.id,
-      source: 'Expense',
-      category: e.category,
-      detail: e.detail,
-      expInc: e.expInc || '支出',
-      party: e.party,
-      name: e.name,
-      origDate: e.originationDate,
-      transDate: e.transactionDate,
-      status: e.status,
-      currency: e.currency,
-      balance: e.balance,
-      comment: e.comment,
-      link: e.link
+      id: e.id, source: 'Expense', category: e.category, detail: e.detail, expInc: e.expInc || '支出', party: e.party, name: e.name, origDate: e.originationDate, transDate: e.transactionDate, status: e.status, currency: (e.currency || 'USD').toUpperCase(), balance: e.balance, comment: e.comment, link: e.link
     }));
-
     return [...sampleFees, ...expenseRecords].sort((a, b) => {
       const dateA = a.transDate || a.origDate || '0000-00-00';
       const dateB = b.transDate || b.origDate || '0000-00-00';
@@ -81,23 +57,21 @@ const FinanceTracker: React.FC = () => {
     });
   }, [samples, expenses]);
 
-  // Dynamically extract unique values for filters from the ACTUAL data pool
+  // Unified Conversion Function
+  const convertAmount = (val: string, fromCurr: string, toCurr: string) => {
+    const amount = parseFloat(val.replace(/[^0-9.]/g, '')) || 0;
+    const rateFrom = fxRates.find(r => r.currency.toUpperCase() === fromCurr.toUpperCase())?.rateToUSD || 1.0;
+    const rateTo = fxRates.find(r => r.currency.toUpperCase() === toCurr.toUpperCase())?.rateToUSD || 1.0;
+    // Conversion Logic: Amount * (Source Rate to USD / Target Rate to USD)
+    return (amount * rateFrom) / rateTo;
+  };
+
   const uniqueOptions = useMemo(() => {
     const categories = new Set<string>();
     const statuses = new Set<string>();
     const parties = new Set<string>();
-
-    unifiedData.forEach(d => {
-      if (d.category) categories.add(d.category);
-      if (d.status) statuses.add(d.status);
-      if (d.party) parties.add(d.party);
-    });
-
-    return {
-      categories: Array.from(categories).sort(),
-      statuses: Array.from(statuses).sort(),
-      parties: Array.from(parties).sort()
-    };
+    unifiedData.forEach(d => { if (d.category) categories.add(d.category); if (d.status) statuses.add(d.status); if (d.party) parties.add(d.party); });
+    return { categories: Array.from(categories).sort(), statuses: Array.from(statuses).sort(), parties: Array.from(parties).sort() };
   }, [unifiedData]);
 
   const filteredData = useMemo(() => {
@@ -109,47 +83,28 @@ const FinanceTracker: React.FC = () => {
       const matchesCurrency = filterCurrency === '' || d.currency === filterCurrency;
       const matchesStatus = filterStatus === '' || d.status === filterStatus;
       const matchesParty = filterParty === '' || d.party === filterParty;
-      
       return matchesSearch && matchesExpInc && matchesCategory && matchesCurrency && matchesStatus && matchesParty;
     });
   }, [unifiedData, searchTerm, filterExpInc, filterCategory, filterCurrency, filterStatus, filterParty]);
 
-  // Aggregate stats for Board view
-  const stats = useMemo(() => {
-    const currencyTotals: Record<string, { income: number; expense: number }> = {};
-    
+  const summaryInDisplayCurrency = useMemo(() => {
+    let incomeTotal = 0;
+    let expenseTotal = 0;
     filteredData.forEach(d => {
-      const cur = d.currency || 'USD';
-      if (!currencyTotals[cur]) currencyTotals[cur] = { income: 0, expense: 0 };
-      
-      const val = parseFloat(d.balance.replace(/[^0-9.]/g, '')) || 0;
-      // Normalizing Exp/Inc check for calculation
-      if (d.expInc === '收入' || d.expInc === 'Income') {
-        currencyTotals[cur].income += val;
-      } else {
-        currencyTotals[cur].expense += val;
-      }
+      const converted = convertAmount(d.balance, d.currency, displayCurrency);
+      if (d.expInc === '收入' || d.expInc === 'Income') incomeTotal += converted;
+      else expenseTotal += converted;
     });
+    return { income: incomeTotal, expense: expenseTotal, net: incomeTotal - expenseTotal };
+  }, [filteredData, displayCurrency, fxRates]);
 
-    return currencyTotals;
-  }, [filteredData]);
-
-  const resetFilters = () => {
-    setSearchTerm('');
-    setFilterExpInc('');
-    setFilterCategory('');
-    setFilterCurrency('');
-    setFilterStatus('');
-    setFilterParty('');
+  const handleUpdateRates = async () => {
+    setIsUpdatingRates(true);
+    await updateGlobalFXRates();
+    setTimeout(() => setIsUpdatingRates(false), 500);
   };
 
   const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
-
-  const handleRowClick = (d: UnifiedTransaction) => {
-    if (d.source === 'Sample') {
-      navigate(`/samples/${d.id}`);
-    }
-  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -159,6 +114,17 @@ const FinanceTracker: React.FC = () => {
           <p className="text-sm xl:text-base font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{t('financeDesc')}</p>
         </div>
         <div className="flex gap-4">
+          <div className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-1.5 rounded-xl flex items-center gap-3 shadow-sm">
+             <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg border dark:border-slate-700">
+               <DollarSign size={14} className="text-slate-400" />
+               <select className="bg-transparent text-[10px] font-black uppercase outline-none" value={displayCurrency} onChange={e => setDisplayCurrency(e.target.value)}>
+                 {fxRates.map(f => <option key={f.id} value={f.currency}>{f.currency}</option>)}
+               </select>
+             </div>
+             <button onClick={handleUpdateRates} className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all ${isUpdatingRates?'animate-pulse':''}`}>
+                <RefreshCw size={12} className={isUpdatingRates?'animate-spin':''} /> {t('updateFxRates')}
+             </button>
+          </div>
           <div className="bg-slate-100 p-1.5 rounded-xl flex dark:bg-slate-800 shadow-inner">
              <button onClick={() => setViewMode('list')} className={`px-8 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>{t('list')}</button>
              <button onClick={() => setViewMode('board')} className={`px-8 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>{t('board')}</button>
@@ -168,88 +134,66 @@ const FinanceTracker: React.FC = () => {
 
       <Card className="p-6 xl:p-8 border-2 rounded-2xl">
         <div className="space-y-6">
+          {/* Quick Stat Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+             <div className="p-5 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border-2 border-emerald-100 dark:border-emerald-800/50 flex flex-col gap-1">
+                <span className={labelClass + " text-emerald-600"}>{t('totalIncome')} ({displayCurrency})</span>
+                <span className="text-2xl xl:text-3xl font-black text-emerald-700 dark:text-emerald-400">+{summaryInDisplayCurrency.income.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+             </div>
+             <div className="p-5 bg-rose-50 dark:bg-rose-900/10 rounded-2xl border-2 border-rose-100 dark:border-rose-800/50 flex flex-col gap-1">
+                <span className={labelClass + " text-rose-600"}>{t('totalExpenses')} ({displayCurrency})</span>
+                <span className="text-2xl xl:text-3xl font-black text-rose-700 dark:text-rose-400">-{summaryInDisplayCurrency.expense.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+             </div>
+             <div className="p-5 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border-2 border-blue-100 dark:border-blue-800/50 flex flex-col gap-1">
+                <span className={labelClass + " text-blue-600"}>{t('totalBalance')} ({displayCurrency})</span>
+                <span className={`text-2xl xl:text-3xl font-black ${summaryInDisplayCurrency.net >= 0 ? 'text-blue-700' : 'text-rose-600'}`}>{summaryInDisplayCurrency.net.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+             </div>
+          </div>
+
           <div className="relative">
             <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
-            <input 
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all shadow-sm"
-              placeholder={t('search')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <input className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-blue-500 font-bold transition-all shadow-sm" placeholder={t('search')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-             {/* Exp / Inc Filter */}
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Filter size={18} className="text-slate-400" />
-                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterExpInc} onChange={e => setFilterExpInc(e.target.value)}>
+                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none" value={filterExpInc} onChange={e => setFilterExpInc(e.target.value)}>
                    <option value="">{t('feeType')}: ALL</option>
                    <option value="收入">{t('income')}</option>
                    <option value="支出">{t('expense')}</option>
                 </select>
              </div>
-
-             {/* Category Filter - Dynamically sourced from table content */}
-             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100">
                 <Tag size={18} className="text-slate-400" />
-                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
                    <option value="">{t('feeCategory')}: ALL</option>
                    {uniqueOptions.categories.map(c => <option key={c} value={c}>{translateDisplay(c, language)}</option>)}
                 </select>
              </div>
-
-             {/* Status Filter - Dynamically sourced */}
-             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100">
                 <Activity size={18} className="text-slate-400" />
-                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                    <option value="">{t('status')}: ALL</option>
                    {uniqueOptions.statuses.map(s => <option key={s} value={s}>{translateDisplay(s, language)}</option>)}
                 </select>
              </div>
-
-             {/* Party Filter - Dynamically sourced */}
-             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
-                <User size={18} className="text-slate-400" />
-                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300 max-w-[150px]" value={filterParty} onChange={e => setFilterParty(e.target.value)}>
-                   <option value="">{t('party')}: ALL</option>
-                   {uniqueOptions.parties.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-             </div>
-
-             {/* Currency Filter */}
-             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
-                <DollarSign size={18} className="text-slate-400" />
-                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterCurrency} onChange={e => setFilterCurrency(e.target.value)}>
-                   <option value="">{t('currency')}: ALL</option>
-                   <option value="USD">USD</option>
-                   <option value="CNY">CNY</option>
-                   <option value="EUR">EUR</option>
-                   <option value="JPY">JPY</option>
-                </select>
-             </div>
-
-             { (searchTerm || filterExpInc || filterCategory || filterCurrency || filterStatus || filterParty) && (
-               <button onClick={resetFilters} className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors ml-2">
-                 <X size={16} /> {t('cancel')}
-               </button>
-             )}
-
-             <div className="ml-auto">
-               <span className="text-xs font-black uppercase text-slate-400 tracking-[0.2em]">{t('results')}: {filteredData.length}</span>
+             <div className="ml-auto flex items-center gap-3">
+               <span className="text-[10px] font-black uppercase text-slate-400 italic">口径参考: {fxRates.map(f => `${f.currency}=${f.rateToUSD.toFixed(3)}`).join(', ')}</span>
+               <span className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-4">{t('results')}: {filteredData.length}</span>
              </div>
           </div>
 
           {viewMode === 'list' ? (
             <div className="overflow-hidden border-2 rounded-2xl border-slate-100 dark:border-slate-800">
               <table className="w-full text-left">
-                <thead className="bg-slate-100 dark:bg-slate-800/80 border-b-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase text-sm font-black tracking-widest">
+                <thead className="bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-200 text-slate-900 dark:text-white uppercase text-sm font-black tracking-widest">
                   <tr>
                     <th className="p-6">{t('feeType')}</th>
-                    <th className="p-6">{t('feeCategory')}</th>
                     <th className="p-6">{t('party')}</th>
                     <th className="p-6">{t('nameLabel')}</th>
-                    <th className="p-6">{t('detail')}</th>
-                    <th className="p-6">{t('balance')}</th>
+                    <th className="p-6">{t('balance')} (ORIG)</th>
+                    <th className="p-6 text-blue-600">{displayCurrency} (CALC)</th>
                     <th className="p-6">{t('status')}</th>
                     <th className="p-6">{t('transactionDate')}</th>
                   </tr>
@@ -257,23 +201,21 @@ const FinanceTracker: React.FC = () => {
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {filteredData.map((d, i) => {
                     const isIncome = d.expInc === '收入' || d.expInc === 'Income';
+                    const displayValue = convertAmount(d.balance, d.currency, displayCurrency);
                     return (
-                      <tr 
-                        key={i} 
-                        className={`hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group ${d.source === 'Sample' ? 'cursor-pointer' : ''}`}
-                        onClick={() => handleRowClick(d)}
-                      >
+                      <tr key={i} className={`hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors group ${d.source === 'Sample' ? 'cursor-pointer' : ''}`} onClick={() => d.source === 'Sample' && navigate(`/samples/${d.id}`)}>
                         <td className="p-6">
                            <div className={`flex items-center gap-2 font-black uppercase text-xs ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
                               {isIncome ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
                               {translateDisplay(d.expInc, language)}
                            </div>
                         </td>
-                        <td className="p-6 font-black text-slate-700 dark:text-slate-200 text-sm uppercase">{translateDisplay(d.category, language)}</td>
                         <td className="p-6 font-black text-blue-600 dark:text-blue-400 uppercase text-sm truncate max-w-[150px]">{d.party}</td>
                         <td className="p-6 font-black text-slate-900 dark:text-white text-sm truncate max-w-[200px] uppercase">{d.name}</td>
-                        <td className="p-6 italic text-slate-500 text-xs truncate max-w-[150px]">{d.detail}</td>
-                        <td className={`p-6 font-black text-base ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>{isIncome ? '+' : '-'}{d.balance} <span className="text-[10px] opacity-40">{d.currency}</span></td>
+                        <td className="p-6 text-xs text-slate-400 font-bold whitespace-nowrap">{d.balance} {d.currency}</td>
+                        <td className={`p-6 font-black text-base ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
+                           {displayValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </td>
                         <td className="p-6"><Badge color="blue">{translateDisplay(d.status, language)}</Badge></td>
                         <td className="p-6 font-black text-slate-400 text-xs whitespace-nowrap">{d.transDate || d.origDate}</td>
                       </tr>
@@ -281,44 +223,9 @@ const FinanceTracker: React.FC = () => {
                   })}
                 </tbody>
               </table>
-              {filteredData.length === 0 && (
-                <div className="p-32 text-center text-slate-300 font-black uppercase tracking-widest italic opacity-40">No matching records found.</div>
-              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-               {/* Summary Cards */}
-               {(Object.entries(stats) as [string, { income: number; expense: number }][]).map(([cur, data]) => (
-                 <Card key={cur} className="p-8 border-2 shadow-sm space-y-6">
-                    <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
-                       <h4 className="font-black text-2xl text-blue-600">{cur}</h4>
-                       <Badge color="gray">Summary</Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="space-y-1">
-                          <span className={labelClass}>{t('totalIncome')}</span>
-                          <p className="text-2xl font-black text-emerald-600">+{data.income.toLocaleString()}</p>
-                       </div>
-                       <div className="space-y-1">
-                          <span className={labelClass}>{t('totalExpenses')}</span>
-                          <p className="text-2xl font-black text-rose-600">-{data.expense.toLocaleString()}</p>
-                       </div>
-                    </div>
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                       <span className={labelClass}>{t('totalBalance')}</span>
-                       <p className={`text-4xl font-black mt-1 ${data.income - data.expense >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-500'}`}>
-                          {(data.income - data.expense).toLocaleString()}
-                       </p>
-                    </div>
-                 </Card>
-               ))}
-               
-               {/* Quick Breakdown Card */}
-               <Card className="p-8 border-2 bg-slate-50 dark:bg-slate-900/50 shadow-inner flex flex-col justify-center items-center text-center opacity-60">
-                  <BarChart3 size={48} className="text-slate-300 mb-4" />
-                  <p className="font-black uppercase tracking-widest text-slate-400 text-sm">Detailed Visuals<br/>Pending Full Data</p>
-               </Card>
-            </div>
+             <div className="p-20 text-center text-slate-300 font-black uppercase italic tracking-widest">Detail Visuals Under Maintenance. Use List View.</div>
           )}
         </div>
       </Card>

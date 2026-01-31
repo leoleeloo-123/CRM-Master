@@ -1,5 +1,5 @@
 
-import { Customer, Sample, MasterProduct, Exhibition, Expense } from '../types';
+import { Customer, Sample, MasterProduct, Exhibition, Expense, FXRate } from '../types';
 import { format, addDays } from 'date-fns';
 
 // Helper to get consistent dates relative to today
@@ -262,4 +262,12 @@ export const MOCK_EXPENSES: Expense[] = [
     comment: 'Standard procurement cycle.',
     link: '#'
   }
+];
+
+export const MOCK_FXRATES: FXRate[] = [
+  { id: 'fx1', currency: 'USD', rateToUSD: 1.0, lastUpdated: dateStr(0) },
+  { id: 'fx2', currency: 'CNY', rateToUSD: 0.138, lastUpdated: dateStr(0) },
+  { id: 'fx3', currency: 'EUR', rateToUSD: 1.085, lastUpdated: dateStr(0) },
+  { id: 'fx4', currency: 'HKD', rateToUSD: 0.128, lastUpdated: dateStr(0) },
+  { id: 'fx5', currency: 'JPY', rateToUSD: 0.0064, lastUpdated: dateStr(0) }
 ];

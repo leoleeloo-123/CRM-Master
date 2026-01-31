@@ -1,13 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Language, translations, getCanonicalTag } from '../utils/i18n';
-import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction, Expense } from '../types';
-import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS, MOCK_EXHIBITIONS, MOCK_EXPENSES } from '../services/dataService';
+import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction, Expense, FXRate } from '../types';
+import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS, MOCK_EXHIBITIONS, MOCK_EXPENSES, MOCK_FXRATES } from '../services/dataService';
+import { format } from 'date-fns';
 
 export type FontSize = 'small' | 'medium' | 'large';
 export type ThemeMode = 'light' | 'dark' | 'warm' | 'dark-green';
 
-// Helper to handle the serialized summary format: (StarStatus)<TypeTag>//ExhibitionTag{EffectTag}Content
 export const parseInteractionSummary = (summary: string) => {
   const result = {
     isStarred: false,
@@ -19,7 +19,6 @@ export const parseInteractionSummary = (summary: string) => {
 
   if (!summary) return result;
 
-  // Star status
   if (summary.startsWith('(标星记录)')) {
     result.isStarred = true;
     result.content = result.content.replace('(标星记录)', '');
@@ -27,27 +26,22 @@ export const parseInteractionSummary = (summary: string) => {
     result.content = result.content.replace('(一般记录)', '');
   }
 
-  // Type Tag <...>
   const typeMatch = result.content.match(/^<(.*?)>/);
   if (typeMatch) {
     const rawType = typeMatch[1];
-    // ALWAYS canonicalize to the Chinese key used in tagOptions
     result.typeTag = getCanonicalTag(rawType); 
     result.content = result.content.replace(typeMatch[0], '');
   }
 
-  // Exhibition Tag //... (Matches until it hits { or end of string)
   const exhMatch = result.content.match(/^\/\/(.*?)(?=\{|$)/);
   if (exhMatch) {
     result.exhibitionTag = exhMatch[1];
     result.content = result.content.replace(`//${result.exhibitionTag}`, '');
   }
 
-  // Effect Tag {...}
   const effectMatch = result.content.match(/^{(.*?)}/);
   if (effectMatch) {
     const rawEffect = effectMatch[1];
-    // ALWAYS canonicalize to the Chinese key used in tagOptions
     result.effectTag = getCanonicalTag(rawEffect);
     result.content = result.content.replace(effectMatch[0], '');
   }
@@ -56,34 +50,22 @@ export const parseInteractionSummary = (summary: string) => {
   return result;
 };
 
-// Constant arrays for bilingual tag matching in date logic
 const REPLY_TAGS = ['Customer Reply', 'Customer Reply & Follow-up', '对方回复', '对方回复及我方跟进'];
 const FOLLOWUP_TAGS = ['Our Follow-up', 'Customer Reply & Follow-up', '我方跟进', '对方回复及我方跟进'];
 
-// Helper: Recalculate dynamic dates based on full interaction history
 export const getComputedDatesForCustomer = (interactions: Interaction[]) => {
   const sorted = [...interactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  
   const lastContact = sorted.length > 0 ? sorted[0].date : undefined;
-
   let lastCustomerReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
-    if (REPLY_TAGS.includes(effectTag)) {
-      lastCustomerReply = int.date;
-      break;
-    }
+    if (REPLY_TAGS.includes(effectTag)) { lastCustomerReply = int.date; break; }
   }
-
   let lastMyReply = undefined;
   for (const int of sorted) {
     const { effectTag } = parseInteractionSummary(int.summary);
-    if (FOLLOWUP_TAGS.includes(effectTag)) {
-      lastMyReply = int.date;
-      break;
-    }
+    if (FOLLOWUP_TAGS.includes(effectTag)) { lastMyReply = int.date; break; }
   }
-
   return { lastContact, lastCustomerReply, lastMyReply };
 };
 
@@ -106,12 +88,15 @@ interface AppContextType {
   masterProducts: MasterProduct[];
   exhibitions: Exhibition[];
   expenses: Expense[];
+  fxRates: FXRate[];
   setCustomers: (customers: Customer[] | ((prev: Customer[]) => Customer[])) => void;
   setSamples: (samples: Sample[] | ((prev: Sample[]) => Sample[])) => void;
   setExhibitions: (exhibitions: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => void;
   setExpenses: (expenses: Expense[] | ((prev: Expense[]) => Expense[])) => void;
+  setFxRates: (rates: FXRate[] | ((prev: FXRate[]) => FXRate[])) => void;
   syncSampleToCatalog: (sample: Partial<Sample>) => void;
   refreshAllCustomerDates: () => void;
+  updateGlobalFXRates: () => Promise<void>;
   
   // Tag Management
   tagOptions: TagOptions;
@@ -186,18 +171,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!saved) return MOCK_EXHIBITIONS; 
     try {
       const parsed: Exhibition[] = JSON.parse(saved);
-      return parsed.map(exh => ({
-        ...exh,
-        eventSeries: Array.isArray(exh.eventSeries) ? exh.eventSeries : []
-      }));
-    } catch (e) {
-      return MOCK_EXHIBITIONS;
-    }
+      return parsed.map(exh => ({ ...exh, eventSeries: Array.isArray(exh.eventSeries) ? exh.eventSeries : [] }));
+    } catch (e) { return MOCK_EXHIBITIONS; }
   });
 
   const [expenses, setExpensesState] = useState<Expense[]>(() => {
     const saved = localStorage.getItem('expenses');
     return saved ? JSON.parse(saved) : MOCK_EXPENSES;
+  });
+
+  const [fxRates, setFxRatesState] = useState<FXRate[]>(() => {
+    const saved = localStorage.getItem('fxRates');
+    return saved ? JSON.parse(saved) : MOCK_FXRATES;
   });
   
   const [tagOptions, setTagOptionsState] = useState<TagOptions>(() => {
@@ -214,9 +199,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         feeStatus: Array.isArray(parsed.feeStatus) ? parsed.feeStatus : DEFAULT_TAGS.feeStatus,
         expenseCategory: Array.isArray(parsed.expenseCategory) ? parsed.expenseCategory : DEFAULT_TAGS.expenseCategory
       };
-    } catch (e) {
-      return DEFAULT_TAGS;
-    }
+    } catch (e) { return DEFAULT_TAGS; }
   });
 
   useEffect(() => {
@@ -228,14 +211,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       uniqueTags.forEach(tagName => {
         const exists = updated.find(e => e.name === tagName);
         if (!exists) {
-          updated.push({
-            id: `exh_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-            name: tagName,
-            date: '',
-            location: 'TBD',
-            link: '#',
-            eventSeries: []
-          });
+          updated.push({ id: `exh_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, name: tagName, date: '', location: 'TBD', link: '#', eventSeries: [] });
           hasChanged = true;
         }
       });
@@ -257,11 +233,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('dark', 'theme-warm', 'theme-dark-green');
-    
     if (theme === 'dark') root.classList.add('dark');
     else if (theme === 'warm') root.classList.add('theme-warm');
     else if (theme === 'dark-green') root.classList.add('theme-dark-green');
-    
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -282,6 +256,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem('masterProducts', JSON.stringify(masterProducts)); }, [masterProducts]);
   useEffect(() => { localStorage.setItem('exhibitions', JSON.stringify(exhibitions)); }, [exhibitions]);
   useEffect(() => { localStorage.setItem('expenses', JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { localStorage.setItem('fxRates', JSON.stringify(fxRates)); }, [fxRates]);
   useEffect(() => { localStorage.setItem('isDemoData', String(isDemoData)); }, [isDemoData]);
   useEffect(() => { localStorage.setItem('tagOptions', JSON.stringify(tagOptions)); }, [tagOptions]);
 
@@ -294,6 +269,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setSamples = (val: Sample[] | ((prev: Sample[]) => Sample[])) => setSamplesState(val);
   const setExhibitions = (val: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => setExhibitionsState(val);
   const setExpenses = (val: Expense[] | ((prev: Expense[]) => Expense[])) => setExpensesState(val);
+  const setFxRates = (val: FXRate[] | ((prev: FXRate[]) => FXRate[])) => setFxRatesState(val);
   const setTagOptions = (val: TagOptions | ((prev: TagOptions) => TagOptions)) => setTagOptionsState(val);
 
   const refreshAllCustomerDates = useCallback(() => {
@@ -308,28 +284,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   }, []);
 
+  const updateGlobalFXRates = async () => {
+    try {
+      const response = await fetch('https://open.er-api.com/v6/latest/USD');
+      if (!response.ok) throw new Error('API request failed');
+      const data = await response.json();
+      const rates = data.rates;
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      
+      setFxRatesState(prev => {
+        return prev.map(item => {
+          const code = item.currency.toUpperCase();
+          // The API gives USD to Target (1 USD = X Target). 
+          // We need Target to USD (1 Target = ? USD).
+          if (code === 'USD') return { ...item, rateToUSD: 1.0, lastUpdated: todayStr };
+          if (rates[code]) {
+            return { ...item, rateToUSD: 1 / rates[code], lastUpdated: todayStr };
+          }
+          return item;
+        });
+      });
+    } catch (err) {
+      console.error('Failed to update FX rates:', err);
+      alert('Unable to sync rates at this moment. Please check network.');
+    }
+  };
+
   const refreshTagsFromSamples = (sampleList: Sample[], replace: boolean = false) => {
     setTagOptionsState(prev => {
       const newTags = replace ? {
-          sampleStatus: [...DEFAULT_TAGS.sampleStatus],
-          crystalType: [],
-          productCategory: [],
-          productForm: [],
-          eventSeries: [...prev.eventSeries],
-          interactionTypes: [...prev.interactionTypes],
-          interactionEffects: [...prev.interactionEffects],
-          feeStatus: [...DEFAULT_TAGS.feeStatus],
-          expenseCategory: [...prev.expenseCategory]
+          sampleStatus: [...DEFAULT_TAGS.sampleStatus], crystalType: [], productCategory: [], productForm: [],
+          eventSeries: [...prev.eventSeries], interactionTypes: [...prev.interactionTypes], interactionEffects: [...prev.interactionEffects],
+          feeStatus: [...DEFAULT_TAGS.feeStatus], expenseCategory: [...prev.expenseCategory]
       } : { 
-          sampleStatus: [...DEFAULT_TAGS.sampleStatus],
-          crystalType: [...prev.crystalType],
-          productCategory: [...prev.productCategory],
-          productForm: [...prev.productForm],
-          eventSeries: [...prev.eventSeries],
-          interactionTypes: [...prev.interactionTypes],
-          interactionEffects: [...prev.interactionEffects],
-          feeStatus: [...prev.feeStatus],
-          expenseCategory: [...prev.expenseCategory]
+          sampleStatus: [...DEFAULT_TAGS.sampleStatus], crystalType: [...prev.crystalType], productCategory: [...prev.productCategory],
+          productForm: [...prev.productForm], eventSeries: [...prev.eventSeries], interactionTypes: [...prev.interactionTypes],
+          interactionEffects: [...prev.interactionEffects], feeStatus: [...prev.feeStatus], expenseCategory: [...prev.expenseCategory]
       };
       const addUnique = (list: string[], item: string) => { if (item && !list.includes(item)) list.push(item); };
       sampleList.forEach(s => {
@@ -352,31 +342,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMasterProducts(prev => {
       const exists = prev.find(p => p.productName === generatedName);
       if (exists) return prev;
-      return [...prev, {
-        id: `mp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-        productName: generatedName,
-        crystalType: sample.crystalType!,
-        productCategory: sample.productCategory || [],
-        productForm: sample.productForm!,
-        originalSize: sample.originalSize!,
-        processedSize: sample.processedSize,
-        nickname: sample.nickname
-      }];
+      return [...prev, { id: `mp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, productName: generatedName, crystalType: sample.crystalType!, productCategory: sample.productCategory || [], productForm: sample.productForm!, originalSize: sample.originalSize!, processedSize: sample.processedSize, nickname: sample.nickname }];
     });
     return generatedName;
   };
 
   const clearDatabase = () => {
-    setCustomersState(MOCK_CUSTOMERS);
-    setSamplesState(MOCK_SAMPLES);
-    setMasterProducts(MOCK_MASTER_PRODUCTS);
-    setExhibitionsState(MOCK_EXHIBITIONS);
-    setExpensesState(MOCK_EXPENSES);
-    setIsDemoData(true);
-    setTagOptionsState(DEFAULT_TAGS); 
-    setCompanyNameState('Zenith Advanced Materials');
-    setUserNameState('Demo User');
-    localStorage.clear();
+    setCustomersState(MOCK_CUSTOMERS); setSamplesState(MOCK_SAMPLES); setMasterProducts(MOCK_MASTER_PRODUCTS); setExhibitionsState(MOCK_EXHIBITIONS); setExpensesState(MOCK_EXPENSES); setFxRatesState(MOCK_FXRATES);
+    setIsDemoData(true); setTagOptionsState(DEFAULT_TAGS); setCompanyNameState('Zenith Advanced Materials'); setUserNameState('Demo User'); localStorage.clear();
   };
 
   const t = (key: keyof typeof translations['en']) => translations[language][key] || key;
@@ -384,8 +357,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{ 
       theme, toggleTheme, language, setLanguage, fontSize, setFontSize, companyName, setCompanyName, userName, setUserName, t,
-      customers, setCustomers, samples, setSamples, exhibitions, setExhibitions, masterProducts, syncSampleToCatalog, expenses, setExpenses,
-      clearDatabase, isDemoData, setIsDemoData, tagOptions, setTagOptions, refreshTagsFromSamples, refreshAllCustomerDates
+      customers, setCustomers, samples, setSamples, exhibitions, setExhibitions, masterProducts, syncSampleToCatalog, expenses, setExpenses, fxRates, setFxRates,
+      clearDatabase, isDemoData, setIsDemoData, tagOptions, setTagOptions, refreshTagsFromSamples, refreshAllCustomerDates, updateGlobalFXRates
     }}>
       {children}
     </AppContext.Provider>

@@ -131,7 +131,6 @@ export interface Sample {
   feeComment?: string;
 }
 
-// NEW: Expense Data Object
 export interface Expense {
   id: string;
   category: string;
@@ -146,6 +145,13 @@ export interface Expense {
   balance: string;
   comment: string;
   link: string;
+}
+
+export interface FXRate {
+  id: string;
+  currency: string;
+  rateToUSD: number;
+  lastUpdated: string;
 }
 
 export interface TagOptions {

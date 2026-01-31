@@ -1,3 +1,4 @@
+
 export type Language = 'en' | 'zh';
 
 export const translations = {
@@ -9,13 +10,14 @@ export const translations = {
     finance: 'Finance',
     dataManagement: 'Data Management',
     settings: 'Settings',
+    fx: 'FX Rates',
 
     // Page Subtitles
     dashboardDesc: 'Enterprise Edition & Console Overview',
     manageClients: 'Manage all client relationships, rankings, and status updates.',
     monitorSamples: 'Monitor sample production and customer feedback.',
-    exhibitionDesc: 'Managing links and info for all exhibition entries.',
-    financeDesc: 'Consolidated view of revenue from samples and operating expenses.',
+    exhibitionDesc: 'Managing links and info for all exhibitions.',
+    financeDesc: 'Unified financial overview with multi-currency conversion.',
     dataManagementDesc: 'Bulk import and export tools for database management.',
     settingsDesc: 'Customize your application experience.',
 
@@ -39,6 +41,14 @@ export const translations = {
     other: 'Other Info',
     results: 'Results',
     nameLabel: 'Name',
+    
+    // FX
+    currencyCode: 'Currency',
+    rateToUsd: 'Rate to USD',
+    lastUpdated: 'Last Updated',
+    updateFxRates: 'Sync Latest Rates',
+    displayCurrency: 'Display Currency',
+    fxReference: 'Conversion Reference',
     
     // Dashboard
     totalCustomers: 'Total Customers',
@@ -102,10 +112,8 @@ export const translations = {
     noExhibitions: 'No linked exhibitions.',
     upcomingPlanHeader: 'Upcoming Plan',
     productSummary: 'Status Summary',
-    lastUpdated: 'Last Updated',
-    statusUpdateHeader: 'Status Updates',
-    daysSinceUpdate: 'Days Since Update',
     updateStatus: 'Update Status',
+    daysSinceUpdate: 'Days Since Update',
     daysUntilDDL: 'Days Until DDL',
     unrepliedDays: 'Customer Unreplied Days',
     unfollowedDays: 'Our Unfollowed Days',
@@ -184,7 +192,7 @@ export const translations = {
     sampleInfo: 'Sample Info',
     statusInfo: 'Status Info',
     sinceUpdate: 'Since Update',
-    test: 'Test',
+    test: 'Test status',
     deleteSample: 'Delete Sample',
     confirmDeleteSample: 'Are you sure you want to delete this sample record? This action cannot be undone.',
     fileLinks: 'File Links',
@@ -345,13 +353,14 @@ export const translations = {
     finance: '财务信息',
     dataManagement: '数据管理',
     settings: '设置',
+    fx: '汇率管理',
 
     // Page Subtitles
     dashboardDesc: '企业版 & 控制台概览',
     manageClients: '管理所有客户关系、等级和状态更新。',
     monitorSamples: '监控样品生产和客户反馈。',
     exhibitionDesc: '管理展会链接及详细记录。',
-    financeDesc: '统一查看样品收入与日常经营支出。',
+    financeDesc: '统一查看财务概况，支持多币种实时换算展示。',
     dataManagementDesc: '用于数据库维护的批量导入 and 导出工具。',
     settingsDesc: '自定义您的应用程序体验。',
 
@@ -375,6 +384,14 @@ export const translations = {
     other: '其它',
     results: '结果',
     nameLabel: '名字',
+    
+    // FX
+    currencyCode: '币种代码',
+    rateToUsd: '对美元汇率',
+    lastUpdated: '最后更新',
+    updateFxRates: '更新最新汇率',
+    displayCurrency: '显示币种',
+    fxReference: '换算口径参考',
 
     // Dashboard
     totalCustomers: '客户总数',
@@ -438,10 +455,8 @@ export const translations = {
     noExhibitions: '暂无关联展会。',
     upcomingPlanHeader: '后续计划',
     productSummary: '状态总结',
-    lastUpdated: '最后更新',
-    statusUpdateHeader: '状态更新',
-    daysSinceUpdate: '距更新天数',
     updateStatus: '更新状态',
+    daysSinceUpdate: '距更新天数',
     daysUntilDDL: 'DDL剩余天数',
     unrepliedDays: '客户未回复天数',
     unfollowedDays: '我方未跟进天数',
