@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Language, translations, getCanonicalTag } from '../utils/i18n';
 import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction, Expense } from '../types';
-import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS, MOCK_EXHIBITIONS } from '../services/dataService';
+import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS, MOCK_EXHIBITIONS, MOCK_EXPENSES } from '../services/dataService';
 
 export type FontSize = 'small' | 'medium' | 'large';
 export type ThemeMode = 'light' | 'dark' | 'warm' | 'dark-green';
@@ -197,7 +197,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [expenses, setExpensesState] = useState<Expense[]>(() => {
     const saved = localStorage.getItem('expenses');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) : MOCK_EXPENSES;
   });
   
   const [tagOptions, setTagOptionsState] = useState<TagOptions>(() => {
@@ -371,7 +371,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSamplesState(MOCK_SAMPLES);
     setMasterProducts(MOCK_MASTER_PRODUCTS);
     setExhibitionsState(MOCK_EXHIBITIONS);
-    setExpensesState([]);
+    setExpensesState(MOCK_EXPENSES);
     setIsDemoData(true);
     setTagOptionsState(DEFAULT_TAGS); 
     setCompanyNameState('Zenith Advanced Materials');

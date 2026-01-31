@@ -4,6 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import { Card, Badge, Button } from '../components/Common';
 import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity } from 'lucide-react';
 import { format, isValid } from 'date-fns';
+import { translateDisplay } from '../utils/i18n';
 
 interface UnifiedTransaction {
   source: 'Sample' | 'Expense';
@@ -22,7 +23,7 @@ interface UnifiedTransaction {
 }
 
 const FinanceTracker: React.FC = () => {
-  const { t, samples, expenses, tagOptions } = useApp();
+  const { t, samples, expenses, language } = useApp();
   const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -40,7 +41,7 @@ const FinanceTracker: React.FC = () => {
         source: 'Sample',
         category: s.feeCategory || '',
         detail: s.nickname || '',
-        expInc: s.feeType || t('income'),
+        expInc: s.feeType || '收入',
         party: s.customerName,
         name: s.sampleName || '',
         origDate: s.originationDate || '',
@@ -56,7 +57,7 @@ const FinanceTracker: React.FC = () => {
       source: 'Expense',
       category: e.category,
       detail: e.detail,
-      expInc: e.expInc || t('expense'),
+      expInc: e.expInc || '支出',
       party: e.party,
       name: e.name,
       origDate: e.originationDate,
@@ -73,9 +74,9 @@ const FinanceTracker: React.FC = () => {
       const dateB = b.transDate || b.origDate || '0000-00-00';
       return dateB.localeCompare(dateA);
     });
-  }, [samples, expenses, t]);
+  }, [samples, expenses]);
 
-  // Dynamically extract unique values for filters from current data pool
+  // Dynamically extract unique values for filters from the ACTUAL data pool
   const uniqueOptions = useMemo(() => {
     const categories = new Set<string>();
     const statuses = new Set<string>();
@@ -117,7 +118,8 @@ const FinanceTracker: React.FC = () => {
       if (!currencyTotals[cur]) currencyTotals[cur] = { income: 0, expense: 0 };
       
       const val = parseFloat(d.balance.replace(/[^0-9.]/g, '')) || 0;
-      if (d.expInc === t('income') || d.expInc === 'Income' || d.expInc === '收入') {
+      // Normalizing Exp/Inc check for calculation
+      if (d.expInc === '收入' || d.expInc === 'Income') {
         currencyTotals[cur].income += val;
       } else {
         currencyTotals[cur].expense += val;
@@ -125,7 +127,7 @@ const FinanceTracker: React.FC = () => {
     });
 
     return currencyTotals;
-  }, [filteredData, t]);
+  }, [filteredData]);
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -171,30 +173,30 @@ const FinanceTracker: React.FC = () => {
                 <Filter size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterExpInc} onChange={e => setFilterExpInc(e.target.value)}>
                    <option value="">{t('feeType')}: ALL</option>
-                   <option value={t('income')}>{t('income')}</option>
-                   <option value={t('expense')}>{t('expense')}</option>
+                   <option value="收入">{t('income')}</option>
+                   <option value="支出">{t('expense')}</option>
                 </select>
              </div>
 
-             {/* Category Filter - Optimized to show only valid categories */}
+             {/* Category Filter - Dynamically sourced from table content */}
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Tag size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
                    <option value="">{t('feeCategory')}: ALL</option>
-                   {uniqueOptions.categories.map(c => <option key={c} value={c}>{c}</option>)}
+                   {uniqueOptions.categories.map(c => <option key={c} value={c}>{translateDisplay(c, language)}</option>)}
                 </select>
              </div>
 
-             {/* Status Filter - NEW */}
+             {/* Status Filter - Dynamically sourced */}
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Activity size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                    <option value="">{t('status')}: ALL</option>
-                   {uniqueOptions.statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                   {uniqueOptions.statuses.map(s => <option key={s} value={s}>{translateDisplay(s, language)}</option>)}
                 </select>
              </div>
 
-             {/* Party Filter - NEW */}
+             {/* Party Filter - Dynamically sourced */}
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <User size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300 max-w-[150px]" value={filterParty} onChange={e => setFilterParty(e.target.value)}>
@@ -243,21 +245,21 @@ const FinanceTracker: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {filteredData.map((d, i) => {
-                    const isIncome = d.expInc === t('income') || d.expInc === 'Income' || d.expInc === '收入';
+                    const isIncome = d.expInc === '收入' || d.expInc === 'Income';
                     return (
                       <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group">
                         <td className="p-6">
                            <div className={`flex items-center gap-2 font-black uppercase text-xs ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
                               {isIncome ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
-                              {d.expInc}
+                              {translateDisplay(d.expInc, language)}
                            </div>
                         </td>
-                        <td className="p-6 font-black text-slate-700 dark:text-slate-200 text-sm uppercase">{d.category}</td>
+                        <td className="p-6 font-black text-slate-700 dark:text-slate-200 text-sm uppercase">{translateDisplay(d.category, language)}</td>
                         <td className="p-6 font-black text-blue-600 dark:text-blue-400 uppercase text-sm truncate max-w-[150px]">{d.party}</td>
                         <td className="p-6 font-black text-slate-900 dark:text-white text-sm truncate max-w-[200px] uppercase">{d.name}</td>
                         <td className="p-6 italic text-slate-500 text-xs truncate max-w-[150px]">{d.detail}</td>
                         <td className={`p-6 font-black text-base ${isIncome ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>{isIncome ? '+' : '-'}{d.balance} <span className="text-[10px] opacity-40">{d.currency}</span></td>
-                        <td className="p-6"><Badge color="blue">{d.status}</Badge></td>
+                        <td className="p-6"><Badge color="blue">{translateDisplay(d.status, language)}</Badge></td>
                         <td className="p-6 font-black text-slate-400 text-xs whitespace-nowrap">{d.transDate || d.origDate}</td>
                       </tr>
                     );

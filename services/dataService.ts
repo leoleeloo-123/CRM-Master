@@ -1,5 +1,5 @@
 
-import { Customer, Sample, MasterProduct, Exhibition } from '../types';
+import { Customer, Sample, MasterProduct, Exhibition, Expense } from '../types';
 import { format, addDays } from 'date-fns';
 
 // Helper to get consistent dates relative to today
@@ -97,7 +97,7 @@ export const MOCK_CUSTOMERS: Customer[] = [
       {
         id: 'i5',
         date: dateStr(-5),
-        summary: '(一般记录)<视频会议>{我方跟进}Held a technical seminar for their junior engineers regarding the proper suspension preparation methods to ensure consistent cutting results.',
+        summary: '(一般记录)<视频会议>{我方跟进}Held a technical seminar for their junior engineers regarding the proper suspension preparation methods to ensure consistent results.',
       }
     ]
   },
@@ -118,12 +118,12 @@ export const MOCK_CUSTOMERS: Customer[] = [
     lastMyReplyDate: dateStr(-20),
     nextActionDate: dateStr(1),
     tags: ['Optical Expo 2026'],
-    upcomingPlan: 'Scheduled a technical consultation call to review the long-term storage stability of Batch 707-B slurry.',
+    upcomingPlan: 'Scheduled a technical consultation call to review the long-term storage stability of slurry.',
     interactions: [
       {
         id: 'i6',
         date: '2026-05-16',
-        summary: '(一般记录)<展会相见>//Optical Expo 2026{我方跟进}Jim visited our booth in Frankfurt to ask about the sedimentation rates of our water-based suspensions. Provided him with the latest stability data charts.',
+        summary: '(一般记录)<展会相见>//Optical Expo 2026{我方跟进}Jim visited our booth in Frankfurt to ask about the stability of our suspensions. Provided him with the latest data charts.',
       }
     ]
   }
@@ -152,7 +152,19 @@ export const MOCK_SAMPLES: Sample[] = [
     lastStatusDate: dateStr(-5),
     nextActionDate: dateStr(0),
     upcomingPlan: 'Finalizing the lab analysis for surface roughness on silicon carbide substrates.',
-    statusDetails: '【' + dateStr(-30) + '】Request received from R&D team ||| 【' + dateStr(-25) + '】Production phase started in clean room ||| 【' + dateStr(-5) + '】Quality check initiated.'
+    statusDetails: '【' + dateStr(-30) + '】Request received ||| 【' + dateStr(-25) + '】Production phase started ||| 【' + dateStr(-5) + '】Quality check initiated.',
+    // Fee Info
+    isPaid: true,
+    feeCategory: '样品费用',
+    feeType: '收入',
+    actualUnitPrice: '2.5',
+    standardUnitPrice: '3.0',
+    originationDate: dateStr(-30),
+    transactionDate: dateStr(-28),
+    feeStatus: '已付款',
+    currency: 'USD',
+    balance: '1250',
+    feeComment: 'Trial batch payment received.'
   },
   {
     id: 's2',
@@ -175,31 +187,19 @@ export const MOCK_SAMPLES: Sample[] = [
     lastStatusDate: dateStr(-1),
     nextActionDate: dateStr(5),
     upcomingPlan: 'Analyze feedback regarding the cutting speed vs wire lifespan trade-off.',
-    statusDetails: '【' + dateStr(-15) + '】Urgent request for high-volume wire saw trial ||| 【' + dateStr(-1) + '】Material batching complete.'
-  },
-  {
-    id: 's3',
-    customerId: 'c3',
-    customerName: 'Titan Aerospace Finishings',
-    sampleIndex: 1,
-    sampleName: 'Single Crystal Nano Diamond Suspension - 20nm > 20nm (Aerospace Slurry)',
-    productType: 'Suspension',
-    specs: '20nm water-based',
-    quantity: '5L',
-    status: '等待中',
-    testStatus: 'Ongoing',
-    crystalType: '单晶',
-    productCategory: ['纳米金刚石'],
-    productForm: '悬浮液',
-    originalSize: '20nm',
-    processedSize: '20nm',
-    nickname: 'Aerospace Slurry',
-    isStarredSample: true,
-    requestDate: dateStr(-5),
-    lastStatusDate: dateStr(-2),
-    nextActionDate: dateStr(1),
-    upcomingPlan: 'Finish mixing Batch 707 and ship via express before Friday end-of-day.',
-    statusDetails: '【' + dateStr(-5) + '】Custom formulation requested for aerospace application.'
+    statusDetails: '【' + dateStr(-15) + '】Urgent request ||| 【' + dateStr(-1) + '】Material batching complete.',
+    // Fee Info
+    isPaid: true,
+    feeCategory: '定制产品',
+    feeType: '收入',
+    actualUnitPrice: '450',
+    standardUnitPrice: '500',
+    originationDate: dateStr(-15),
+    transactionDate: dateStr(-10),
+    feeStatus: '已付款',
+    currency: 'USD',
+    balance: '900',
+    feeComment: 'Custom formulation surcharge included.'
   }
 ];
 
@@ -213,5 +213,53 @@ export const MOCK_MASTER_PRODUCTS: MasterProduct[] = [
     originalSize: '0.5um',
     processedSize: '0.5um',
     nickname: 'SuperPolish A'
+  }
+];
+
+export const MOCK_EXPENSES: Expense[] = [
+  {
+    id: 'exp_1',
+    category: 'Exhibition Booth',
+    detail: 'Booth Rental & Build',
+    expInc: '支出',
+    party: 'Shanghai Expo Center',
+    name: 'SEMICON 2026',
+    originationDate: dateStr(-60),
+    transactionDate: dateStr(-55),
+    status: 'Paid',
+    currency: 'CNY',
+    balance: '45000',
+    comment: 'Down payment for 36sqm corner booth.',
+    link: '#'
+  },
+  {
+    id: 'exp_2',
+    category: 'Travel Expense',
+    detail: 'Flights & Hotel',
+    expInc: '支出',
+    party: 'Trip.com',
+    name: 'Team Travel - Germany',
+    originationDate: dateStr(-12),
+    transactionDate: dateStr(-10),
+    status: 'Paid',
+    currency: 'USD',
+    balance: '3200',
+    comment: 'Round-trip tickets for 2 engineers.',
+    link: '#'
+  },
+  {
+    id: 'exp_3',
+    category: 'Material Procurement',
+    detail: 'Raw Diamond Grit',
+    expInc: '支出',
+    party: 'Element Six Ltd',
+    name: 'Batch Q3-Materials',
+    originationDate: dateStr(-5),
+    transactionDate: '',
+    status: 'Pending',
+    currency: 'USD',
+    balance: '12500',
+    comment: 'Standard procurement cycle.',
+    link: '#'
   }
 ];

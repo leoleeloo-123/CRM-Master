@@ -645,15 +645,26 @@ export const getCanonicalTag = (val: string): string => {
  */
 export const translateToZh = (keyOrVal: string): string => {
   if (!keyOrVal) return '无';
-  
-  // 1. If it exists in zh as a value, we might already have it
-  // 2. Normalize to canonical key first
   const canonical = getCanonicalTag(keyOrVal);
-  
-  // Return the Chinese version from our mapped keys
   if (translations.zh.hasOwnProperty(canonical)) {
     return translations.zh[canonical as keyof typeof translations.zh] as string;
   }
-  
   return canonical;
+};
+
+/**
+ * Translates a given value to the target language (UI Display only).
+ * If the value matches a key in our dictionary, return translation.
+ */
+export const translateDisplay = (val: string, lang: Language): string => {
+  if (!val) return '';
+  const canonical = getCanonicalTag(val);
+  const targetDict = translations[lang];
+  
+  // Check if it's a known key
+  if (targetDict.hasOwnProperty(canonical)) {
+    return (targetDict as any)[canonical];
+  }
+  
+  return val;
 };
