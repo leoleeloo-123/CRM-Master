@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Card, Badge, Button, Modal } from '../components/Common';
-import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User } from 'lucide-react';
+import { Card, Badge, Button } from '../components/Common';
+import { Search, Filter, CreditCard, DollarSign, ArrowUpRight, ArrowDownRight, ExternalLink, X, ChevronDown, List, BarChart3, PieChart, Wallet, Calendar, Tag, User, Activity } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 
 interface UnifiedTransaction {
@@ -30,6 +31,7 @@ const FinanceTracker: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterCurrency, setFilterCurrency] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterParty, setFilterParty] = useState('');
 
   const unifiedData: UnifiedTransaction[] = useMemo(() => {
     const sampleFees: UnifiedTransaction[] = samples
@@ -73,6 +75,25 @@ const FinanceTracker: React.FC = () => {
     });
   }, [samples, expenses, t]);
 
+  // Dynamically extract unique values for filters from current data pool
+  const uniqueOptions = useMemo(() => {
+    const categories = new Set<string>();
+    const statuses = new Set<string>();
+    const parties = new Set<string>();
+
+    unifiedData.forEach(d => {
+      if (d.category) categories.add(d.category);
+      if (d.status) statuses.add(d.status);
+      if (d.party) parties.add(d.party);
+    });
+
+    return {
+      categories: Array.from(categories).sort(),
+      statuses: Array.from(statuses).sort(),
+      parties: Array.from(parties).sort()
+    };
+  }, [unifiedData]);
+
   const filteredData = useMemo(() => {
     return unifiedData.filter(d => {
       const searchStr = `${d.party} ${d.name} ${d.detail} ${d.category} ${d.comment}`.toLowerCase();
@@ -81,10 +102,11 @@ const FinanceTracker: React.FC = () => {
       const matchesCategory = filterCategory === '' || d.category === filterCategory;
       const matchesCurrency = filterCurrency === '' || d.currency === filterCurrency;
       const matchesStatus = filterStatus === '' || d.status === filterStatus;
+      const matchesParty = filterParty === '' || d.party === filterParty;
       
-      return matchesSearch && matchesExpInc && matchesCategory && matchesCurrency && matchesStatus;
+      return matchesSearch && matchesExpInc && matchesCategory && matchesCurrency && matchesStatus && matchesParty;
     });
-  }, [unifiedData, searchTerm, filterExpInc, filterCategory, filterCurrency, filterStatus]);
+  }, [unifiedData, searchTerm, filterExpInc, filterCategory, filterCurrency, filterStatus, filterParty]);
 
   // Aggregate stats for Board view
   const stats = useMemo(() => {
@@ -111,6 +133,7 @@ const FinanceTracker: React.FC = () => {
     setFilterCategory('');
     setFilterCurrency('');
     setFilterStatus('');
+    setFilterParty('');
   };
 
   const labelClass = "text-[10px] xl:text-xs font-black uppercase text-slate-400 tracking-widest";
@@ -143,27 +166,48 @@ const FinanceTracker: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
+             {/* Exp / Inc Filter */}
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Filter size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterExpInc} onChange={e => setFilterExpInc(e.target.value)}>
-                   <option value="">{t('feeType')}: All</option>
+                   <option value="">{t('feeType')}: ALL</option>
                    <option value={t('income')}>{t('income')}</option>
                    <option value={t('expense')}>{t('expense')}</option>
                 </select>
              </div>
 
+             {/* Category Filter - Optimized to show only valid categories */}
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <Tag size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-                   <option value="">{t('feeCategory')}: All</option>
-                   {[...tagOptions.expenseCategory, ...tagOptions.productCategory, t('defaultFeeCategory')].map(c => <option key={c} value={c}>{c}</option>)}
+                   <option value="">{t('feeCategory')}: ALL</option>
+                   {uniqueOptions.categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
              </div>
 
+             {/* Status Filter - NEW */}
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <Activity size={18} className="text-slate-400" />
+                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                   <option value="">{t('status')}: ALL</option>
+                   {uniqueOptions.statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+             </div>
+
+             {/* Party Filter - NEW */}
+             <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
+                <User size={18} className="text-slate-400" />
+                <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300 max-w-[150px]" value={filterParty} onChange={e => setFilterParty(e.target.value)}>
+                   <option value="">{t('party')}: ALL</option>
+                   {uniqueOptions.parties.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+             </div>
+
+             {/* Currency Filter */}
              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-100 dark:border-slate-700">
                 <DollarSign size={18} className="text-slate-400" />
                 <select className="bg-transparent text-sm font-black uppercase tracking-widest outline-none dark:text-slate-300" value={filterCurrency} onChange={e => setFilterCurrency(e.target.value)}>
-                   <option value="">{t('currency')}: All</option>
+                   <option value="">{t('currency')}: ALL</option>
                    <option value="USD">USD</option>
                    <option value="CNY">CNY</option>
                    <option value="EUR">EUR</option>
@@ -171,7 +215,7 @@ const FinanceTracker: React.FC = () => {
                 </select>
              </div>
 
-             { (searchTerm || filterExpInc || filterCategory || filterCurrency || filterStatus) && (
+             { (searchTerm || filterExpInc || filterCategory || filterCurrency || filterStatus || filterParty) && (
                <button onClick={resetFilters} className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors ml-2">
                  <X size={16} /> {t('cancel')}
                </button>
@@ -190,7 +234,7 @@ const FinanceTracker: React.FC = () => {
                     <th className="p-6">{t('feeType')}</th>
                     <th className="p-6">{t('feeCategory')}</th>
                     <th className="p-6">{t('party')}</th>
-                    <th className="p-6">{t('name')}</th>
+                    <th className="p-6">NAME</th>
                     <th className="p-6">{t('detail')}</th>
                     <th className="p-6">{t('balance')}</th>
                     <th className="p-6">{t('status')}</th>
@@ -227,9 +271,6 @@ const FinanceTracker: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                {/* Summary Cards */}
-               {/*
-                * FIX: Cast Object.entries(stats) to correct type to avoid 'unknown' errors on 'data' object.
-                */}
                {(Object.entries(stats) as [string, { income: number; expense: number }][]).map(([cur, data]) => (
                  <Card key={cur} className="p-8 border-2 shadow-sm space-y-6">
                     <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
