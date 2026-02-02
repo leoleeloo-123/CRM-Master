@@ -224,6 +224,43 @@ const DataManagement: React.FC<DataManagementProps> = ({ onImportCustomers, onIm
     );
   };
 
+  const renderParsedPreviewTable = () => {
+    if (!parsedPreview) return null;
+    return (
+      <div className="border-2 rounded-3xl border-slate-100 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 shadow-sm animate-in fade-in duration-300">
+        <div className="bg-slate-100 dark:bg-slate-800/80 p-5 border-b-2 border-slate-200 dark:border-slate-700 flex justify-between items-center">
+          <span className="font-black text-slate-900 dark:text-white uppercase tracking-widest text-sm flex items-center gap-3">
+            <Eye size={18} className="text-blue-600" /> Preview: {activeTab}
+          </span>
+        </div>
+        <div className="max-h-[500px] overflow-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 font-black uppercase text-[10px] tracking-widest sticky top-0 z-10 border-b border-slate-100 dark:border-slate-800">
+              <tr>
+                {activeTab === 'customers' ? (<><th className="p-4 pl-6">Name</th><th className="p-4">Rank</th><th className="p-4">Region</th><th className="p-4">Summary</th><th className="p-4">Status</th><th className="p-4">Next</th><th className="p-4 pr-6">Date</th></>) : 
+                 activeTab === 'samples' ? (<><th className="p-4 pl-6">Customer</th><th className="p-4">Idx</th><th className="p-4">Name</th><th className="p-4">Status</th><th className="p-4">Test</th><th className="p-4">Paid</th><th className="p-4">Balance</th><th className="p-4 pr-6">Next</th></>) : 
+                 activeTab === 'exhibitions' ? (<><th className="p-4 pl-6">Name</th><th className="p-4">Date</th><th className="p-4">Location</th><th className="p-4 pr-6">Summary</th></>) : 
+                 activeTab === 'expenses' ? (<><th className="p-4 pl-6">Cat</th><th className="p-4">Party</th><th className="p-4">Name</th><th className="p-4">Balance</th><th className="p-4 pr-6">Date</th></>) :
+                 (<><th className="p-4 pl-6">Currency</th><th className="p-4">Rate (to USD)</th><th className="p-4 pr-6">Last Updated</th></>)}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
+              {parsedPreview.map((row: any, idx) => (
+                <tr key={idx} className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 transition-colors">
+                  {activeTab === 'customers' ? (<><td className="p-4 pl-6 text-blue-600 font-black uppercase">{row.name}</td><td className="p-4"><RankStars rank={row.rank} /></td><td className="p-4">{Array.isArray(row.region) ? row.region.join(', ') : row.region}</td><td className="p-4 truncate max-w-[150px]">{row.productSummary}</td><td className="p-4"><Badge color="blue">{row.followUpStatus}</Badge></td><td className="p-4 truncate max-w-[120px]">{row.upcomingPlan}</td><td className="p-4 pr-6 whitespace-nowrap">{row.lastStatusUpdate}</td></>) : 
+                   activeTab === 'samples' ? (<><td className="p-4 pl-6 uppercase text-slate-400">{row.customerName}</td><td className="p-4">{row.sampleIndex}</td><td className="p-4 font-black text-blue-600 uppercase">{row.sampleName}</td><td className="p-4"><Badge color="blue">{row.status}</Badge></td><td className="p-4"><Badge color={row.testStatus==='Finished'?'green':row.testStatus==='Terminated'?'red':'yellow'}>{row.testStatus}</Badge></td><td className="p-4">{row.isPaid ? 'Yes' : 'No'}</td><td className="p-4 text-amber-600 font-black">{row.balance}</td><td className="p-4 pr-6 italic truncate max-w-[120px]">{row.upcomingPlan}</td></>) : 
+                   activeTab === 'exhibitions' ? (<><td className="p-4 pl-6 font-black uppercase text-blue-600">{row.name}</td><td className="p-4">{row.date}</td><td className="p-4">{row.location}</td><td className="p-4 pr-6 truncate max-w-[150px] italic">{row.summary}</td></>) : 
+                   activeTab === 'expenses' ? (<><td className="p-4 pl-6 uppercase text-blue-600">{row.category}</td><td className="p-4 uppercase">{row.party}</td><td className="p-4 uppercase">{row.name}</td><td className="p-4 font-black text-amber-600">{row.balance} {row.currency}</td><td className="p-4 pr-6 whitespace-nowrap">{row.transactionDate || row.originationDate}</td></>) :
+                   (<><td className="p-4 pl-6 font-black text-blue-600 uppercase">{row.currency}</td><td className="p-4 font-mono font-bold text-emerald-600">{row.rateToUSD}</td><td className="p-4 pr-6 text-slate-400">{row.lastUpdated}</td></>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex justify-between items-center">
@@ -254,12 +291,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ onImportCustomers, onIm
                  </div>
                  {importStatus && <div className={`flex items-center gap-3 p-3 rounded-2xl border font-black uppercase text-[10px] tracking-widest ${importStatus.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : importStatus.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>{importStatus.message}</div>}
               </div>
-              {!parsedPreview ? <textarea className="w-full h-44 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-6 font-mono text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none bg-white dark:bg-slate-900 text-slate-700 shadow-inner" placeholder={`Paste ${activeTab} data here...`} value={importData} onChange={(e) => setImportData(e.target.value)} /> : (
-                <div className="border-2 rounded-3xl border-slate-100 overflow-hidden bg-white dark:bg-slate-900">
-                   <div className="bg-slate-100 dark:bg-slate-800/80 p-5 border-b-2 border-slate-200 flex justify-between items-center"><span className="font-black text-slate-900 dark:text-white uppercase tracking-widest text-sm flex items-center gap-3"><Eye size={18} className="text-blue-600" /> Preview: {activeTab}</span></div>
-                   <div className="max-h-[500px] overflow-auto"><table className="w-full text-left"><thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 font-black uppercase text-[10px] tracking-widest sticky top-0 z-10 border-b border-slate-100"><tr>{activeTab==='fxRates'?(<><th className="p-4 pl-6">Currency</th><th className="p-4">Rate to USD</th><th className="p-4 pr-6">Updated</th></>):<th className="p-4 pl-6">Row Data Preview</th>}</tr></thead><tbody className="divide-y divide-slate-50 text-xs font-bold text-slate-600 dark:text-slate-400">{parsedPreview.map((row, idx) => (<tr key={idx}>{activeTab==='fxRates'?(<><td className="p-4 pl-6 font-black text-blue-600">{row.currency}</td><td className="p-4 text-emerald-600">{row.rateToUSD}</td><td className="p-4 pr-6">{row.lastUpdated}</td></>):<td className="p-4 pl-6">{JSON.stringify(row).substring(0, 100)}...</td>}</tr>))}</tbody></table></div>
-                </div>
-              )}
+              {!parsedPreview ? <textarea className="w-full h-44 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-6 font-mono text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none bg-white dark:bg-slate-900 text-slate-700 shadow-inner" placeholder={`Paste ${activeTab} data here...`} value={importData} onChange={(e) => setImportData(e.target.value)} /> : renderParsedPreviewTable()}
             </div>
           )}
         </div>
