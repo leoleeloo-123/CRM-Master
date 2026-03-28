@@ -7,7 +7,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cnptexlyzhfkqt
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_bq1-NO6E0uAoDLWviGtgfA_tnCwC245';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const INVITE_CODE = 'NAVI2026';
+const INVITE_CODE = import.meta.env.VITE_INVITE_CODE || 'NAVI2026';
 
 interface AuthPageProps {
   onLogin: (user: any, mode: 'team' | 'local', setAsDefault?: boolean) => void;
@@ -119,6 +119,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSkip }) => {
                 </label>
               </div>
             </button>
+          </div>
+          
+          <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-xs text-slate-400 dark:text-slate-500 italic leading-relaxed">
+              <strong className="text-slate-500 dark:text-slate-400 not-italic">Team Mode:</strong> Connect to cloud database for team collaboration. Requires invite code to register.
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 italic leading-relaxed mt-2">
+              <strong className="text-slate-500 dark:text-slate-400 not-italic">Local Mode:</strong> Store data only on this device. No registration needed. Data stays private to this browser.
+            </p>
           </div>
         </Card>
       </div>
