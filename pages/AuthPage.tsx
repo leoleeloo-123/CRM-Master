@@ -224,15 +224,16 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSkip }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Invite Code</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Access Code</label>
               <input
-                type="text"
+                type="password"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="NAVI2026"
+                placeholder="Enter access code if you have one"
                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
                 required
               />
+              <p className="text-xs text-slate-400 mt-1">Contact admin if you need an access code</p>
             </div>
 
             {error && (
