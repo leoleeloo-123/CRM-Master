@@ -8,7 +8,7 @@ export const translations = {
     customers: 'Customers',
     sampleTracking: 'Sample Tracking',
     finance: 'Finance',
-    dataManagement: 'Data Management',
+    dataManagement: 'Data Manage',
     settings: 'Settings',
     fx: 'FX Rates',
 
