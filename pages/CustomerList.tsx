@@ -4,6 +4,7 @@ import { Card, Button, RankStars, StatusIcon, Modal, Badge } from '../components
 import { Search, Plus, ChevronRight, Filter, Star, RefreshCcw, ExternalLink, User, Activity, Clock, X, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { customersApi } from '../services/apiClient';
 import { differenceInDays, isValid } from 'date-fns';
 
 interface CustomerListProps {
@@ -105,38 +106,59 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
     return "text-red-500 font-black";
   };
 
-  const handleCreateCustomer = () => {
+  const handleCreateCustomer = async () => {
     if (!newCustomer.name) {
       alert('Customer Name is required');
       return;
     }
 
-    const newId = `c_${Date.now()}`;
     const now = new Date().toISOString().split('T')[0];
+    const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
 
-    const customer: Customer = {
-       id: newId,
+    const customerData = {
        name: newCustomer.name,
        region: [newCustomer.region || 'Unknown'],
        rank: newCustomer.rank,
        status: 'Active',
-       productSummary: '',
-       lastStatusUpdate: now,
-       followUpStatus: 'No Action',
+       product_summary: '',
+       last_status_update: now,
+       follow_up_status: 'No Action',
        contacts: newCustomer.contactName ? [{
          name: newCustomer.contactName,
          title: '',
          email: newCustomer.contactEmail,
          isPrimary: true
        }] : [],
-       lastContactDate: now,
+       last_contact_date: now,
        tags: [],
        interactions: []
     };
 
-    setCustomers(prev => [...prev, customer]);
-    setIsAddModalOpen(false);
-    navigate(`/customers/${newId}`);
+    try {
+      if (storageMode === 'team') {
+        // Create in Supabase
+        const created = await customersApi.create(customerData);
+        setCustomers(prev => [...prev, created]);
+        setIsAddModalOpen(false);
+        navigate(`/customers/${created.id}`);
+      } else {
+        // Local mode - create with local ID
+        const newId = `c_${Date.now()}`;
+        const customer: Customer = {
+          ...customerData,
+          id: newId,
+          productSummary: '',
+          lastStatusUpdate: now,
+          followUpStatus: 'No Action',
+          lastContactDate: now
+        } as Customer;
+        setCustomers(prev => [...prev, customer]);
+        setIsAddModalOpen(false);
+        navigate(`/customers/${newId}`);
+      }
+    } catch (err: any) {
+      alert('Failed to create customer: ' + err.message);
+    }
   };
 
   const handleGlobalRefresh = () => {
