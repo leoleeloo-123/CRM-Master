@@ -12,6 +12,7 @@ import ExhibitionProfile from './pages/ExhibitionProfile';
 import FinanceTracker from './pages/FinanceTracker';
 import DataManagement from './pages/DataManagement';
 import Settings from './pages/Settings';
+import AuthPage from './pages/AuthPage';
 import { Customer, Sample } from './types';
 import { AppProvider, useApp } from './contexts/AppContext';
 
@@ -20,6 +21,56 @@ const AppContent: React.FC = () => {
   const { customers, samples, setCustomers, setSamples, isDemoData, setIsDemoData, refreshAllCustomerDates } = useApp();
   const [loading, setLoading] = useState(true);
   const [showDemoBanner, setShowDemoBanner] = useState(true);
+  
+  // Auth State
+  const [authMode, setAuthMode] = useState<'auth' | 'app'>('auth');
+  const [storageMode, setStorageMode] = useState<'team' | 'local'>('local');
+  const [user, setUser] = useState<any>(null);
+  const [hasSeenAuth, setHasSeenAuth] = useState(false);
+  
+  useEffect(() => {
+    // Check if user has made a choice before
+    const savedUser = localStorage.getItem('crm_user');
+    const savedMode = localStorage.getItem('crm_storage_mode');
+    const savedDefaultMode = localStorage.getItem('crm_default_mode');
+    
+    if (savedDefaultMode) {
+      // User has a default preference, use it
+      setStorageMode(savedDefaultMode as 'team' | 'local');
+      if (savedUser && savedDefaultMode === 'team') {
+        setUser(JSON.parse(savedUser));
+      }
+      setAuthMode('app');
+    }
+    // Otherwise show auth page for them to choose
+  }, []);
+  
+  const handleLogin = (loggedInUser: any, mode: 'team' | 'local', setAsDefault: boolean = false) => {
+    setUser(loggedInUser);
+    setStorageMode(mode);
+    setAuthMode('app');
+    
+    if (mode === 'team' && loggedInUser) {
+      localStorage.setItem('crm_user', JSON.stringify(loggedInUser));
+    }
+    localStorage.setItem('crm_storage_mode', mode);
+    
+    if (setAsDefault) {
+      localStorage.setItem('crm_default_mode', mode);
+    }
+  };
+  
+  const handleLogout = () => {
+    setUser(null);
+    setStorageMode('local');
+    setAuthMode('auth');
+    localStorage.removeItem('crm_user');
+    // Keep crm_storage_mode and crm_default_mode for next time
+  };
+  
+  const handleSwitchMode = () => {
+    setAuthMode('auth');
+  };
   
   // Sidebar State with persistence
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -94,6 +145,15 @@ const AppContent: React.FC = () => {
     }
   };
 
+  if (authMode === 'auth') {
+    return (
+      <AuthPage 
+        onLogin={handleLogin} 
+        onSkip={(setAsDefault = false) => handleLogin(null, 'local', setAsDefault)} 
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
@@ -105,7 +165,14 @@ const AppContent: React.FC = () => {
   return (
     <HashRouter>
       <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
-        <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+        <Sidebar 
+          isCollapsed={isSidebarCollapsed} 
+          toggleSidebar={toggleSidebar}
+          user={user}
+          storageMode={storageMode}
+          onLogout={user ? handleLogout : undefined}
+          onSwitchMode={handleSwitchMode}
+        />
         
         <div className={`flex-1 overflow-y-auto relative transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-80 xl:ml-96'}`}>
             {isDemoData && showDemoBanner && (

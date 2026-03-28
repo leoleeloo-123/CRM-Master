@@ -1,16 +1,20 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, FlaskConical, Database, Settings, ChevronLeft, ChevronRight, Presentation, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, FlaskConical, Database, Settings, ChevronLeft, ChevronRight, Presentation, CreditCard, LogOut, Cloud, HardDrive, RefreshCw } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { CrmLogo } from './Logo';
 
 interface SidebarProps {
   isCollapsed: boolean;
   toggleSidebar: () => void;
+  user?: any;
+  storageMode?: 'team' | 'local';
+  onLogout?: () => void;
+  onSwitchMode?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, user, storageMode = 'local', onLogout, onSwitchMode }) => {
   const { t, companyName } = useApp();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -80,11 +84,44 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
         </NavLink>
       </nav>
 
-      <div className={`border-t border-slate-100 dark:border-slate-800 ${isCollapsed ? 'p-3' : 'p-6 xl:p-8'}`}>
+      <div className={`border-t border-slate-100 dark:border-slate-800 ${isCollapsed ? 'p-3' : 'p-6 xl:p-8'} space-y-2`}>
+        {/* Storage Mode Indicator */}
+        <div className={`flex items-center gap-3 px-4 py-2 rounded-xl ${storageMode === 'team' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} ${isCollapsed ? 'justify-center' : ''}`}>
+          {storageMode === 'team' ? <Cloud className="w-5 h-5" /> : <HardDrive className="w-5 h-5" />}
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wider">{storageMode === 'team' ? 'Team Mode' : 'Local Mode'}</p>
+              {user?.email && <p className="text-xs truncate">{user.email}</p>}
+            </div>
+          )}
+        </div>
+        
         <NavLink to="/settings" className={linkClass} title={isCollapsed ? t('settings') : ''}>
           <Settings className={iconClass} />
           {!isCollapsed && <span>{t('settings')}</span>}
         </NavLink>
+        
+        {onSwitchMode && (
+          <button 
+            onClick={onSwitchMode}
+            className={`w-full flex items-center gap-4 py-4 xl:py-5 font-medium rounded-xl transition-all whitespace-nowrap text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center px-2' : 'px-6 text-base xl:text-xl'}`}
+            title={isCollapsed ? 'Switch Mode' : ''}
+          >
+            <RefreshCw className={iconClass} />
+            {!isCollapsed && <span>Switch Mode</span>}
+          </button>
+        )}
+        
+        {onLogout && (
+          <button 
+            onClick={onLogout}
+            className={`w-full flex items-center gap-4 py-4 xl:py-5 font-medium rounded-xl transition-all whitespace-nowrap text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 ${isCollapsed ? 'justify-center px-2' : 'px-6 text-base xl:text-xl'}`}
+            title={isCollapsed ? 'Logout' : ''}
+          >
+            <LogOut className={iconClass} />
+            {!isCollapsed && <span>Logout</span>}
+          </button>
+        )}
       </div>
     </div>
   );
