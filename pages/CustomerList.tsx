@@ -119,19 +119,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
        name: newCustomer.name,
        region: [newCustomer.region || 'Unknown'],
        rank: newCustomer.rank,
-       status: 'Active',
-       product_summary: '',
-       last_status_update: now,
-       follow_up_status: 'No Action',
-       contacts: newCustomer.contactName ? [{
-         name: newCustomer.contactName,
-         title: '',
-         email: newCustomer.contactEmail,
-         isPrimary: true
-       }] : [],
-       last_contact_date: now,
-       tags: [],
-       interactions: []
+       status: 'Active'
     };
 
     try {
