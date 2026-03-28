@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -17,18 +17,18 @@ export default async function handler(req, res) {
   try {
     switch (req.method) {
       case 'GET':
-        const { data, error } = await supabase.from('expenses').select('*').eq('id', id).single();
+        const { data: sample, error } = await supabase.from('samples').select('*').eq('id', id).single();
         if (error) throw error;
-        if (!data) return res.status(404).json({ error: 'Not found' });
-        return res.status(200).json(data);
+        if (!sample) return res.status(404).json({ error: 'Sample not found' });
+        return res.status(200).json(sample);
 
       case 'PUT':
-        const { data: updated, error: updateError } = await supabase.from('expenses').update(req.body).eq('id', id).select().single();
+        const { data: updated, error: updateError } = await supabase.from('samples').update(req.body).eq('id', id).select().single();
         if (updateError) throw updateError;
         return res.status(200).json(updated);
 
       case 'DELETE':
-        const { error: deleteError } = await supabase.from('expenses').delete().eq('id', id);
+        const { error: deleteError } = await supabase.from('samples').delete().eq('id', id);
         if (deleteError) throw deleteError;
         return res.status(204).end();
 
@@ -38,4 +38,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-}
+};

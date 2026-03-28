@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -16,14 +16,14 @@ export default async function handler(req, res) {
   try {
     switch (req.method) {
       case 'GET':
-        const { data, error } = await supabase.from('expenses').select('*').order('transaction_date', { ascending: false });
+        const { data: customers, error } = await supabase.from('customers').select('*').order('updated_at', { ascending: false });
         if (error) throw error;
-        return res.status(200).json(data);
+        return res.status(200).json(customers);
 
       case 'POST':
-        const { data: created, error: createError } = await supabase.from('expenses').insert([req.body]).select().single();
+        const { data: newCustomer, error: createError } = await supabase.from('customers').insert([req.body]).select().single();
         if (createError) throw createError;
-        return res.status(201).json(created);
+        return res.status(201).json(newCustomer);
 
       default:
         return res.status(405).json({ error: 'Method not allowed' });
@@ -31,4 +31,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-}
+};

@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -16,12 +16,12 @@ export default async function handler(req, res) {
   try {
     switch (req.method) {
       case 'GET':
-        const { data, error } = await supabase.from('exhibitions').select('*').order('date', { ascending: false });
+        const { data, error } = await supabase.from('fx_rates').select('*').order('currency');
         if (error) throw error;
         return res.status(200).json(data);
 
       case 'POST':
-        const { data: created, error: createError } = await supabase.from('exhibitions').insert([req.body]).select().single();
+        const { data: created, error: createError } = await supabase.from('fx_rates').insert([req.body]).select().single();
         if (createError) throw createError;
         return res.status(201).json(created);
 
@@ -31,4 +31,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-}
+};
