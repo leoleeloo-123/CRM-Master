@@ -72,6 +72,47 @@ const AppContent: React.FC = () => {
     setAuthMode('auth');
   };
   
+  // Polling for data updates (every 60 seconds)
+  const [lastUpdateInfo, setLastUpdateInfo] = useState<{user: string, time: string} | null>(null);
+  const [hasUpdate, setHasUpdate] = useState(false);
+  
+  useEffect(() => {
+    if (storageMode !== 'team') return;
+    
+    const checkUpdates = async () => {
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          import.meta.env.VITE_SUPABASE_URL || 'https://cnptexlyzhfkqtlorxjt.supabase.co',
+          import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_bq1-NO6E0uAoDLWviGtgfA_tnCwC245'
+        );
+        
+        const { data } = await supabase
+          .from('customers')
+          .select('last_updated_by, updated_at')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (data && data.last_updated_by) {
+          setLastUpdateInfo({ user: data.last_updated_by, time: data.updated_at });
+          // Check if update is newer than 2 minutes
+          const updateTime = new Date(data.updated_at).getTime();
+          const now = new Date().getTime();
+          if (now - updateTime < 120000) {
+            setHasUpdate(true);
+          }
+        }
+      } catch (e) {
+        // Silent fail
+      }
+    };
+    
+    checkUpdates();
+    const interval = setInterval(checkUpdates, 60000); // 1 minute
+    return () => clearInterval(interval);
+  }, [storageMode]);
+  
   // Sidebar State with persistence
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -175,6 +216,23 @@ const AppContent: React.FC = () => {
         />
         
         <div className={`flex-1 overflow-y-auto relative transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-80 xl:ml-96'}`}>
+            {storageMode === 'team' && lastUpdateInfo && (
+              <div className={`text-xs xl:text-sm font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md transition-colors ${hasUpdate ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'}`}>
+                <span>
+                  {hasUpdate ? '⚠ ' : '✓ '}
+                  最后更新: {lastUpdateInfo.user} @ {new Date(lastUpdateInfo.time).toLocaleTimeString()}
+                  {hasUpdate && ' (有新数据)'}
+                </span>
+                {hasUpdate && (
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="text-white hover:text-amber-100 bg-amber-700 px-2 py-0.5 rounded"
+                  >
+                    刷新
+                  </button>
+                )}
+              </div>
+            )}
             {isDemoData && showDemoBanner && (
               <div className="bg-blue-600 text-white text-xs xl:text-sm font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
                 <span>⚠ DEMO MODE: Showing generated sample data. Real client data is hidden. Import your data in Data Management.</span>

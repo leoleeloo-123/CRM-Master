@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS customers (
     doc_links JSONB DEFAULT '[]',
     interactions JSONB DEFAULT '[]',
     mailing_info JSONB DEFAULT '{}',
+    last_updated_by TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
