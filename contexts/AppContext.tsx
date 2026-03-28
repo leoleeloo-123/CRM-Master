@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Language, translations, getCanonicalTag } from '../utils/i18n';
 import { Customer, Sample, MasterProduct, TagOptions, Exhibition, Interaction, Expense, FXRate } from '../types';
 import { MOCK_CUSTOMERS, MOCK_SAMPLES, MOCK_MASTER_PRODUCTS, MOCK_EXHIBITIONS, MOCK_EXPENSES, MOCK_FXRATES } from '../services/dataService';
+import { customersApi, samplesApi, exhibitionsApi, expensesApi, fxRatesApi } from '../services/apiClient';
 import { format } from 'date-fns';
 
 export type FontSize = 'small' | 'medium' | 'large';
@@ -151,15 +152,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return localStorage.getItem('isDemoData') !== 'false';
   });
 
-  const [customers, setCustomersState] = useState<Customer[]>(() => {
-    const saved = localStorage.getItem('customers');
-    return saved ? JSON.parse(saved) : MOCK_CUSTOMERS;
+  // Storage mode detection
+  const [storageMode, setStorageMode] = useState<'team' | 'local'>(() => {
+    return (localStorage.getItem('crm_storage_mode') as 'team' | 'local') || 'local';
   });
 
-  const [samples, setSamplesState] = useState<Sample[]>(() => {
-    const saved = localStorage.getItem('samples');
-    return saved ? JSON.parse(saved) : MOCK_SAMPLES;
-  });
+  const [customers, setCustomersState] = useState<Customer[]>(MOCK_CUSTOMERS);
+  const [samples, setSamplesState] = useState<Sample[]>(MOCK_SAMPLES);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Load data based on storage mode
+  useEffect(() => {
+    const loadData = async () => {
+      if (storageMode === 'team') {
+        try {
+          const [customersData, samplesData] = await Promise.all([
+            customersApi.getAll(),
+            samplesApi.getAll()
+          ]);
+          setCustomersState(customersData.length > 0 ? customersData : MOCK_CUSTOMERS);
+          setSamplesState(samplesData.length > 0 ? samplesData : MOCK_SAMPLES);
+        } catch (err) {
+          console.error('Failed to load from API:', err);
+          // Fallback to localStorage
+          const savedCustomers = localStorage.getItem('customers');
+          const savedSamples = localStorage.getItem('samples');
+          if (savedCustomers) setCustomersState(JSON.parse(savedCustomers));
+          if (savedSamples) setSamplesState(JSON.parse(savedSamples));
+        }
+      } else {
+        // Local mode - load from localStorage
+        const savedCustomers = localStorage.getItem('customers');
+        const savedSamples = localStorage.getItem('samples');
+        if (savedCustomers) setCustomersState(JSON.parse(savedCustomers));
+        if (savedSamples) setSamplesState(JSON.parse(savedSamples));
+      }
+      setDataLoaded(true);
+    };
+
+    loadData();
+  }, [storageMode]);
   
   const [masterProducts, setMasterProducts] = useState<MasterProduct[]>(() => {
     const saved = localStorage.getItem('masterProducts');
@@ -265,8 +297,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setFontSize = (size: FontSize) => setFontSizeState(size);
   const setCompanyName = (name: string) => setCompanyNameState(name);
   const setUserName = (name: string) => setUserNameState(name);
-  const setCustomers = (val: Customer[] | ((prev: Customer[]) => Customer[])) => setCustomersState(val);
-  const setSamples = (val: Sample[] | ((prev: Sample[]) => Sample[])) => setSamplesState(val);
+  const setCustomers = useCallback(async (val: Customer[] | ((prev: Customer[]) => Customer[])) => {
+    const newValue = typeof val === 'function' ? val(customers) : val;
+    setCustomersState(newValue);
+    
+    // Save based on storage mode
+    if (storageMode === 'team' && dataLoaded) {
+      // In team mode, individual saves are handled by API calls in components
+      // This is just for local state update
+    } else {
+      localStorage.setItem('customers', JSON.stringify(newValue));
+    }
+  }, [customers, storageMode, dataLoaded]);
+
+  const setSamples = useCallback(async (val: Sample[] | ((prev: Sample[]) => Sample[])) => {
+    const newValue = typeof val === 'function' ? val(samples) : val;
+    setSamplesState(newValue);
+    
+    if (storageMode === 'team' && dataLoaded) {
+      // Team mode saves via API
+    } else {
+      localStorage.setItem('samples', JSON.stringify(newValue));
+    }
+  }, [samples, storageMode, dataLoaded]);
   const setExhibitions = (val: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => setExhibitionsState(val);
   const setExpenses = (val: Expense[] | ((prev: Expense[]) => Expense[])) => setExpensesState(val);
   const setFxRates = (val: FXRate[] | ((prev: FXRate[]) => FXRate[])) => setFxRatesState(val);
