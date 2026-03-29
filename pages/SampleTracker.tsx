@@ -9,12 +9,13 @@ import { useNavigate } from 'react-router-dom';
 interface SampleTrackerProps {
   samples: Sample[];
   customers: Customer[];
+  onCreateSample?: (sampleData: Partial<Sample>) => Promise<Sample | null>;
 }
 
 // Strictly mandated status order for the board
 const FIXED_BOARD_ORDER = ['等待中', '样品制作中', '样品已发出', '客户初步测试', '客户初步结果'];
 
-const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => {
+const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers, onCreateSample }) => {
   const navigate = useNavigate();
   const { t, setSamples, masterProducts, syncSampleToCatalog, tagOptions, setTagOptions, language } = useApp();
   
@@ -149,7 +150,7 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     setExpandedCustomers(new Set());
   };
 
-  const handleCreateSample = () => {
+  const handleCreateSample = async () => {
     if (!newSample.customerId) { alert("Please select a customer."); return; }
     const targetCustomer = customers.find(c => c.id === newSample.customerId);
     if (!targetCustomer) return;
@@ -160,15 +161,47 @@ const SampleTracker: React.FC<SampleTrackerProps> = ({ samples, customers }) => 
     const procPart = newSample.processedSize ? ` > ${newSample.processedSize}` : '';
     const nickname = newSample.nickname.trim();
     const generatedName = `${newSample.crystalType} ${catStr} ${newSample.productForm} - ${newSample.originalSize}${procPart}${nickname ? ` (${nickname})` : ''}`;
-    const newId = `s_${Date.now()}`;
     const now = format(new Date(), 'yyyy-MM-dd');
-    const sampleRecord: Sample = {
-      id: newId, customerId: newSample.customerId, customerName: targetCustomer.name, sampleIndex: newIndex, sampleSKU: newSample.sampleSKU, status: newSample.status, lastStatusDate: now, testStatus: 'Ongoing', crystalType: newSample.crystalType, productCategory: newSample.productCategory as ProductCategory[], productForm: newSample.productForm as ProductForm, originalSize: newSample.originalSize, processedSize: newSample.processedSize, nickname: nickname, quantity: newSample.quantity || '0', sampleName: generatedName, requestDate: now, productType: generatedName, specs: `${newSample.originalSize}${procPart}`, statusDetails: `【${now}】Sample record created manually.`
+    
+    const sampleData: Partial<Sample> = {
+      customerId: newSample.customerId,
+      customerName: targetCustomer.name,
+      sampleIndex: newIndex,
+      sampleSKU: newSample.sampleSKU,
+      status: newSample.status,
+      lastStatusDate: now,
+      testStatus: 'Ongoing',
+      crystalType: newSample.crystalType,
+      productCategory: newSample.productCategory as ProductCategory[],
+      productForm: newSample.productForm as ProductForm,
+      originalSize: newSample.originalSize,
+      processedSize: newSample.processedSize,
+      nickname: nickname,
+      quantity: newSample.quantity || '0',
+      sampleName: generatedName,
+      requestDate: now,
+      productType: generatedName,
+      specs: `${newSample.originalSize}${procPart}`,
+      statusDetails: `【${now}】Sample record created manually.`
     };
-    setSamples(prev => [...prev, sampleRecord]);
-    syncSampleToCatalog(sampleRecord);
-    setIsAddModalOpen(false);
-    navigate(`/samples/${newId}`);
+    
+    // Use onCreateSample if provided (Team mode), otherwise fallback to local
+    if (onCreateSample) {
+      const created = await onCreateSample(sampleData);
+      if (created) {
+        syncSampleToCatalog(created);
+        setIsAddModalOpen(false);
+        navigate(`/samples/${created.id}`);
+      }
+    } else {
+      // Local mode fallback
+      const newId = `s_${Date.now()}`;
+      const sampleRecord: Sample = { ...sampleData, id: newId } as Sample;
+      setSamples(prev => [...prev, sampleRecord]);
+      syncSampleToCatalog(sampleRecord);
+      setIsAddModalOpen(false);
+      navigate(`/samples/${newId}`);
+    }
   };
 
   const hasActiveFilters = searchTerm !== '' || filterStatus !== '' || filterTestFinished !== 'ongoing' || filterCrystal !== '' || filterForm !== '' || filterCustomer !== '' || filterGrading !== '';

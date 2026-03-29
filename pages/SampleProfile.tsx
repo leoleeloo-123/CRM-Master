@@ -1,16 +1,22 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink } from '../types';
+import { Sample, SampleStatus, GradingStatus, TestStatus, ProductCategory, CrystalType, ProductForm, SampleDocLink, Customer } from '../types';
 import { Card, Badge, Button, StatusIcon, DaysCounter, Modal, getUrgencyLevel, parseLocalDate } from '../components/Common';
 import { ArrowLeft, Box, Save, X, Plus, ExternalLink, Activity, Target, PencilLine, Ruler, Clock, ClipboardList, Trash2, Link as LinkIcon, FileText, Check, Star, Info, Timer, Calendar, DollarSign, CreditCard, Truck, Hash } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 
-const SampleProfile: React.FC = () => {
+interface SampleProfileProps {
+  samples: Sample[];
+  customers: Customer[];
+  onUpdateSample?: (updatedSample: Sample) => Promise<void>;
+}
+
+const SampleProfile: React.FC<SampleProfileProps> = ({ samples, customers, onUpdateSample }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { samples, customers, setSamples, t, tagOptions, syncSampleToCatalog, language } = useApp();
+  const { setSamples, t, tagOptions, syncSampleToCatalog, language } = useApp();
 
   const sample = samples.find(s => s.id === id);
   const customer = customers.find(c => c.id === sample?.customerId);
@@ -101,14 +107,22 @@ const SampleProfile: React.FC = () => {
     return sorted.map(item => `【${item.date}】${item.text}`).join(' ||| ');
   };
 
-  const saveSampleUpdate = (fields: Partial<Sample>) => {
+  const saveSampleUpdate = async (fields: Partial<Sample>) => {
     if (!sample) return;
     const today = format(new Date(), 'yyyy-MM-dd');
-    setSamples(prev => prev.map(s => s.id === id ? { 
-      ...s, 
+    const updatedSample = { 
+      ...sample, 
       lastStatusDate: today,
       ...fields
-    } : s));
+    };
+    
+    // If onUpdateSample is provided (Team mode), use it
+    if (onUpdateSample) {
+      await onUpdateSample(updatedSample);
+    } else {
+      // Local mode - just update state
+      setSamples(prev => prev.map(s => s.id === id ? updatedSample : s));
+    }
   };
 
   const handleDeleteSample = () => {
@@ -119,7 +133,7 @@ const SampleProfile: React.FC = () => {
     }
   };
 
-  const handleSaveSpecs = () => {
+  const handleSaveSpecs = async () => {
     if (!sample || !editSample) return;
     const categories = editCategoryText.split(',').map(c => c.trim() as ProductCategory).filter(c => c);
     const crystal = editSample.crystalType || sample.crystalType || '';
@@ -140,28 +154,28 @@ const SampleProfile: React.FC = () => {
       quantity: editQuantityText
     };
 
-    saveSampleUpdate(updatedSampleData);
+    await saveSampleUpdate(updatedSampleData);
     syncSampleToCatalog({ ...sample, ...updatedSampleData } as Sample);
     setIsEditingSpecs(false);
   };
 
-  const handleAddLink = () => {
+  const handleAddLink = async () => {
     if (!newLinkUrl.trim() || !sample) return;
     let url = newLinkUrl.trim();
     if (!url.startsWith('http')) url = 'https://' + url;
     const title = newLinkTitle.trim() || `Link ${ (sample.docLinks || []).length + 1 }`;
     const newLink: SampleDocLink = { title, url };
     const currentLinks = sample.docLinks || [];
-    saveSampleUpdate({ docLinks: [...currentLinks, newLink] });
+    await saveSampleUpdate({ docLinks: [...currentLinks, newLink] });
     setNewLinkUrl('');
     setNewLinkTitle('');
   };
 
-  const handleDeleteLink = (linkToDelete: SampleDocLink) => {
+  const handleDeleteLink = async (linkToDelete: SampleDocLink) => {
     if (!sample) return;
     if (confirm('Delete this link?')) {
       const updatedLinks = (sample.docLinks || []).filter(l => l.url !== linkToDelete.url || l.title !== linkToDelete.title);
-      saveSampleUpdate({ docLinks: updatedLinks });
+      await saveSampleUpdate({ docLinks: updatedLinks });
     }
   };
 
@@ -171,50 +185,50 @@ const SampleProfile: React.FC = () => {
     setEditLinkUrl(link.url);
   };
 
-  const handleSaveEditLink = () => {
+  const handleSaveEditLink = async () => {
     if (!sample || editingLinkIndex === null) return;
     let url = editLinkUrl.trim();
     if (url && !url.startsWith('http')) url = 'https://' + url;
     
     const updatedLinks = [...(sample.docLinks || [])];
     updatedLinks[editingLinkIndex] = { title: editLinkTitle.trim() || `Link ${editingLinkIndex + 1}`, url: url || '#' };
-    saveSampleUpdate({ docLinks: updatedLinks });
+    await saveSampleUpdate({ docLinks: updatedLinks });
     setEditingLinkIndex(null);
   };
 
-  const handleSaveStatus = () => {
+  const handleSaveStatus = async () => {
     if (!sample || !editSample) return;
-    saveSampleUpdate({ 
+    await saveSampleUpdate({ 
       status: editSample.status || sample.status,
       testStatus: editSample.testStatus || sample.testStatus
     });
     setIsEditingStatus(false);
   };
 
-  const handleSaveOther = () => {
-    saveSampleUpdate({ 
+  const handleSaveOther = async () => {
+    await saveSampleUpdate({ 
       trackingNumber: editTrackingText,
       sampleSKU: editSKUText
     });
     setIsEditingOther(false);
   };
 
-  const handleSaveContext = () => {
-    saveSampleUpdate({ application: editAppText, sampleDetails: editDetailsText });
+  const handleSaveContext = async () => {
+    await saveSampleUpdate({ application: editAppText, sampleDetails: editDetailsText });
     setIsEditingContext(false);
   };
 
-  const handleSavePlan = () => {
-    saveSampleUpdate({ upcomingPlan: editPlanText, nextActionDate: editPlanDate });
+  const handleSavePlan = async () => {
+    await saveSampleUpdate({ upcomingPlan: editPlanText, nextActionDate: editPlanDate });
     setIsEditingPlan(false);
   };
 
-  const handleSaveFee = () => {
-    saveSampleUpdate({ ...tempFee });
+  const handleSaveFee = async () => {
+    await saveSampleUpdate({ ...tempFee });
     setIsEditingFee(false);
   };
 
-  const handleToggleStar = () => {
+  const handleToggleStar = async () => {
     if (!sample) return;
     const currentlyStarred = !!sample.isStarredSample;
     const confirmMsg = currentlyStarred ? t('confirmUnstarSample') : t('confirmStarSample');
@@ -227,28 +241,28 @@ const SampleProfile: React.FC = () => {
         nextDate = customer.nextActionDate;
       }
       
-      saveSampleUpdate({ 
+      await saveSampleUpdate({ 
         isStarredSample: nextStarred,
         nextActionDate: nextDate
       });
     }
   };
 
-  const handleSaveHistoryItem = (item: {id: string, date: string, text: string}) => {
+  const handleSaveHistoryItem = async (item: {id: string, date: string, text: string}) => {
     const updatedHistory = historyItems.map(i => i.id === item.id ? item : i);
     updatedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setHistoryItems(updatedHistory);
-    saveSampleUpdate({ statusDetails: serializeHistory(updatedHistory) });
+    await saveSampleUpdate({ statusDetails: serializeHistory(updatedHistory) });
     setEditingHistoryId(null);
   };
 
-  const handleAddHistory = () => {
+  const handleAddHistory = async () => {
     if (!newHistoryText) return;
     const newItem = { id: `new_${Date.now()}`, date: newHistoryDate || format(new Date(), 'yyyy-MM-dd'), text: newHistoryText };
     const updatedHistory = [newItem, ...historyItems];
     updatedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setHistoryItems(updatedHistory);
-    saveSampleUpdate({ statusDetails: serializeHistory(updatedHistory) });
+    await saveSampleUpdate({ statusDetails: serializeHistory(updatedHistory) });
     setIsAddingHistory(false);
     setNewHistoryText('');
     setNewHistoryDate('');

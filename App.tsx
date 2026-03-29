@@ -15,7 +15,7 @@ import Settings from './pages/Settings';
 import AuthPage from './pages/AuthPage';
 import { Customer, Sample } from './types';
 import { AppProvider, useApp } from './contexts/AppContext';
-import { customersApi } from './services/apiClient';
+import { customersApi, samplesApi } from './services/apiClient';
 
 // Inner component to use the context hooks
 const AppContent: React.FC = () => {
@@ -213,6 +213,61 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleUpdateSample = async (updatedSample: Sample) => {
+    const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
+    
+    // If in team mode, save to Supabase first
+    if (storageMode === 'team') {
+      try {
+        await samplesApi.update(updatedSample.id, updatedSample);
+        // Mark updates as acknowledged since we just saved
+        acknowledgeUpdates();
+      } catch (err: any) {
+        console.error('Failed to update sample:', err);
+        alert('Failed to save changes: ' + err.message);
+        return; // Don't update local state if API call failed
+      }
+    }
+    
+    // Update local state
+    setSamples((prev: Sample[]) => prev.map(s => s.id === updatedSample.id ? updatedSample : s));
+  };
+
+  const handleCreateSample = async (sampleData: Partial<Sample>): Promise<Sample | null> => {
+    const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
+    const now = new Date().toISOString().split('T')[0];
+    
+    try {
+      if (storageMode === 'team') {
+        // Create in Supabase
+        const newSample: Sample = {
+          ...sampleData,
+          requestDate: sampleData.requestDate || now,
+          lastStatusDate: sampleData.lastStatusDate || now,
+        } as Sample;
+        const created = await samplesApi.create(newSample);
+        setSamples(prev => [...prev, created]);
+        acknowledgeUpdates();
+        return created;
+      } else {
+        // Local mode - create with local ID
+        const newId = `s_${Date.now()}`;
+        const newSample: Sample = {
+          ...sampleData,
+          id: newId,
+          requestDate: sampleData.requestDate || now,
+          lastStatusDate: sampleData.lastStatusDate || now,
+        } as Sample;
+        setSamples(prev => [...prev, newSample]);
+        return newSample;
+      }
+    } catch (err: any) {
+      console.error('Failed to create sample:', err);
+      alert('Failed to create sample: ' + err.message);
+      return null;
+    }
+  };
+
   if (authMode === 'auth') {
     return (
       <AuthPage 
@@ -280,8 +335,20 @@ const AppContent: React.FC = () => {
                   onUpdateCustomer={handleUpdateCustomer} 
                 />
               } />
-              <Route path="/samples" element={<SampleTracker samples={samples} customers={customers} />} />
-              <Route path="/samples/:id" element={<SampleProfile />} />
+              <Route path="/samples" element={
+                <SampleTracker 
+                  samples={samples} 
+                  customers={customers} 
+                  onCreateSample={handleCreateSample}
+                />
+              } />
+              <Route path="/samples/:id" element={
+                <SampleProfile 
+                  samples={samples}
+                  customers={customers}
+                  onUpdateSample={handleUpdateSample}
+                />
+              } />
               <Route path="/finance" element={<FinanceTracker />} />
               <Route path="/exhibitions" element={<ExhibitionList />} />
               <Route path="/exhibitions/:id" element={<ExhibitionProfile />} />
