@@ -76,6 +76,13 @@ const AppContent: React.FC = () => {
   // Polling for data updates (every 60 seconds)
   const [lastUpdateInfo, setLastUpdateInfo] = useState<{user: string, time: string} | null>(null);
   const [hasUpdate, setHasUpdate] = useState(false);
+  const lastAcknowledgedUpdateRef = useRef<number>(Date.now());
+  
+  // Mark updates as acknowledged (call this after user saves data)
+  const acknowledgeUpdates = () => {
+    lastAcknowledgedUpdateRef.current = Date.now();
+    setHasUpdate(false);
+  };
   
   useEffect(() => {
     if (storageMode !== 'team') return;
@@ -97,10 +104,13 @@ const AppContent: React.FC = () => {
         
         if (data && data.updated_at) {
           setLastUpdateInfo({ user: 'Team', time: data.updated_at });
-          // Check if update is newer than 2 minutes
           const updateTime = new Date(data.updated_at).getTime();
-          const now = new Date().getTime();
-          if (now - updateTime < 120000) {
+          const now = Date.now();
+          
+          // Only show update warning if:
+          // 1. Update is within last 2 minutes, AND
+          // 2. Update is newer than when user last acknowledged
+          if (now - updateTime < 120000 && updateTime > lastAcknowledgedUpdateRef.current) {
             setHasUpdate(true);
           }
         }
@@ -143,6 +153,8 @@ const AppContent: React.FC = () => {
     if (storageMode === 'team') {
       try {
         await customersApi.update(updatedCustomer.id, updatedCustomer);
+        // Mark updates as acknowledged since we just saved
+        acknowledgeUpdates();
       } catch (err: any) {
         console.error('Failed to update customer:', err);
         alert('Failed to save changes: ' + err.message);
@@ -240,7 +252,10 @@ const AppContent: React.FC = () => {
                 </span>
                 {hasUpdate && (
                   <button 
-                    onClick={() => window.location.reload()} 
+                    onClick={() => {
+                      acknowledgeUpdates();
+                      window.location.reload();
+                    }} 
                     className="text-white hover:text-amber-100 bg-amber-700 px-2 py-0.5 rounded"
                   >
                     刷新
