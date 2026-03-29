@@ -232,10 +232,23 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setIsEditCustomerModalOpen(false);
   };
 
-  const handleDeleteCustomer = () => {
+  const handleDeleteCustomer = async () => {
     if (confirm(t('confirmDeleteCustomer'))) {
-      setCustomers(prev => prev.filter(c => c.id !== id));
-      setSamples(prev => prev.filter(s => s.customerId !== id));
+      const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
+      
+      if (storageMode === 'team') {
+        try {
+          // Delete from Supabase
+          await customersApi.delete(id);
+        } catch (err: any) {
+          alert('Failed to delete customer: ' + err.message);
+          return;
+        }
+      }
+      
+      // Update local state
+      setCustomers(prev => (Array.isArray(prev) ? prev : []).filter(c => c.id !== id));
+      setSamples(prev => (Array.isArray(prev) ? prev : []).filter(s => s.customerId !== id));
       navigate('/customers');
     }
   };
