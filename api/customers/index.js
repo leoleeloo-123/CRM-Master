@@ -41,6 +41,12 @@ const deserializeField = (value, fieldName) => {
   return value;
 };
 
+// Helper to format date fields - convert empty strings to null for DB
+const formatDateField = (value) => {
+  if (!value || value === '') return null;
+  return value;
+};
+
 // Convert frontend customer format to DB format (serialize complex fields)
 const toDbFormat = (customer) => {
   return {
@@ -50,17 +56,17 @@ const toDbFormat = (customer) => {
     rank: customer.rank,
     status: customer.status || 'Active',
     product_summary: customer.productSummary || '',
-    last_status_update: customer.lastStatusUpdate || '',
+    last_status_update: formatDateField(customer.lastStatusUpdate),
     follow_up_status: customer.followUpStatus || 'No Action',
     contacts: serializeField(customer.contacts),
-    next_action_date: customer.nextActionDate || '',
+    next_action_date: formatDateField(customer.nextActionDate),
     tags: serializeField(customer.tags),
     interactions: serializeField(customer.interactions),
     doc_links: serializeField(customer.docLinks),
     upcoming_plan: customer.upcomingPlan || '',
     mailing_info: serializeField(customer.mailingInfo),
-    last_customer_reply_date: customer.lastCustomerReplyDate || '',
-    last_my_reply_date: customer.lastMyReplyDate || ''
+    last_customer_reply_date: formatDateField(customer.lastCustomerReplyDate),
+    last_my_reply_date: formatDateField(customer.lastMyReplyDate)
   };
 };
 
