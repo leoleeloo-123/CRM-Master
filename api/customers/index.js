@@ -35,19 +35,21 @@ export default async function handler(req, res) {
 
       case 'PUT':
         if (!id) return res.status(400).json({ error: 'ID required' });
-        // Only include fields that exist in the database schema
-        const allowedFields = [
-          'name', 'region', 'rank', 'status', 'productSummary', 'lastStatusUpdate',
-          'followUpStatus', 'contacts', 'nextActionDate', 'tags', 'interactions',
-          'docLinks', 'upcomingPlan', 'mailingInfo'
-        ];
-        const updateData = {};
-        for (const field of allowedFields) {
-          if (req.body.hasOwnProperty(field)) {
-            updateData[field] = req.body[field];
+        // Get existing customer first to merge data
+        const { data: existingCustomer, error: fetchError } = await supabase.from('customers').select('*').eq('id', id).single();
+        if (fetchError) throw fetchError;
+        if (!existingCustomer) return res.status(404).json({ error: 'Customer not found' });
+        
+        // Merge existing data with updates - only include fields that exist in DB
+        const mergedData = { ...existingCustomer };
+        const dbFields = Object.keys(existingCustomer);
+        for (const field of dbFields) {
+          if (req.body.hasOwnProperty(field) && field !== 'id' && field !== 'created_at') {
+            mergedData[field] = req.body[field];
           }
         }
-        const { data: updated, error: updateError } = await supabase.from('customers').update(updateData).eq('id', id).select().single();
+        
+        const { data: updated, error: updateError } = await supabase.from('customers').update(mergedData).eq('id', id).select().single();
         if (updateError) throw updateError;
         return res.status(200).json(updated);
 
