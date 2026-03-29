@@ -4,9 +4,13 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
 // Helper to serialize array/object fields for PostgreSQL
-const serializeField = (value, isDbArray = false) => {
+const serializeField = (value, isDbArray = false, isJsonField = false) => {
   if (value === null || value === undefined) {
     return isDbArray ? [] : '';
+  }
+  // JSON fields (contacts, interactions, docLinks, mailingInfo) should always be JSON stringified
+  if (isJsonField) {
+    return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
     // For DB array columns, return the array directly
@@ -86,13 +90,14 @@ const toDbFormat = (customer) => {
   if (customer.status !== undefined) result.status = customer.status || 'Active';
   
   // Serialize array/object fields
-  // region and tags are array columns in DB
+  // region and tags are array columns in DB (native PostgreSQL arrays)
   if (customer.region !== undefined) result.region = serializeField(customer.region, true);
   if (customer.tags !== undefined) result.tags = serializeField(customer.tags, true);
-  if (customer.contacts !== undefined) result.contacts = serializeField(customer.contacts);
-  if (customer.interactions !== undefined) result.interactions = serializeField(customer.interactions);
-  if (customer.docLinks !== undefined) result.doc_links = serializeField(customer.docLinks);
-  if (customer.mailingInfo !== undefined) result.mailing_info = serializeField(customer.mailingInfo);
+  // contacts, interactions, docLinks, mailingInfo are JSONB/text fields - need JSON stringification
+  if (customer.contacts !== undefined) result.contacts = serializeField(customer.contacts, false, true);
+  if (customer.interactions !== undefined) result.interactions = serializeField(customer.interactions, false, true);
+  if (customer.docLinks !== undefined) result.doc_links = serializeField(customer.docLinks, false, true);
+  if (customer.mailingInfo !== undefined) result.mailing_info = serializeField(customer.mailingInfo, false, true);
   
   // Text fields
   if (customer.productSummary !== undefined) result.product_summary = customer.productSummary || '';
