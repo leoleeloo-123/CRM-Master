@@ -327,26 +327,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setCompanyName = (name: string) => setCompanyNameState(name);
   const setUserName = (name: string) => setUserNameState(name);
   const setCustomers = useCallback(async (val: Customer[] | ((prev: Customer[]) => Customer[])) => {
-    const newValue = typeof val === 'function' ? val(customers) : val;
-    setCustomersState(newValue);
+    const newValue = typeof val === 'function' ? val(customers || []) : val;
+    // Ensure newValue is always an array
+    const safeValue = Array.isArray(newValue) ? newValue : [];
+    setCustomersState(safeValue);
     
     // Save based on storage mode
     if (storageMode === 'team' && dataLoaded) {
       // In team mode, individual saves are handled by API calls in components
       // This is just for local state update
     } else {
-      localStorage.setItem('customers', JSON.stringify(newValue));
+      localStorage.setItem('customers', JSON.stringify(safeValue));
     }
   }, [customers, storageMode, dataLoaded]);
 
   const setSamples = useCallback(async (val: Sample[] | ((prev: Sample[]) => Sample[])) => {
-    const newValue = typeof val === 'function' ? val(samples) : val;
-    setSamplesState(newValue);
+    const newValue = typeof val === 'function' ? val(samples || []) : val;
+    // Ensure newValue is always an array
+    const safeValue = Array.isArray(newValue) ? newValue : [];
+    setSamplesState(safeValue);
     
     if (storageMode === 'team' && dataLoaded) {
       // Team mode saves via API
     } else {
-      localStorage.setItem('samples', JSON.stringify(newValue));
+      localStorage.setItem('samples', JSON.stringify(safeValue));
     }
   }, [samples, storageMode, dataLoaded]);
   const setExhibitions = (val: Exhibition[] | ((prev: Exhibition[]) => Exhibition[])) => setExhibitionsState(val);
