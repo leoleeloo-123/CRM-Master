@@ -11,7 +11,7 @@ import { translateToZh, getCanonicalTag } from '../utils/i18n';
 interface CustomerProfileProps {
   customers: Customer[];
   samples: Sample[];
-  onUpdateCustomer: (updated: Customer) => void;
+  onUpdateCustomer: (updated: Customer) => Promise<void>;
 }
 
 // Fixed format helper: ensures that the serialized string ALWAYS uses Chinese keys for tags
@@ -167,22 +167,22 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   if (!customer) return <div className="p-8 text-center font-black uppercase text-slate-400">Customer not found.</div>;
 
-  const saveUpdate = (updatedFields: Partial<Customer>) => {
-    onUpdateCustomer({ ...customer, ...updatedFields });
+  const saveUpdate = async (updatedFields: Partial<Customer>) => {
+    await onUpdateCustomer({ ...customer, ...updatedFields });
   };
 
-  const handleUpdateSummary = () => {
-    saveUpdate({ productSummary: tempSummary, lastStatusUpdate: format(new Date(), 'yyyy-MM-dd') });
+  const handleUpdateSummary = async () => {
+    await saveUpdate({ productSummary: tempSummary, lastStatusUpdate: format(new Date(), 'yyyy-MM-dd') });
     setIsEditSummaryOpen(false);
   };
 
-  const handleUpdateMailing = () => {
-    saveUpdate({ mailingInfo: tempMailing, lastStatusUpdate: format(new Date(), 'yyyy-MM-dd') });
+  const handleUpdateMailing = async () => {
+    await saveUpdate({ mailingInfo: tempMailing, lastStatusUpdate: format(new Date(), 'yyyy-MM-dd') });
     setIsEditMailingOpen(false);
   };
 
-  const handleUpdateTags = () => {
-    saveUpdate({ tags: tempTags.filter(t => t.trim()) });
+  const handleUpdateTags = async () => {
+    await saveUpdate({ tags: tempTags.filter(t => t.trim()) });
     setIsEditTagsOpen(false);
     setTagSearchTerm('');
   };
@@ -200,8 +200,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setTagSearchTerm('');
   };
 
-  const handleUpdateUpcomingPlan = () => {
-    saveUpdate({ 
+  const handleUpdateUpcomingPlan = async () => {
+    await saveUpdate({ 
       upcomingPlan: tempUpcomingPlan, 
       nextActionDate: tempDDL, 
       followUpStatus: tempStatus 
@@ -209,12 +209,12 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setIsEditUpcomingPlanOpen(false);
   };
 
-  const handleUpdateCustomerInfo = () => {
+  const handleUpdateCustomerInfo = async () => {
     if (!tempName.trim()) return;
     const oldName = customer.name;
     const newName = tempName.trim();
     
-    saveUpdate({ 
+    await saveUpdate({ 
       name: newName,
       region: tempRegions.filter(r => r.trim())
     });
@@ -234,11 +234,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     }
   };
 
-  const handleRefreshDates = () => {
+  const handleRefreshDates = async () => {
     setIsRefreshing(true);
     const computed = getComputedDatesForCustomer(customer.interactions);
     
-    saveUpdate({
+    await saveUpdate({
       lastContactDate: computed.lastContact || customer.lastContactDate,
       lastCustomerReplyDate: computed.lastCustomerReply !== undefined ? computed.lastCustomerReply : customer.lastCustomerReplyDate,
       lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate,
@@ -248,7 +248,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     setTimeout(() => setIsRefreshing(false), 600);
   };
 
-  const saveInteraction = (interactionToSave: Interaction) => {
+  const saveInteraction = async (interactionToSave: Interaction) => {
     const isNew = !customer.interactions.some(i => i.id === interactionToSave.id);
     const finalSummary = formatInteractionSummary(intIsStarred, intTypeTag, intExhibitionTag, intEffectTag, intContent);
     const updatedInt = { ...interactionToSave, summary: finalSummary };
@@ -269,11 +269,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
       lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate
     };
 
-    saveUpdate(updateObj);
+    await saveUpdate(updateObj);
     setEditingInteraction(null);
   };
 
-  const deleteInteraction = (intId: string) => {
+  const deleteInteraction = async (intId: string) => {
     if (confirm(t('confirmDeleteInteraction'))) {
       const newInteractions = customer.interactions.filter(i => i.id !== intId);
       const computed = getComputedDatesForCustomer(newInteractions);
@@ -286,30 +286,30 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
         lastMyReplyDate: computed.lastMyReply !== undefined ? computed.lastMyReply : customer.lastMyReplyDate
       };
 
-      saveUpdate(updateObj);
+      await saveUpdate(updateObj);
     }
   };
 
-  const handleAddLink = () => {
+  const handleAddLink = async () => {
     if (!newLinkUrl.trim() || !customer) return;
     let url = newLinkUrl.trim();
     if (!url.startsWith('http')) url = 'https://' + url;
     const title = newLinkTitle.trim() || `Link ${(customer.docLinks || []).length + 1}`;
     const newLink: SampleDocLink = { title, url };
     const currentLinks = customer.docLinks || [];
-    saveUpdate({ docLinks: [...currentLinks, newLink] });
+    await saveUpdate({ docLinks: [...currentLinks, newLink] });
     setNewLinkUrl('');
     setNewLinkTitle('');
   };
 
-  const handleSaveEditLink = () => {
+  const handleSaveEditLink = async () => {
     if (!customer || editingLinkIndex === null) return;
     let url = editLinkUrl.trim();
     if (url && !url.startsWith('http')) url = 'https://' + url;
     
     const updatedLinks = [...(customer.docLinks || [])];
     updatedLinks[editingLinkIndex] = { title: editLinkTitle.trim() || `Link ${editingLinkIndex + 1}`, url: url || '#' };
-    saveUpdate({ docLinks: updatedLinks });
+    await saveUpdate({ docLinks: updatedLinks });
     setEditingLinkIndex(null);
   };
 
@@ -371,8 +371,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     else if (editingContactIndex === nextIdx) setEditingContactIndex(index);
   };
 
-  const handleUpdateContacts = () => {
-    saveUpdate({ contacts: tempContacts });
+  const handleUpdateContacts = async () => {
+    await saveUpdate({ contacts: tempContacts });
     setIsEditContactsOpen(false);
     setEditingContactIndex(null);
   };
@@ -435,9 +435,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                  <RankStars 
                    rank={customer.rank} 
                    editable 
-                   onRankChange={(r) => {
+                   onRankChange={async (r) => {
                      if (window.confirm(t('confirmTierChange'))) {
-                       saveUpdate({ rank: r });
+                       await saveUpdate({ rank: r });
                      }
                    }} 
                  />
@@ -469,17 +469,17 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                  <MiniDaysCounter 
                     date={customer.lastStatusUpdate} 
                     label={t('daysSinceUpdate')} 
-                    onDateChange={(d) => saveUpdate({ lastStatusUpdate: d })} 
+                    onDateChange={async (d) => await saveUpdate({ lastStatusUpdate: d })} 
                  />
                  <MiniDaysCounter 
                     date={customer.lastCustomerReplyDate} 
                     label={t('unrepliedDays')} 
-                    onDateChange={(d) => saveUpdate({ lastCustomerReplyDate: d })} 
+                    onDateChange={async (d) => await saveUpdate({ lastCustomerReplyDate: d })} 
                  />
                  <MiniDaysCounter 
                     date={customer.lastMyReplyDate} 
                     label={t('unfollowedDays')} 
-                    onDateChange={(d) => saveUpdate({ lastMyReplyDate: d })} 
+                    onDateChange={async (d) => await saveUpdate({ lastMyReplyDate: d })} 
                  />
                </div>
             </Card>
@@ -1360,7 +1360,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                 <button onClick={() => { setEditingLinkIndex(idx); setEditLinkTitle(link.title); setEditLinkUrl(link.url); }} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-all">
                                    <PencilLine size={16} />
                                 </button>
-                                <button onClick={() => { if(confirm('Delete?')) { const updated = (customer.docLinks || []).filter((_, i) => i !== idx); saveUpdate({ docLinks: updated }); } }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all">
+                                <button onClick={async () => { if(confirm('Delete?')) { const updated = (customer.docLinks || []).filter((_, i) => i !== idx); await saveUpdate({ docLinks: updated }); } }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all">
                                    <Trash2 size={16} />
                                 </button>
                              </div>

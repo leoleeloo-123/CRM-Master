@@ -15,6 +15,7 @@ import Settings from './pages/Settings';
 import AuthPage from './pages/AuthPage';
 import { Customer, Sample } from './types';
 import { AppProvider, useApp } from './contexts/AppContext';
+import { customersApi } from './services/apiClient';
 
 // Inner component to use the context hooks
 const AppContent: React.FC = () => {
@@ -135,7 +136,21 @@ const AppContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [refreshAllCustomerDates]);
 
-  const handleUpdateCustomer = (updatedCustomer: Customer) => {
+  const handleUpdateCustomer = async (updatedCustomer: Customer) => {
+    const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
+    
+    // If in team mode, save to Supabase first
+    if (storageMode === 'team') {
+      try {
+        await customersApi.update(updatedCustomer.id, updatedCustomer);
+      } catch (err: any) {
+        console.error('Failed to update customer:', err);
+        alert('Failed to save changes: ' + err.message);
+        return; // Don't update local state if API call failed
+      }
+    }
+    
+    // Update local state
     setCustomers((prev: Customer[]) => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
     
     // Sync DDL to Starred Samples
