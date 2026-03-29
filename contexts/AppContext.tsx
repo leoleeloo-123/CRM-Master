@@ -359,7 +359,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setTagOptions = (val: TagOptions | ((prev: TagOptions) => TagOptions)) => setTagOptionsState(val);
 
   const refreshAllCustomerDates = useCallback(() => {
-    setCustomersState(prev => prev.map(customer => {
+    setCustomersState(prev => (Array.isArray(prev) ? prev : []).map(customer => {
       const computed = getComputedDatesForCustomer(customer.interactions);
       return {
         ...customer,
@@ -379,7 +379,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const todayStr = format(new Date(), 'yyyy-MM-dd');
       
       setFxRatesState(prev => {
-        return prev.map(item => {
+        return (Array.isArray(prev) ? prev : []).map(item => {
           const code = item.currency.toUpperCase();
           // The API gives USD to Target (1 USD = X Target). 
           // We need Target to USD (1 Target = ? USD).
@@ -426,9 +426,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const nickname = sample.nickname ? ` (${sample.nickname})` : '';
     const generatedName = `${crystal} ${catStr} ${form} - ${orig}${proc}${nickname}`.trim();
     setMasterProducts(prev => {
-      const exists = prev.find(p => p.productName === generatedName);
-      if (exists) return prev;
-      return [...prev, { id: `mp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, productName: generatedName, crystalType: sample.crystalType!, productCategory: sample.productCategory || [], productForm: sample.productForm!, originalSize: sample.originalSize!, processedSize: sample.processedSize, nickname: sample.nickname }];
+      const safePrev = Array.isArray(prev) ? prev : [];
+      const exists = safePrev.find(p => p.productName === generatedName);
+      if (exists) return safePrev;
+      return [...safePrev, { id: `mp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, productName: generatedName, crystalType: sample.crystalType!, productCategory: sample.productCategory || [], productForm: sample.productForm!, originalSize: sample.originalSize!, processedSize: sample.processedSize, nickname: sample.nickname }];
     });
     return generatedName;
   };
