@@ -157,82 +157,92 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return (localStorage.getItem('crm_storage_mode') as 'team' | 'local') || 'local';
   });
 
-  const [customers, setCustomersState] = useState<Customer[]>(MOCK_CUSTOMERS);
-  const [samples, setSamplesState] = useState<Sample[]>(MOCK_SAMPLES);
+  // Initialize all state with empty arrays - don't use MOCK data by default
+  const [customers, setCustomersState] = useState<Customer[]>([]);
+  const [samples, setSamplesState] = useState<Sample[]>([]);
+  const [masterProducts, setMasterProducts] = useState<MasterProduct[]>([]);
+  const [exhibitions, setExhibitionsState] = useState<Exhibition[]>([]);
+  const [expenses, setExpensesState] = useState<Expense[]>([]);
+  const [fxRates, setFxRatesState] = useState<FXRate[]>([]);
+  const [tagOptions, setTagOptionsState] = useState<TagOptions>(DEFAULT_TAGS);
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Load data based on storage mode
+  // Load all data based on storage mode
   useEffect(() => {
-    const loadData = async () => {
+    const loadAllData = async () => {
+      // Reset all state when switching modes to ensure clean separation
+      setCustomersState([]);
+      setSamplesState([]);
+      setMasterProducts([]);
+      setExhibitionsState([]);
+      setExpensesState([]);
+      setFxRatesState([]);
+      setTagOptionsState(DEFAULT_TAGS);
+      
       if (storageMode === 'team') {
         try {
-          const [customersData, samplesData] = await Promise.all([
+          // Team Mode: Load all data from Supabase
+          const [customersData, samplesData, exhibitionsData] = await Promise.all([
             customersApi.getAll(),
-            samplesApi.getAll()
+            samplesApi.getAll(),
+            exhibitionsApi.getAll()
           ]);
-          setCustomersState(customersData.length > 0 ? customersData : MOCK_CUSTOMERS);
-          setSamplesState(samplesData.length > 0 ? samplesData : MOCK_SAMPLES);
+          // Team Mode: use Supabase data only, no fallback to MOCK or localStorage
+          setCustomersState(customersData || []);
+          setSamplesState(samplesData || []);
+          setExhibitionsState(exhibitionsData || []);
         } catch (err) {
           console.error('Failed to load from API:', err);
-          // Fallback to localStorage
-          const savedCustomers = localStorage.getItem('customers');
-          const savedSamples = localStorage.getItem('samples');
-          if (savedCustomers) setCustomersState(JSON.parse(savedCustomers));
-          if (savedSamples) setSamplesState(JSON.parse(savedSamples));
+          // Team Mode: on error, show empty state - don't fallback to local data
+          setCustomersState([]);
+          setSamplesState([]);
+          setExhibitionsState([]);
         }
+        // TODO: Load masterProducts, expenses, fxRates from Supabase when APIs are ready
       } else {
-        // Local mode - load from localStorage
+        // Local mode - load from localStorage only
         const savedCustomers = localStorage.getItem('customers');
         const savedSamples = localStorage.getItem('samples');
-        if (savedCustomers) setCustomersState(JSON.parse(savedCustomers));
-        if (savedSamples) setSamplesState(JSON.parse(savedSamples));
+        const savedMasterProducts = localStorage.getItem('masterProducts');
+        const savedExhibitions = localStorage.getItem('exhibitions');
+        const savedExpenses = localStorage.getItem('expenses');
+        const savedFxRates = localStorage.getItem('fxRates');
+        const savedTagOptions = localStorage.getItem('tagOptions');
+        
+        setCustomersState(savedCustomers ? JSON.parse(savedCustomers) : []);
+        setSamplesState(savedSamples ? JSON.parse(savedSamples) : []);
+        setMasterProducts(savedMasterProducts ? JSON.parse(savedMasterProducts) : []);
+        
+        if (savedExhibitions) {
+          try {
+            const parsed: Exhibition[] = JSON.parse(savedExhibitions);
+            setExhibitionsState(parsed.map(exh => ({ ...exh, eventSeries: Array.isArray(exh.eventSeries) ? exh.eventSeries : [] })));
+          } catch (e) { setExhibitionsState([]); }
+        }
+        
+        setExpensesState(savedExpenses ? JSON.parse(savedExpenses) : []);
+        setFxRatesState(savedFxRates ? JSON.parse(savedFxRates) : []);
+        
+        if (savedTagOptions) {
+          try {
+            const parsed: TagOptions = JSON.parse(savedTagOptions);
+            setTagOptionsState({
+              ...DEFAULT_TAGS,
+              ...parsed,
+              sampleStatus: DEFAULT_TAGS.sampleStatus,
+              interactionTypes: Array.isArray(parsed.interactionTypes) ? parsed.interactionTypes : DEFAULT_TAGS.interactionTypes,
+              interactionEffects: Array.isArray(parsed.interactionEffects) ? parsed.interactionEffects : DEFAULT_TAGS.interactionEffects,
+              feeStatus: Array.isArray(parsed.feeStatus) ? parsed.feeStatus : DEFAULT_TAGS.feeStatus,
+              expenseCategory: Array.isArray(parsed.expenseCategory) ? parsed.expenseCategory : DEFAULT_TAGS.expenseCategory
+            });
+          } catch (e) { setTagOptionsState(DEFAULT_TAGS); }
+        }
       }
       setDataLoaded(true);
     };
 
-    loadData();
+    loadAllData();
   }, [storageMode]);
-  
-  const [masterProducts, setMasterProducts] = useState<MasterProduct[]>(() => {
-    const saved = localStorage.getItem('masterProducts');
-    return saved ? JSON.parse(saved) : MOCK_MASTER_PRODUCTS;
-  });
-
-  const [exhibitions, setExhibitionsState] = useState<Exhibition[]>(() => {
-    const saved = localStorage.getItem('exhibitions');
-    if (!saved) return MOCK_EXHIBITIONS; 
-    try {
-      const parsed: Exhibition[] = JSON.parse(saved);
-      return parsed.map(exh => ({ ...exh, eventSeries: Array.isArray(exh.eventSeries) ? exh.eventSeries : [] }));
-    } catch (e) { return MOCK_EXHIBITIONS; }
-  });
-
-  const [expenses, setExpensesState] = useState<Expense[]>(() => {
-    const saved = localStorage.getItem('expenses');
-    return saved ? JSON.parse(saved) : MOCK_EXPENSES;
-  });
-
-  const [fxRates, setFxRatesState] = useState<FXRate[]>(() => {
-    const saved = localStorage.getItem('fxRates');
-    return saved ? JSON.parse(saved) : MOCK_FXRATES;
-  });
-  
-  const [tagOptions, setTagOptionsState] = useState<TagOptions>(() => {
-    const saved = localStorage.getItem('tagOptions');
-    if (!saved) return DEFAULT_TAGS;
-    try {
-      const parsed: TagOptions = JSON.parse(saved);
-      return {
-        ...DEFAULT_TAGS,
-        ...parsed,
-        sampleStatus: DEFAULT_TAGS.sampleStatus,
-        interactionTypes: Array.isArray(parsed.interactionTypes) ? parsed.interactionTypes : DEFAULT_TAGS.interactionTypes,
-        interactionEffects: Array.isArray(parsed.interactionEffects) ? parsed.interactionEffects : DEFAULT_TAGS.interactionEffects,
-        feeStatus: Array.isArray(parsed.feeStatus) ? parsed.feeStatus : DEFAULT_TAGS.feeStatus,
-        expenseCategory: Array.isArray(parsed.expenseCategory) ? parsed.expenseCategory : DEFAULT_TAGS.expenseCategory
-      };
-    } catch (e) { return DEFAULT_TAGS; }
-  });
 
   useEffect(() => {
     const uniqueTags = Array.from(new Set(customers.flatMap(c => c.tags || [])));
