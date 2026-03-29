@@ -190,10 +190,21 @@ export default async function handler(req, res) {
         }
         
         // Debug: log what we're updating
+        console.log('DB fields available:', dbFields);
+        console.log('Serialized data fields:', Object.keys(serialized));
         console.log('Updating fields:', Object.keys(updateDbData));
+        console.log('Update data:', JSON.stringify(updateDbData, null, 2));
         
         const { data: updatedDb, error: updateError } = await supabase.from('customers').update(updateDbData).eq('id', id).select().single();
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Update error:', updateError);
+          return res.status(400).json({ 
+            error: updateError.message, 
+            details: updateError.details,
+            hint: updateError.hint,
+            code: updateError.code
+          });
+        }
         return res.status(200).json(fromDbFormat(updatedDb));
 
       case 'DELETE':
