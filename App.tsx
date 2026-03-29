@@ -19,9 +19,8 @@ import { customersApi, samplesApi } from './services/apiClient';
 
 // Inner component to use the context hooks
 const AppContent: React.FC = () => {
-  const { customers, samples, setCustomers, setSamples, isDemoData, setIsDemoData, refreshAllCustomerDates } = useApp();
+  const { customers, samples, setCustomers, setSamples, refreshAllCustomerDates } = useApp();
   const [loading, setLoading] = useState(true);
-  const [showDemoBanner, setShowDemoBanner] = useState(true);
   
   // Auth State
   const [authMode, setAuthMode] = useState<'auth' | 'app'>('auth');
@@ -183,12 +182,8 @@ const AppContent: React.FC = () => {
   };
 
   const handleImportCustomers = (importedCustomers: Customer[], override: boolean = false) => {
-    if (override || isDemoData) {
+    if (override) {
       setCustomers(importedCustomers);
-      if (isDemoData) {
-        setIsDemoData(false); 
-        setShowDemoBanner(false);
-      }
       return;
     }
 
@@ -213,9 +208,8 @@ const AppContent: React.FC = () => {
   };
 
   const handleImportSamples = (newSamples: Sample[], override: boolean = false) => {
-    if (isDemoData || override) {
+    if (override) {
       setSamples(newSamples);
-      if (isDemoData) setIsDemoData(false);
     } else {
       setSamples((prev: Sample[]) => [...prev, ...newSamples]);
     }
@@ -326,12 +320,7 @@ const AppContent: React.FC = () => {
                 )}
               </div>
             )}
-            {isDemoData && showDemoBanner && (
-              <div className="bg-blue-600 text-white text-xs xl:text-sm font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
-                <span>⚠ DEMO MODE: Showing generated sample data. Real client data is hidden. Import your data in Data Management.</span>
-                <button onClick={() => setShowDemoBanner(false)} className="text-white hover:text-blue-200 bg-blue-700 px-2 py-0.5 rounded">Dismiss</button>
-              </div>
-            )}
+
           <main className="max-max-w-[2560px] mx-auto p-8 xl:p-12 2xl:p-16">
             <Routes>
               <Route path="/" element={<Dashboard customers={customers} samples={samples} />} />

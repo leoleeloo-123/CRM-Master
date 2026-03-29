@@ -105,8 +105,6 @@ interface AppContextType {
   refreshTagsFromSamples: (samples: Sample[], replace?: boolean) => void;
   
   clearDatabase: () => void;
-  isDemoData: boolean;
-  setIsDemoData: (isDemo: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -148,9 +146,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved !== null ? saved : 'Demo User';
   });
 
-  const [isDemoData, setIsDemoData] = useState<boolean>(() => {
-    return localStorage.getItem('isDemoData') !== 'false';
-  });
+
 
   // Storage mode detection
   const [storageMode, setStorageMode] = useState<'team' | 'local'>(() => {
@@ -325,9 +321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { 
     if (storageMode === 'local') localStorage.setItem('fxRates', JSON.stringify(fxRates)); 
   }, [fxRates, storageMode]);
-  useEffect(() => { 
-    if (storageMode === 'local') localStorage.setItem('isDemoData', String(isDemoData)); 
-  }, [isDemoData, storageMode]);
+
   useEffect(() => { 
     if (storageMode === 'local') localStorage.setItem('tagOptions', JSON.stringify(tagOptions)); 
   }, [tagOptions, storageMode]);
@@ -446,8 +440,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const clearDatabase = () => {
-    setCustomersState(MOCK_CUSTOMERS); setSamplesState(MOCK_SAMPLES); setMasterProducts(MOCK_MASTER_PRODUCTS); setExhibitionsState(MOCK_EXHIBITIONS); setExpensesState(MOCK_EXPENSES); setFxRatesState(MOCK_FXRATES);
-    setIsDemoData(true); setTagOptionsState(DEFAULT_TAGS); setCompanyNameState('Zenith Advanced Materials'); setUserNameState('Demo User'); localStorage.clear();
+    setCustomersState([]); setSamplesState([]); setMasterProducts([]); setExhibitionsState([]); setExpensesState([]); setFxRatesState([]);
+    setTagOptionsState(DEFAULT_TAGS); setCompanyNameState('Zenith Advanced Materials'); setUserNameState('Demo User'); localStorage.clear();
   };
 
   const t = (key: keyof typeof translations['en']) => translations[language][key] || key;
@@ -456,7 +450,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider value={{ 
       theme, toggleTheme, language, setLanguage, fontSize, setFontSize, companyName, setCompanyName, userName, setUserName, t,
       customers, setCustomers, samples, setSamples, exhibitions, setExhibitions, masterProducts, syncSampleToCatalog, expenses, setExpenses, fxRates, setFxRates,
-      clearDatabase, isDemoData, setIsDemoData, tagOptions, setTagOptions, refreshTagsFromSamples, refreshAllCustomerDates, updateGlobalFXRates
+      clearDatabase, tagOptions, setTagOptions, refreshTagsFromSamples, refreshAllCustomerDates, updateGlobalFXRates
     }}>
       {children}
     </AppContext.Provider>
