@@ -86,8 +86,11 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   const [editLinkTitle, setEditLinkTitle] = useState('');
   const [editLinkUrl, setEditLinkUrl] = useState('');
 
-  const customer = customers.find(c => c.id === id);
-  const customerSamples = samples.filter(s => s.customerId === id);
+  // Ensure customers and samples are arrays
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const safeSamples = Array.isArray(samples) ? samples : [];
+  const customer = safeCustomers.find(c => c.id === id);
+  const customerSamples = safeSamples.filter(s => s.customerId === id);
 
   const urgency = getUrgencyLevel(customer?.nextActionDate);
 
