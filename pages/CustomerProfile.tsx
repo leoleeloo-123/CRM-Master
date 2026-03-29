@@ -227,7 +227,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     });
     
     if (oldName !== newName) {
-      setSamples(prev => prev.map(s => s.customerId === id ? { ...s, customerName: newName } : s));
+      setSamples(prev => (Array.isArray(prev) ? prev : []).map(s => s.customerId === id ? { ...s, customerName: newName } : s));
     }
     
     setIsEditCustomerModalOpen(false);
@@ -600,7 +600,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                </div>
                <div className="p-6">
                  <div className="flex flex-wrap gap-2">
-                   {customer.tags.map((tag, i) => {
+                   {(customer.tags || []).map((tag, i) => {
                      const matchedExhibition = exhibitions.find(e => e.name === tag);
                      return (
                       <button 
@@ -726,7 +726,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                   onChange={e => setFilterType(e.target.value)}
                                 >
                                    <option value="all">流程: 全部</option>
-                                   {tagOptions.interactionTypes.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                                   {(tagOptions.interactionTypes || []).map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
                                  </select>
                                 
                                 <select 
@@ -735,7 +735,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                                   onChange={e => setFilterEffect(e.target.value)}
                                 >
                                    <option value="all">作用: 全部</option>
-                                   {tagOptions.interactionEffects.map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
+                                   {(tagOptions.interactionEffects || []).map(tOption => <option key={tOption} value={tOption}>{t(tOption as any) || tOption}</option>)}
                                 </select>
                                 
                                 {hasActiveFilters && (
@@ -819,7 +819,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                              onChange={e => setSampleStatusFilter(e.target.value)}
                            >
                               <option value="all">全部Status</option>
-                              {tagOptions.sampleStatus.map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
+                              {(tagOptions.sampleStatus || []).map(s => <option key={s} value={s}>{t(s as any) || s}</option>)}
                            </select>
                            
                            <select 
