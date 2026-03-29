@@ -167,7 +167,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
     if (customer) {
       setTempName(customer.name);
       setTempRegions(Array.isArray(customer.region) ? [...customer.region] : [customer.region]);
-      setTempContacts([...customer.contacts]);
+      setTempContacts([...(customer.contacts || [])]);
     }
   }, [customer]);
 
@@ -242,7 +242,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const handleRefreshDates = async () => {
     setIsRefreshing(true);
-    const computed = getComputedDatesForCustomer(customer.interactions);
+    const computed = getComputedDatesForCustomer(customer.interactions || []);
     
     await saveUpdate({
       lastContactDate: computed.lastContact || customer.lastContactDate,
@@ -255,13 +255,13 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   };
 
   const saveInteraction = async (interactionToSave: Interaction) => {
-    const isNew = !customer.interactions.some(i => i.id === interactionToSave.id);
+    const isNew = !(customer.interactions || []).some(i => i.id === interactionToSave.id);
     const finalSummary = formatInteractionSummary(intIsStarred, intTypeTag, intExhibitionTag, intEffectTag, intContent);
     const updatedInt = { ...interactionToSave, summary: finalSummary };
 
     let newInteractions = isNew 
-      ? [updatedInt, ...customer.interactions]
-      : customer.interactions.map(i => i.id === updatedInt.id ? updatedInt : i);
+      ? [updatedInt, ...(customer.interactions || [])]
+      : (customer.interactions || []).map(i => i.id === updatedInt.id ? updatedInt : i);
     
     newInteractions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -281,7 +281,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const deleteInteraction = async (intId: string) => {
     if (confirm(t('confirmDeleteInteraction'))) {
-      const newInteractions = customer.interactions.filter(i => i.id !== intId);
+      const newInteractions = (customer.interactions || []).filter(i => i.id !== intId);
       const computed = getComputedDatesForCustomer(newInteractions);
 
       const updateObj: Partial<Customer> = { 
@@ -521,14 +521,14 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
                       </div>
                    </div>
                  ))}
-                 {customer.contacts.length > 2 && (
+                 {(customer.contacts || []).length > 2 && (
                    <div className="flex justify-center pt-2">
                      <button 
                        onClick={() => setShowAllContacts(!showAllContacts)} 
                        className="text-blue-600 font-black uppercase text-[10px] xl:text-xs tracking-widest flex items-center gap-1 hover:underline transition-all active:scale-95"
                      >
                        {showAllContacts ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
-                       {showAllContacts ? 'View Less' : `View More (${customer.contacts.length - 2})`}
+                       {showAllContacts ? 'View Less' : `View More (${(customer.contacts || []).length - 2})`}
                      </button>
                    </div>
                  )}
