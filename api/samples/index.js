@@ -114,7 +114,8 @@ const toDbFormat = (sample) => {
   if (sample.docLinks !== undefined) result.doc_links = serializeField(sample.docLinks, false, true);
   
   // Date fields
-  if (sample.requestDate !== undefined) result.request_date = formatDateField(sample.requestDate);
+  // Note: requestDate is mapped to origination_date in DB
+  if (sample.requestDate !== undefined) result.origination_date = formatDateField(sample.requestDate);
   if (sample.lastStatusDate !== undefined) result.last_status_date = formatDateField(sample.lastStatusDate);
   if (sample.originationDate !== undefined) result.origination_date = formatDateField(sample.originationDate);
   if (sample.transactionDate !== undefined) result.transaction_date = formatDateField(sample.transactionDate);
@@ -161,7 +162,8 @@ const fromDbFormat = (dbSample) => {
     feeComment: dbSample.fee_comment,
     feeStatus: dbSample.fee_status,
     docLinks: deserializeField(dbSample.doc_links, 'docLinks'),
-    requestDate: dbSample.request_date,
+    // Note: origination_date in DB is mapped to requestDate in frontend
+    requestDate: dbSample.origination_date,
     lastStatusDate: dbSample.last_status_date,
     originationDate: dbSample.origination_date,
     transactionDate: dbSample.transaction_date,
