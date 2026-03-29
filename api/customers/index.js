@@ -41,33 +41,63 @@ const deserializeField = (value, fieldName) => {
   return value;
 };
 
-// Helper to format date fields - convert empty strings to null for DB
+// Helper to format date fields - handle both TEXT and DATE column types
 const formatDateField = (value) => {
   if (!value || value === '') return null;
-  return value;
+  // Ensure date is in YYYY-MM-DD format
+  const dateStr = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  // Try to parse and format
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
+    }
+  } catch (e) {}
+  return null;
 };
 
 // Convert frontend customer format to DB format (serialize complex fields)
+// Only include fields that are actually present in the request to avoid overwriting with empty values
 const toDbFormat = (customer) => {
-  return {
-    id: customer.id,
-    name: customer.name,
-    region: serializeField(customer.region),
-    rank: customer.rank,
-    status: customer.status || 'Active',
-    product_summary: customer.productSummary || '',
-    last_status_update: formatDateField(customer.lastStatusUpdate),
-    follow_up_status: customer.followUpStatus || 'No Action',
-    contacts: serializeField(customer.contacts),
-    next_action_date: formatDateField(customer.nextActionDate),
-    tags: serializeField(customer.tags),
-    interactions: serializeField(customer.interactions),
-    doc_links: serializeField(customer.docLinks),
-    upcoming_plan: customer.upcomingPlan || '',
-    mailing_info: serializeField(customer.mailingInfo),
-    last_customer_reply_date: formatDateField(customer.lastCustomerReplyDate),
-    last_my_reply_date: formatDateField(customer.lastMyReplyDate)
-  };
+  const result = {};
+  
+  // Always include these basic fields
+  if (customer.id !== undefined) result.id = customer.id;
+  if (customer.name !== undefined) result.name = customer.name;
+  if (customer.rank !== undefined) result.rank = customer.rank;
+  if (customer.status !== undefined) result.status = customer.status || 'Active';
+  
+  // Serialize array/object fields
+  if (customer.region !== undefined) result.region = serializeField(customer.region);
+  if (customer.tags !== undefined) result.tags = serializeField(customer.tags);
+  if (customer.contacts !== undefined) result.contacts = serializeField(customer.contacts);
+  if (customer.interactions !== undefined) result.interactions = serializeField(customer.interactions);
+  if (customer.docLinks !== undefined) result.doc_links = serializeField(customer.docLinks);
+  if (customer.mailingInfo !== undefined) result.mailing_info = serializeField(customer.mailingInfo);
+  
+  // Text fields
+  if (customer.productSummary !== undefined) result.product_summary = customer.productSummary || '';
+  if (customer.followUpStatus !== undefined) result.follow_up_status = customer.followUpStatus || 'No Action';
+  if (customer.upcomingPlan !== undefined) result.upcoming_plan = customer.upcomingPlan || '';
+  
+  // Date fields - only include if they have valid values
+  if (customer.lastStatusUpdate !== undefined && customer.lastStatusUpdate) {
+    result.last_status_update = formatDateField(customer.lastStatusUpdate);
+  }
+  if (customer.nextActionDate !== undefined && customer.nextActionDate) {
+    result.next_action_date = formatDateField(customer.nextActionDate);
+  }
+  if (customer.lastCustomerReplyDate !== undefined && customer.lastCustomerReplyDate) {
+    result.last_customer_reply_date = formatDateField(customer.lastCustomerReplyDate);
+  }
+  if (customer.lastMyReplyDate !== undefined && customer.lastMyReplyDate) {
+    result.last_my_reply_date = formatDateField(customer.lastMyReplyDate);
+  }
+  
+  return result;
 };
 
 // Convert DB format to frontend customer format (deserialize complex fields)
