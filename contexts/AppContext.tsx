@@ -209,9 +209,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const savedFxRates = localStorage.getItem('fxRates');
         const savedTagOptions = localStorage.getItem('tagOptions');
         
-        setCustomersState(savedCustomers ? JSON.parse(savedCustomers) : []);
-        setSamplesState(savedSamples ? JSON.parse(savedSamples) : []);
-        setMasterProducts(savedMasterProducts ? JSON.parse(savedMasterProducts) : []);
+        // Safely parse localStorage data, ensuring result is always an array
+        const parseSafe = (data: string | null): any[] => {
+          if (!data) return [];
+          try {
+            const parsed = JSON.parse(data);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch (e) {
+            return [];
+          }
+        };
+        
+        setCustomersState(parseSafe(savedCustomers));
+        setSamplesState(parseSafe(savedSamples));
+        setMasterProducts(parseSafe(savedMasterProducts));
         
         if (savedExhibitions) {
           try {
@@ -220,8 +231,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } catch (e) { setExhibitionsState([]); }
         }
         
-        setExpensesState(savedExpenses ? JSON.parse(savedExpenses) : []);
-        setFxRatesState(savedFxRates ? JSON.parse(savedFxRates) : []);
+        setExpensesState(parseSafe(savedExpenses));
+        setFxRatesState(parseSafe(savedFxRates));
         
         if (savedTagOptions) {
           try {
