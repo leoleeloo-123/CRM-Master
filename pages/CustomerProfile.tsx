@@ -7,6 +7,7 @@ import { ArrowLeft, Phone, Mail, MapPin, Clock, Plus, Box, Save, X, Trash2, List
 import { format, differenceInDays, isValid, startOfDay } from 'date-fns';
 import { useApp, parseInteractionSummary, getComputedDatesForCustomer } from '../contexts/AppContext';
 import { translateToZh, getCanonicalTag } from '../utils/i18n';
+import { customersApi } from '../services/apiClient';
 
 interface CustomerProfileProps {
   customers: Customer[];
