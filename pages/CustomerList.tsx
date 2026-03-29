@@ -59,7 +59,9 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers }) => {
   };
 
   // Sorting and Filtering Logic
-  const filteredCustomers = customers
+  // Ensure customers is always an array
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const filteredCustomers = safeCustomers
     .filter(c => {
       const regionString = Array.isArray(c.region) ? c.region.join(' ') : c.region;
       const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
