@@ -35,8 +35,18 @@ export default async function handler(req, res) {
 
       case 'PUT':
         if (!id) return res.status(400).json({ error: 'ID required' });
-        // Remove internal fields that may not exist in the database schema
-        const { last_updated_by, ...updateData } = req.body;
+        // Only include fields that exist in the database schema
+        const allowedFields = [
+          'name', 'region', 'rank', 'status', 'productSummary', 'lastStatusUpdate',
+          'followUpStatus', 'contacts', 'nextActionDate', 'tags', 'interactions',
+          'docLinks', 'upcomingPlan', 'mailingInfo'
+        ];
+        const updateData = {};
+        for (const field of allowedFields) {
+          if (req.body.hasOwnProperty(field)) {
+            updateData[field] = req.body[field];
+          }
+        }
         const { data: updated, error: updateError } = await supabase.from('customers').update(updateData).eq('id', id).select().single();
         if (updateError) throw updateError;
         return res.status(200).json(updated);
