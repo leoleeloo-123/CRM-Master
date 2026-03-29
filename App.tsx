@@ -90,13 +90,13 @@ const AppContent: React.FC = () => {
         
         const { data } = await supabase
           .from('customers')
-          .select('last_updated_by, updated_at')
+          .select('updated_at')
           .order('updated_at', { ascending: false })
           .limit(1)
           .single();
         
-        if (data && data.last_updated_by) {
-          setLastUpdateInfo({ user: data.last_updated_by, time: data.updated_at });
+        if (data && data.updated_at) {
+          setLastUpdateInfo({ user: 'Team', time: data.updated_at });
           // Check if update is newer than 2 minutes
           const updateTime = new Date(data.updated_at).getTime();
           const now = new Date().getTime();
