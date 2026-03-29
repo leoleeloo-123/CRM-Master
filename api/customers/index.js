@@ -3,10 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-// Helper to serialize array/object fields to strings for storage
-const serializeField = (value) => {
-  if (value === null || value === undefined) return '';
-  if (Array.isArray(value)) return value.join('|||');
+// Helper to serialize array/object fields for PostgreSQL
+const serializeField = (value, isDbArray = false) => {
+  if (value === null || value === undefined) {
+    return isDbArray ? [] : '';
+  }
+  if (Array.isArray(value)) {
+    // For DB array columns, return the array directly
+    // For text columns, join with delimiter
+    return isDbArray ? value : value.join('|||');
+  }
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
 };
@@ -71,8 +77,9 @@ const toDbFormat = (customer) => {
   if (customer.status !== undefined) result.status = customer.status || 'Active';
   
   // Serialize array/object fields
-  if (customer.region !== undefined) result.region = serializeField(customer.region);
-  if (customer.tags !== undefined) result.tags = serializeField(customer.tags);
+  // region and tags are array columns in DB
+  if (customer.region !== undefined) result.region = serializeField(customer.region, true);
+  if (customer.tags !== undefined) result.tags = serializeField(customer.tags, true);
   if (customer.contacts !== undefined) result.contacts = serializeField(customer.contacts);
   if (customer.interactions !== undefined) result.interactions = serializeField(customer.interactions);
   if (customer.docLinks !== undefined) result.doc_links = serializeField(customer.docLinks);
