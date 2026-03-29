@@ -293,14 +293,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem('language', language); }, [language]);
   useEffect(() => { localStorage.setItem('companyName', companyName); }, [companyName]);
   useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
-  useEffect(() => { localStorage.setItem('customers', JSON.stringify(customers)); }, [customers]);
-  useEffect(() => { localStorage.setItem('samples', JSON.stringify(samples)); }, [samples]);
-  useEffect(() => { localStorage.setItem('masterProducts', JSON.stringify(masterProducts)); }, [masterProducts]);
-  useEffect(() => { localStorage.setItem('exhibitions', JSON.stringify(exhibitions)); }, [exhibitions]);
-  useEffect(() => { localStorage.setItem('expenses', JSON.stringify(expenses)); }, [expenses]);
-  useEffect(() => { localStorage.setItem('fxRates', JSON.stringify(fxRates)); }, [fxRates]);
-  useEffect(() => { localStorage.setItem('isDemoData', String(isDemoData)); }, [isDemoData]);
-  useEffect(() => { localStorage.setItem('tagOptions', JSON.stringify(tagOptions)); }, [tagOptions]);
+  
+  // Only save business data to localStorage in Local Mode
+  // Team Mode data is stored in Supabase only
+  useEffect(() => { 
+    if (storageMode === 'local') localStorage.setItem('customers', JSON.stringify(customers)); 
+  }, [customers, storageMode]);
+  useEffect(() => { 
+    if (storageMode === 'local') localStorage.setItem('samples', JSON.stringify(samples)); 
+  }, [samples, storageMode]);
+  useEffect(() => { 
+    if (storageMode === 'local') localStorage.setItem('masterProducts', JSON.stringify(masterProducts)); 
+  }, [masterProducts, storageMode]);
+  useEffect(() => { 
+    if (storageMode === 'local') localStorage.setItem('exhibitions', JSON.stringify(exhibitions)); 
+  }, [exhibitions, storageMode]);
+  useEffect(() => { 
+    if (storageMode === 'local') localStorage.setItem('expenses', JSON.stringify(expenses)); 
+  }, [expenses, storageMode]);
+  useEffect(() => { 
+    if (storageMode === 'local') localStorage.setItem('fxRates', JSON.stringify(fxRates)); 
+  }, [fxRates, storageMode]);
+  useEffect(() => { 
+    if (storageMode === 'local') localStorage.setItem('isDemoData', String(isDemoData)); 
+  }, [isDemoData, storageMode]);
+  useEffect(() => { 
+    if (storageMode === 'local') localStorage.setItem('tagOptions', JSON.stringify(tagOptions)); 
+  }, [tagOptions, storageMode]);
 
   const toggleTheme = (newTheme: ThemeMode) => setTheme(newTheme);
   const setLanguage = (lang: Language) => setLanguageState(lang);
