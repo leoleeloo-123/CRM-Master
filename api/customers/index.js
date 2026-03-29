@@ -40,6 +40,10 @@ export default async function handler(req, res) {
         if (fetchError) throw fetchError;
         if (!existingCustomer) return res.status(404).json({ error: 'Customer not found' });
         
+        // Debug: log available fields
+        console.log('DB Fields:', Object.keys(existingCustomer));
+        console.log('Request body fields:', Object.keys(req.body));
+        
         // Merge existing data with updates - only include fields that exist in DB
         const mergedData = { ...existingCustomer };
         const dbFields = Object.keys(existingCustomer);
