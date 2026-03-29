@@ -17,7 +17,7 @@ const serializeField = (value, isDbArray = false) => {
   return String(value);
 };
 
-// Helper to deserialize string fields back to original format
+// Helper to deserialize fields from DB format
 const deserializeField = (value, fieldName) => {
   if (value === null || value === undefined || value === '') {
     // Return appropriate default based on field name
@@ -27,12 +27,21 @@ const deserializeField = (value, fieldName) => {
     return '';
   }
   
-  // Fields that should be arrays
-  if (fieldName === 'region' || fieldName === 'tags') {
-    return String(value).split('|||').filter(s => s.trim());
+  // If value is already an array (PostgreSQL array type), return it directly
+  if (Array.isArray(value)) {
+    return value;
   }
   
-  // Fields that should be objects/arrays (stored as JSON)
+  // Fields that should be arrays - handle both DB array type and legacy text format
+  if (fieldName === 'region' || fieldName === 'tags') {
+    // If it's a string (legacy format), split by delimiter
+    if (typeof value === 'string') {
+      return value.split('|||').filter(s => s.trim());
+    }
+    return [];
+  }
+  
+  // Fields that should be objects/arrays (stored as JSON text)
   if (fieldName === 'contacts' || fieldName === 'interactions' || fieldName === 'docLinks' || fieldName === 'mailingInfo') {
     try {
       return JSON.parse(value);
