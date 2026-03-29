@@ -103,7 +103,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const visibleContacts = useMemo(() => {
     if (!customer) return [];
-    return showAllContacts ? customer.contacts : customer.contacts.slice(0, 2);
+    const contacts = Array.isArray(customer.contacts) ? customer.contacts : [];
+    return showAllContacts ? contacts : contacts.slice(0, 2);
   }, [customer, showAllContacts]);
 
   const sortedCustomerSamples = useMemo(() => {
@@ -123,7 +124,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
   }, [sortedCustomerSamples, sampleStatusFilter, sampleTestStatusFilter]);
 
   const availableExhibitionsToAdd = useMemo(() => {
-    return exhibitions.filter(ex => 
+    const safeExhibitions = Array.isArray(exhibitions) ? exhibitions : [];
+    return safeExhibitions.filter(ex => 
       !tempTags.includes(ex.name) && 
       ex.name.toLowerCase().includes(tagSearchTerm.toLowerCase())
     );
@@ -131,7 +133,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ customers, samples, o
 
   const processedInteractions = useMemo(() => {
     if (!customer) return [];
-    return customer.interactions
+    const interactions = Array.isArray(customer.interactions) ? customer.interactions : [];
+    return interactions
       .map(int => ({
         ...int,
         parsed: parseInteractionSummary(int.summary)
