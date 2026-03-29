@@ -35,7 +35,15 @@ const AppContent: React.FC = () => {
     const savedMode = localStorage.getItem('crm_storage_mode');
     const savedDefaultMode = localStorage.getItem('crm_default_mode');
     
-    if (savedDefaultMode) {
+    // Priority: savedMode (current session) > savedDefaultMode (user preference) > show auth
+    if (savedMode) {
+      // Use current session mode
+      setStorageMode(savedMode as 'team' | 'local');
+      if (savedUser && savedMode === 'team') {
+        setUser(JSON.parse(savedUser));
+      }
+      setAuthMode('app');
+    } else if (savedDefaultMode) {
       // User has a default preference, use it
       setStorageMode(savedDefaultMode as 'team' | 'local');
       if (savedUser && savedDefaultMode === 'team') {
