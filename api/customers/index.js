@@ -173,7 +173,25 @@ export default async function handler(req, res) {
 
       case 'PUT':
         if (!id) return res.status(400).json({ error: 'ID required' });
-        const updateDbData = toDbFormat(req.body);
+        
+        // First, get the existing customer to check which fields exist in DB
+        const { data: existingCustomer, error: fetchError } = await supabase.from('customers').select('*').eq('id', id).single();
+        if (fetchError) throw fetchError;
+        
+        // Build update data only with fields that exist in the database
+        const dbFields = Object.keys(existingCustomer);
+        const updateDbData = {};
+        const serialized = toDbFormat(req.body);
+        
+        for (const field of dbFields) {
+          if (serialized.hasOwnProperty(field)) {
+            updateDbData[field] = serialized[field];
+          }
+        }
+        
+        // Debug: log what we're updating
+        console.log('Updating fields:', Object.keys(updateDbData));
+        
         const { data: updatedDb, error: updateError } = await supabase.from('customers').update(updateDbData).eq('id', id).select().single();
         if (updateError) throw updateError;
         return res.status(200).json(fromDbFormat(updatedDb));
