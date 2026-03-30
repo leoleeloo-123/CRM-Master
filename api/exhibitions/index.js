@@ -29,13 +29,29 @@ const deserializeField = (value, fieldName) => {
   return value;
 };
 
+// Helper to format date fields - handle empty strings
+const formatDateField = (value) => {
+  if (!value || value === '') return null;
+  const dateStr = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
+    }
+  } catch (e) {}
+  return null;
+};
+
 // Convert frontend exhibition format to DB format (camelCase -> snake_case)
 const toDbFormat = (exhibition) => {
   const result = {};
   
   if (exhibition.id !== undefined) result.id = exhibition.id;
   if (exhibition.name !== undefined) result.name = exhibition.name;
-  if (exhibition.date !== undefined) result.date = exhibition.date;
+  if (exhibition.date !== undefined) result.date = formatDateField(exhibition.date);
   if (exhibition.location !== undefined) result.location = exhibition.location;
   if (exhibition.link !== undefined) result.link = exhibition.link;
   if (exhibition.summary !== undefined) result.summary = exhibition.summary;
