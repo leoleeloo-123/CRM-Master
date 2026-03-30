@@ -5,6 +5,7 @@ import { useApp } from '../contexts/AppContext';
 import { Plus, Search, MapPin, Calendar, ExternalLink, Trash2, PencilLine, ArrowRight, Tag, X, Filter, User, ChevronDown, ChevronRight, Globe, Maximize2, Minimize2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Exhibition } from '../types';
+import { exhibitionsApi } from '../services/apiClient';
 
 const ExhibitionList: React.FC = () => {
   const { exhibitions, setExhibitions, customers, tagOptions, setTagOptions, t } = useApp();
@@ -109,10 +110,21 @@ const ExhibitionList: React.FC = () => {
     setExpandedSeries(next);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name) return;
+    const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
+    
     if (editingExhibition) {
-      setExhibitions(prev => prev.map(e => e.id === editingExhibition.id ? { ...editingExhibition, ...formData } as Exhibition : e));
+      const updatedData = { ...editingExhibition, ...formData };
+      if (storageMode === 'team') {
+        try {
+          await exhibitionsApi.update(editingExhibition.id, updatedData);
+        } catch (err: any) {
+          alert('Failed to update exhibition: ' + err.message);
+          return;
+        }
+      }
+      setExhibitions(prev => (Array.isArray(prev) ? prev : []).map(e => e.id === editingExhibition.id ? updatedData as Exhibition : e));
     } else {
       const newExh: Exhibition = {
         id: `exh_${Date.now()}`,
@@ -123,7 +135,17 @@ const ExhibitionList: React.FC = () => {
         eventSeries: formData.eventSeries || [],
         summary: formData.summary || ''
       };
-      setExhibitions(prev => [...prev, newExh]);
+      if (storageMode === 'team') {
+        try {
+          const created = await exhibitionsApi.create(newExh);
+          setExhibitions(prev => [...(Array.isArray(prev) ? prev : []), created]);
+        } catch (err: any) {
+          alert('Failed to create exhibition: ' + err.message);
+          return;
+        }
+      } else {
+        setExhibitions(prev => [...(Array.isArray(prev) ? prev : []), newExh]);
+      }
     }
     setIsAddModalOpen(false);
     setEditingExhibition(null);
@@ -140,14 +162,23 @@ const ExhibitionList: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleDelete = (id: string, name: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
     const count = exhibitionStats[name] || 0;
     const message = count > 0 
       ? `This exhibition is linked to ${count} customer(s). Are you absolutely sure you want to delete it?`
       : `Are you sure you want to delete "${name}"?`;
     if (confirm(message)) {
-      setExhibitions(prev => prev.filter(ex => ex.id !== id));
+      if (storageMode === 'team') {
+        try {
+          await exhibitionsApi.delete(id);
+        } catch (err: any) {
+          alert('Failed to delete exhibition: ' + err.message);
+          return;
+        }
+      }
+      setExhibitions(prev => (Array.isArray(prev) ? prev : []).filter(ex => ex.id !== id));
     }
   };
 
