@@ -304,7 +304,7 @@ const AppContent: React.FC = () => {
               <div className={`text-xs xl:text-sm font-bold text-center py-2 px-4 sticky top-0 z-50 flex justify-between items-center shadow-md transition-colors ${hasUpdate ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'}`}>
                 <span>
                   {hasUpdate ? '⚠ ' : '✓ '}
-                  最后更新: {lastUpdateInfo.user} @ {new Date(lastUpdateInfo.time).toLocaleTimeString()}
+                  最后更新: {lastUpdateInfo.user} @ {new Date(lastUpdateInfo.time).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   {hasUpdate && ' (有新数据)'}
                 </span>
                 {hasUpdate && (
