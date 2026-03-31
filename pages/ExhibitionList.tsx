@@ -137,7 +137,9 @@ const ExhibitionList: React.FC = () => {
       };
       if (storageMode === 'team') {
         try {
-          const created = await exhibitionsApi.create(newExh);
+          // Team Mode: don't send id, let Supabase generate UUID
+          const { id, ...exhData } = newExh;
+          const created = await exhibitionsApi.create(exhData);
           setExhibitions(prev => [...(Array.isArray(prev) ? prev : []), created]);
         } catch (err: any) {
           alert('Failed to create exhibition: ' + err.message);
