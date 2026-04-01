@@ -202,7 +202,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.error('Failed to load expenses from API:', err);
           setExpensesState([]);
         }
-        // TODO: Load masterProducts, fxRates from Supabase when APIs are ready
+        // Load fxRates from Supabase
+        try {
+          const fxRatesData = await fxRatesApi.getAll();
+          setFxRatesState(fxRatesData || []);
+        } catch (err) {
+          console.error('Failed to load FX rates from API:', err);
+          setFxRatesState([]);
+        }
+        // TODO: Load masterProducts from Supabase when API is ready
       } else {
         // Local mode - load from localStorage only
         const savedCustomers = localStorage.getItem('customers');
@@ -391,18 +399,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const rates = data.rates;
       const todayStr = format(new Date(), 'yyyy-MM-dd');
       
-      setFxRatesState(prev => {
-        return (Array.isArray(prev) ? prev : []).map(item => {
-          const code = item.currency.toUpperCase();
-          // The API gives USD to Target (1 USD = X Target). 
-          // We need Target to USD (1 Target = ? USD).
-          if (code === 'USD') return { ...item, rateToUSD: 1.0, lastUpdated: todayStr };
-          if (rates[code]) {
-            return { ...item, rateToUSD: 1 / rates[code], lastUpdated: todayStr };
-          }
-          return item;
-        });
+      const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
+      
+      // Calculate new rates
+      const updatedRates = (fxRates || []).map(item => {
+        const code = item.currency.toUpperCase();
+        // The API gives USD to Target (1 USD = X Target). 
+        // We need Target to USD (1 Target = ? USD).
+        if (code === 'USD') return { ...item, rateToUSD: 1.0, lastUpdated: todayStr };
+        if (rates[code]) {
+          return { ...item, rateToUSD: 1 / rates[code], lastUpdated: todayStr };
+        }
+        return item;
       });
+      
+      // Team Mode: sync to Supabase
+      if (storageMode === 'team') {
+        try {
+          // Update each rate in Supabase
+          for (const rate of updatedRates) {
+            await fxRatesApi.update(rate.id, rate);
+          }
+        } catch (err: any) {
+          console.error('Failed to sync FX rates to Supabase:', err);
+          alert('Failed to sync rates to server: ' + err.message);
+          return;
+        }
+      }
+      
+      setFxRatesState(updatedRates);
     } catch (err) {
       console.error('Failed to update FX rates:', err);
       alert('Unable to sync rates at this moment. Please check network.');
