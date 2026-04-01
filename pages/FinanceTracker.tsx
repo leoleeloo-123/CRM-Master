@@ -9,6 +9,7 @@ import { translateDisplay } from '../utils/i18n';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend, ReferenceLine } from 'recharts';
 import { Expense } from '../types';
+import { expensesApi } from '../services/apiClient';
 
 interface UnifiedTransaction {
   id: string;
@@ -215,30 +216,64 @@ const FinanceTracker: React.FC = () => {
     }
   };
 
-  const handleDeleteExpense = (id: string, e: React.MouseEvent) => {
+  const handleDeleteExpense = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
+    
     if (confirm(t('confirmDeleteExpense'))) {
-      setExpenses(prev => prev.filter(ex => ex.id !== id));
+      if (storageMode === 'team') {
+        try {
+          await expensesApi.delete(id);
+        } catch (err: any) {
+          alert('Failed to delete expense: ' + err.message);
+          return;
+        }
+      }
+      setExpenses(prev => (Array.isArray(prev) ? prev : []).filter(ex => ex.id !== id));
     }
   };
 
-  const handleSaveExpense = () => {
+  const handleSaveExpense = async () => {
     if (!editingExpense) return;
     if (!editingExpense.name || !editingExpense.balance) {
       alert("Name and Amount are required.");
       return;
     }
+    
+    const storageMode = localStorage.getItem('crm_storage_mode') as 'team' | 'local' || 'local';
 
     if (editingExpense.id) {
       // Edit
-      setExpenses(prev => prev.map(ex => ex.id === editingExpense.id ? { ...editingExpense } as Expense : ex));
+      const updatedData = { ...editingExpense } as Expense;
+      if (storageMode === 'team') {
+        try {
+          await expensesApi.update(editingExpense.id, updatedData);
+        } catch (err: any) {
+          alert('Failed to update expense: ' + err.message);
+          return;
+        }
+      }
+      setExpenses(prev => (Array.isArray(prev) ? prev : []).map(ex => ex.id === editingExpense.id ? updatedData : ex));
     } else {
       // Create
       const newEx: Expense = {
         ...editingExpense,
         id: `exp_${Date.now()}`
       } as Expense;
-      setExpenses(prev => [newEx, ...prev]);
+      
+      if (storageMode === 'team') {
+        try {
+          // Team Mode: don't send id, let Supabase generate UUID
+          const { id, ...expData } = newEx;
+          const created = await expensesApi.create(expData);
+          setExpenses(prev => [created, ...(Array.isArray(prev) ? prev : [])]);
+        } catch (err: any) {
+          alert('Failed to create expense: ' + err.message);
+          return;
+        }
+      } else {
+        setExpenses(prev => [newEx, ...(Array.isArray(prev) ? prev : [])]);
+      }
     }
     setIsExpenseModalOpen(false);
     setEditingExpense(null);
