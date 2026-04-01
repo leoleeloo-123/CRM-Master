@@ -194,7 +194,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setSamplesState([]);
           setExhibitionsState([]);
         }
-        // TODO: Load masterProducts, expenses, fxRates from Supabase when APIs are ready
+        // Load expenses from Supabase
+        try {
+          const expensesData = await expensesApi.getAll();
+          setExpensesState(expensesData || []);
+        } catch (err) {
+          console.error('Failed to load expenses from API:', err);
+          setExpensesState([]);
+        }
+        // TODO: Load masterProducts, fxRates from Supabase when APIs are ready
       } else {
         // Local mode - load from localStorage only
         const savedCustomers = localStorage.getItem('customers');
